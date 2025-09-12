@@ -7,12 +7,9 @@ locals {
   acr_name  = lower(replace("acr${var.project_name}${var.env}", "-", ""))
   aks_name  = "aks-${var.project_name}-${var.env}-${var.location}"
 
-  web_plan  = "asp-halomdweb-${var.env}-${var.location}"
-  web_name  = "app-halomdweb-${var.env}"
-
-  func_external_plan = "asp-external-${var.env}-${var.location}"
+  service_plan_name  = "asp-${var.project_name}-${var.env}-${var.location}"
+  web_name           = "app-halomdweb-${var.env}"
   func_external_name = "func-external-${var.env}"
-  func_cron_plan     = "asp-cron-${var.env}-${var.location}"
   func_cron_name     = "func-cron-${var.env}"
 
   storage_data_name  = lower(replace("st${var.project_name}${var.env}data", "-", ""))
@@ -69,13 +66,21 @@ module "aks" {
   tags                = var.tags
 }
 
+module "service_plan" {
+  source              = "../../Azure/modules/service-plan"
+  name                = local.service_plan_name
+  resource_group_name = module.rg.name
+  location            = var.location
+  sku                 = var.plan_sku
+  tags                = var.tags
+}
+
 module "web" {
   source                         = "../../Azure/modules/app-service-web"
   name                           = local.web_name
-  plan_name                      = local.web_plan
   resource_group_name            = module.rg.name
   location                       = var.location
-  plan_sku                       = var.web_plan_sku
+  service_plan_id                = module.service_plan.id
   dotnet_version                 = var.web_dotnet_version
   app_insights_connection_string = module.logs.app_insights_connection_string
   tags                           = var.tags
@@ -84,10 +89,9 @@ module "web" {
 module "func_external" {
   source                         = "../../Azure/modules/function-app"
   name                           = local.func_external_name
-  plan_name                      = local.func_external_plan
   resource_group_name            = module.rg.name
   location                       = var.location
-  plan_sku                       = var.func_plan_sku
+  service_plan_id                = module.service_plan.id
   runtime                        = var.function_external_runtime
   app_insights_connection_string = module.logs.app_insights_connection_string
   tags                           = var.tags
@@ -96,10 +100,9 @@ module "func_external" {
 module "func_cron" {
   source                         = "../../Azure/modules/function-app"
   name                           = local.func_cron_name
-  plan_name                      = local.func_cron_plan
   resource_group_name            = module.rg.name
   location                       = var.location
-  plan_sku                       = var.func_plan_sku
+  service_plan_id                = module.service_plan.id
   runtime                        = var.function_cron_runtime
   app_insights_connection_string = module.logs.app_insights_connection_string
   tags                           = var.tags
@@ -148,3 +151,4 @@ output "storage_data_account_name"  { value = var.enable_storage ? module.storag
 output "sql_server_name"            { value = var.enable_sql ? module.sql[0].server_name : null }
 output "sql_database_id"            { value = var.enable_sql ? module.sql[0].database_id : null }
 output "aad_app_client_id"          { value = var.enable_aad_app ? module.aad_app[0].client_id : null }
+output "service_plan_id"            { value = module.service_plan.id }

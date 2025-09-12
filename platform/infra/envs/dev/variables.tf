@@ -125,16 +125,10 @@ variable "aks_vm_size" {
   default     = "Standard_DS2_v2"
 }
 
-variable "web_plan_sku" {
+variable "plan_sku" {
   type        = string
   description = "App Service plan SKU"
   default     = "B1"
-}
-
-variable "func_plan_sku" {
-  type        = string
-  description = "Function App plan SKU"
-  default     = "Y1"
 }
 
 variable "web_dotnet_version" {

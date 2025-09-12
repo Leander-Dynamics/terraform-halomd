@@ -14,19 +14,11 @@ resource "azurerm_storage_account" "sa" {
   min_tls_version          = "TLS1_2"
   tags                     = var.tags
 }
-resource "azurerm_service_plan" "plan" {
-  name                = var.plan_name
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  os_type             = "Linux"
-  sku_name            = var.plan_sku
-  tags                = var.tags
-}
 resource "azurerm_linux_function_app" "func" {
   name                        = var.name
   resource_group_name         = var.resource_group_name
   location                    = var.location
-  service_plan_id             = azurerm_service_plan.plan.id
+  service_plan_id             = var.service_plan_id
   storage_account_name        = azurerm_storage_account.sa.name
   storage_account_access_key  = azurerm_storage_account.sa.primary_access_key
   https_only                  = true

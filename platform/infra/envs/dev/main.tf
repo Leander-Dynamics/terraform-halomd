@@ -67,13 +67,21 @@ module "logs" {
   tags                = var.tags
 }
 
+module "service_plan" {
+  source              = "../../Azure/modules/service-plan"
+  name                = "${var.project_name}-${var.env_name}-asp"
+  resource_group_name = var.deploy_rg
+  location            = var.location
+  sku                 = var.plan_sku
+  tags                = var.tags
+}
+
 module "func_cron" {
   source                         = "../../Azure/modules/function-app"
   name                           = "${var.project_name}-${var.env_name}-func-cron"
-  plan_name                      = "${var.project_name}-${var.env_name}-asp"
   resource_group_name            = var.deploy_rg
   location                       = var.location
-  plan_sku                       = var.func_plan_sku
+  service_plan_id                = module.service_plan.id
   runtime                        = var.function_cron_runtime
   app_insights_connection_string = var.app_insights_connection_string
   tags                           = var.tags
@@ -82,10 +90,9 @@ module "func_cron" {
 module "func_external" {
   source                         = "../../Azure/modules/function-app"
   name                           = "${var.project_name}-${var.env_name}-func-ext"
-  plan_name                      = "${var.project_name}-${var.env_name}-asp"
   resource_group_name            = var.deploy_rg
   location                       = var.location
-  plan_sku                       = var.func_plan_sku
+  service_plan_id                = module.service_plan.id
   runtime                        = var.function_external_runtime
   app_insights_connection_string = var.app_insights_connection_string
   tags                           = var.tags
@@ -94,10 +101,9 @@ module "func_external" {
 module "web" {
   source                         = "../../Azure/modules/app-service-web"
   name                           = "${var.project_name}-${var.env_name}-web"
-  plan_name                      = "${var.project_name}-${var.env_name}-asp"
   resource_group_name            = var.deploy_rg
   location                       = var.location
-  plan_sku                       = var.web_plan_sku
+  service_plan_id                = module.service_plan.id
   dotnet_version                 = var.web_dotnet_version
   app_insights_connection_string = var.app_insights_connection_string
   tags                           = var.tags
@@ -110,4 +116,8 @@ module "storage_data" {
   resource_group_name = var.deploy_rg
   location            = var.location
   tags                = var.tags
+}
+
+output "service_plan_id" {
+  value = module.service_plan.id
 }

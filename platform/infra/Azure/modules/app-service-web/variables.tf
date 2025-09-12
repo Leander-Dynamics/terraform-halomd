@@ -1,11 +1,7 @@
 variable "name"                           { type = string }
-variable "plan_name"                      { type = string }
 variable "resource_group_name"            { type = string }
 variable "location"                       { type = string }
-variable "plan_sku" {
-  type    = string
-  default = "B1"
-}
+variable "service_plan_id"               { type = string }
 variable "dotnet_version" {
   type    = string
   default = "8.0"

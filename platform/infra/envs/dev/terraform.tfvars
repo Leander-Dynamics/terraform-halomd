@@ -31,8 +31,7 @@ kv_public_network_access = true
 acr_sku        = "Basic"
 aks_node_count = 1
 aks_vm_size    = "Standard_DS2_v2"
-web_plan_sku   = "B1"
-func_plan_sku  = "Y1"
+plan_sku       = "B1"
 
 web_dotnet_version        = "8.0"
 function_external_runtime = "dotnet"
