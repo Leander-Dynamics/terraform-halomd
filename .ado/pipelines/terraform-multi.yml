@@ -1,0 +1,81 @@
+trigger:
+  branches: { include: [ main ] }
+  paths: { include: [ 'platform/infra/**', '.ado/**' ] }
+
+pr:
+  branches: { include: [ main, feature/* ] }
+  paths: { include: [ 'platform/infra/**', '.ado/**' ] }
+
+pool: { vmImage: 'ubuntu-latest' }
+
+variables:
+  TF_VERSION: '1.7.5'
+  TF_LOCK_TIMEOUT: '20m'
+
+stages:
+- stage: Validate
+  displayName: Validate & Lint
+  jobs:
+  - template: ../templates/tf-validate.yml
+    parameters:
+      envName: dev
+      tfVersion: ${{ variables.TF_VERSION }}
+
+- stage: Plan_All
+  displayName: Terraform Plan (dev, stage, prod)
+  dependsOn: Validate
+  jobs:
+  - template: ../templates/tf-plan.yml
+    parameters:
+      envName: dev
+      serviceConnection: sc-azure-oidc-dev
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+  - template: ../templates/tf-plan.yml
+    parameters:
+      envName: stage
+      serviceConnection: sc-azure-oidc-stage
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+  - template: ../templates/tf-plan.yml
+    parameters:
+      envName: prod
+      serviceConnection: sc-azure-oidc-prod
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+
+- stage: Apply_Dev
+  displayName: Terraform Apply (dev)
+  dependsOn: Plan_All
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - template: ../templates/tf-apply.yml
+    parameters:
+      envName: dev
+      serviceConnection: sc-azure-oidc-dev
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+
+- stage: Apply_Stage
+  displayName: Terraform Apply (stage)
+  dependsOn: Apply_Dev
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - template: ../templates/tf-apply.yml
+    parameters:
+      envName: stage
+      serviceConnection: sc-azure-oidc-stage
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+
+- stage: Apply_Prod
+  displayName: Terraform Apply (prod)
+  dependsOn: Apply_Stage
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - template: ../templates/tf-apply.yml
+    parameters:
+      envName: prod
+      serviceConnection: sc-azure-oidc-prod
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}

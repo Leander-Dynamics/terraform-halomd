@@ -1,0 +1,25 @@
+parameters:
+  - name: envName
+    type: string
+  - name: tfVersion
+    type: string
+    default: '1.7.5'
+
+jobs:
+- job: validate_${{ parameters.envName }}
+  displayName: "Terraform fmt & validate (${{ parameters.envName }})"
+  steps:
+  - checkout: self
+  - bash: |
+      set -euo pipefail
+      TFV='${{ parameters.tfVersion }}'
+      if ! command -v terraform >/dev/null 2>&1 || ! terraform version | head -1 | grep -q "v${TFV}"; then
+        sudo apt-get update -y && sudo apt-get install -y unzip curl
+        curl -fsSL -o /tmp/tf.zip "https://releases.hashicorp.com/terraform/${TFV}/terraform_${TFV}_linux_amd64.zip"
+        sudo unzip -o /tmp/tf.zip -d /usr/local/bin
+      fi
+      terraform -version
+      terraform fmt -check -recursive platform/infra
+      terraform -chdir=platform/infra/envs/${{ parameters.envName }} init -backend=false -input=false
+      terraform -chdir=platform/infra/envs/${{ parameters.envName }} validate
+    displayName: "terraform fmt & validate (${{ parameters.envName }})"

@@ -1,0 +1,42 @@
+trigger:
+  branches: { include: [ main ] }
+  paths: { include: [ 'platform/infra/envs/prod/**', '.ado/**' ] }
+
+pr:
+  branches: { include: [ main, feature/* ] }
+  paths: { include: [ 'platform/infra/envs/prod/**', '.ado/**' ] }
+
+pool: { vmImage: 'ubuntu-latest' }
+
+variables:
+  TF_VERSION: '1.7.5'
+  TF_LOCK_TIMEOUT: '20m'
+
+stages:
+- stage: Validate
+  jobs:
+  - template: ../templates/tf-validate.yml
+    parameters:
+      envName: prod
+      tfVersion: ${{ variables.TF_VERSION }}
+
+- stage: Plan
+  dependsOn: Validate
+  jobs:
+  - template: ../templates/tf-plan.yml
+    parameters:
+      envName: prod
+      serviceConnection: sc-azure-oidc-prod
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+
+- stage: Apply
+  dependsOn: Plan
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - template: ../templates/tf-apply.yml
+    parameters:
+      envName: prod
+      serviceConnection: sc-azure-oidc-prod
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}

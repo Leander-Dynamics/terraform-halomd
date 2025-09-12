@@ -1,0 +1,104 @@
+# Multi-stage ADO pipeline (PR -> Validate & Plan; merge -> Apply dev -> gated stage/prod)
+# Includes AKV-driven secrets and optional temporary IP allow-listing for hosted agents.
+
+trigger:
+  branches: { include: [ main ] }
+  paths: { include: [ 'platform/infra/**', '.ado/**' ] }
+
+pr:
+  branches: { include: [ main, feature/*, hotfix/*, chore/* ] }
+  paths: { include: [ 'platform/infra/**', '.ado/**' ] }
+
+pool: { vmImage: 'ubuntu-latest' }
+
+variables:
+  TF_VERSION: '1.7.5'
+  TF_LOCK_TIMEOUT: '20m'
+
+stages:
+- stage: Validate
+  displayName: Validate & Lint
+  jobs:
+  - template: .ado/templates/tf-validate.yml
+    parameters:
+      envName: dev
+      tfVersion: ${{ variables.TF_VERSION }}
+
+- stage: Plan_All
+  displayName: Terraform Plan (dev, stage, prod)
+  dependsOn: Validate
+  jobs:
+  - template: .ado/templates/tf-plan.yml
+    parameters:
+      envName: dev
+      serviceConnection: sc-azure-oidc-dev
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      # Pass the CI/CD principal Object ID if provided (used to grant KV Secrets User via TF)
+      extraVarFlags: '-var "kv_cicd_principal_id=$(KV_CICD_PRINCIPAL_ID_DEV)"'
+      # AKV integration (pull SQL secrets at plan time)
+      useAkv: '$(USE_AKV_FOR_SECRETS)'
+      akvName: '$(KV_NAME_DEV)'
+      akvEnableDynamicIp: '$(AKV_ENABLE_DYNAMIC_IP_DEV)'
+      akvSecretSqlAdminLoginName: '$(AKV_SECRET_SQL_ADMIN_LOGIN_NAME)'
+      akvSecretSqlAdminPasswordName: '$(AKV_SECRET_SQL_ADMIN_PASSWORD_NAME)'
+  - template: .ado/templates/tf-plan.yml
+    parameters:
+      envName: stage
+      serviceConnection: sc-azure-oidc-stage
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      extraVarFlags: '-var "kv_cicd_principal_id=$(KV_CICD_PRINCIPAL_ID_STAGE)"'
+      useAkv: '$(USE_AKV_FOR_SECRETS)'
+      akvName: '$(KV_NAME_STAGE)'
+      akvEnableDynamicIp: '$(AKV_ENABLE_DYNAMIC_IP_STAGE)'
+      akvSecretSqlAdminLoginName: '$(AKV_SECRET_SQL_ADMIN_LOGIN_NAME)'
+      akvSecretSqlAdminPasswordName: '$(AKV_SECRET_SQL_ADMIN_PASSWORD_NAME)'
+  - template: .ado/templates/tf-plan.yml
+    parameters:
+      envName: prod
+      serviceConnection: sc-azure-oidc-prod
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      extraVarFlags: '-var "kv_cicd_principal_id=$(KV_CICD_PRINCIPAL_ID_PROD)"'
+      useAkv: '$(USE_AKV_FOR_SECRETS)'
+      akvName: '$(KV_NAME_PROD)'
+      akvEnableDynamicIp: '$(AKV_ENABLE_DYNAMIC_IP_PROD)'
+      akvSecretSqlAdminLoginName: '$(AKV_SECRET_SQL_ADMIN_LOGIN_NAME)'
+      akvSecretSqlAdminPasswordName: '$(AKV_SECRET_SQL_ADMIN_PASSWORD_NAME)'
+
+- stage: Apply_Dev
+  displayName: Terraform Apply (dev)
+  dependsOn: Plan_All
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - template: .ado/templates/tf-apply.yml
+    parameters:
+      envName: dev
+      serviceConnection: sc-azure-oidc-dev
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+
+- stage: Apply_Stage
+  displayName: Terraform Apply (stage)
+  dependsOn: Apply_Dev
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - template: .ado/templates/tf-apply.yml
+    parameters:
+      envName: stage
+      serviceConnection: sc-azure-oidc-stage
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+
+- stage: Apply_Prod
+  displayName: Terraform Apply (prod)
+  dependsOn: Apply_Stage
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - template: .ado/templates/tf-apply.yml
+    parameters:
+      envName: prod
+      serviceConnection: sc-azure-oidc-prod
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}

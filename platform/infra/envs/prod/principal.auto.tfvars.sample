@@ -1,0 +1,4 @@
+# Sample: ADO pipeline principal Object ID for prod
+# Rename this file to "principal.auto.tfvars" (or pass via pipeline variable: KV_CICD_PRINCIPAL_ID_PROD)
+# Then uncomment the RBAC block in prod/main.tf to grant "Key Vault Secrets User" on the vault.
+kv_cicd_principal_id = "33333333-3333-3333-3333-333333333333"
