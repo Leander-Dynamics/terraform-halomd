@@ -1,6 +1,5 @@
 project_name = "arbit"
 location     = "eastus"
-env          = "dev"
 
 env_name            = "dev"
 container_name      = "arbit"
@@ -11,6 +10,11 @@ storage_account_name = "deveus2terraform"
 key                 = "arbit/dev.tfstate"
 use_azuread_auth    = true
 
+deploy_rg = "arbit-dev-rg"
+
+app_insights_name             = "arbit-dev-appi"
+app_insights_rg               = "arbit-dev-rg"
+app_insights_connection_string = "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://example.com/"
 
 tags = {
   project = "arbit"
@@ -39,5 +43,5 @@ sql_sku_name              = "GP_S_Gen5_2"
 sql_auto_pause_minutes    = 60
 sql_max_size_gb           = 32
 sql_public_network_access = true
-# sql_admin_login    = ""
-# sql_admin_password = ""
+sql_admin_login           = "sqladmin"
+sql_admin_password        = "P@ssw0rd1234!"
