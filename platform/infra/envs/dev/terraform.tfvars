@@ -10,8 +10,6 @@ storage_account_name = "deveus2terraform"
 key                 = "arbit/dev.tfstate"
 use_azuread_auth    = true
 
-deploy_rg = "arbit-dev-rg"
-
 app_insights_name             = "arbit-dev-appi"
 app_insights_rg               = "arbit-dev-rg"
 app_insights_connection_string = "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://example.com/"

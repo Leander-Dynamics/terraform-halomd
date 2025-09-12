@@ -51,11 +51,6 @@ variable "tenant_id" {
   type        = string
 }
 
-variable "deploy_rg" {
-  type        = string
-  description = "Resource Group name"
-}
-
 variable "app_insights_connection_string" {
   type        = string
   description = "App Insights connection string"
