@@ -65,8 +65,14 @@ Use these to create `azurerm_role_assignment` for **Key Vault Secrets User** at 
 Create these secrets **in each environment’s Key Vault** (names configurable via variables):
 - `sql-admin-login`
 - `sql-admin-password`
+- `app-service-primary-database-connection`
+- `arbitration-primary-connection`
+- `arbitration-idr-connection`
+- `arbitration-storage-connection`
 
 You can add more (e.g., `webapp-client-secret`) and extend the YAML similarly.
+
+> App Service / Function apps must have managed identities with **Key Vault Secrets User** access so the runtime can resolve `@Microsoft.KeyVault(...)` references configured in Terraform.
 
 ## How the pipeline uses AKV
 

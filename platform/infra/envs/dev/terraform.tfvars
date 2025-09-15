@@ -1,8 +1,10 @@
-project_name    = "arbit"
-env_name        = "dev"
-location        = "eastus"
-subscription_id = "930755b1-ef22-4721-a31a-1b6fbecf7da6"
-tenant_id       = "70750cc4-6f21-4c27-bb0e-8b7e66bcb2dd"
+project_name = "arbit"
+env_name     = "dev"
+location     = "eastus"
+
+# Secrets are injected at runtime via the pipeline / Key Vault.
+subscription_id = ""
+tenant_id       = ""
 
 tags = {
   project = "arbit"
@@ -23,7 +25,8 @@ subnets = {
   }
 }
 
-app_gateway_subnet_id = "/subscriptions/930755b1-ef22-4721-a31a-1b6fbecf7da6/resourceGroups/rg-arbit-dev/providers/Microsoft.Network/virtualNetworks/vnet-arbit-dev/subnets/appgw"
+# Reference subnets by key (no hard-coded IDs)
+app_gateway_subnet_key = "gateway"
 
 app_gateway_fqdn_prefix = "agw-arbit-dev"
 app_gateway_backend_fqdns = []
@@ -62,7 +65,7 @@ app_service_app_settings = {
 app_service_connection_strings = {
   PrimaryDatabase = {
     type  = "SQLAzure"
-    value = "Server=tcp:sql-arbit-dev.database.windows.net,1433;Initial Catalog=halomd;User ID=sqladmin;Password=P@ssw0rd1234!;Encrypt=True;"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/app-service-primary-database-connection)"
   }
 }
 
@@ -97,15 +100,15 @@ arbitration_runtime_version = "8.0"
 arbitration_connection_strings = {
   ConnStr = {
     type  = "SQLAzure"
-    value = "Server=tcp:dev-arbit-sql.database.windows.net,1433;Initial Catalog=dev-arbit-db;User ID=sqladmin;Password=P@ssw0rd123!;Encrypt=True;"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/arbitration-primary-connection)"
   }
   IDRConnStr = {
     type  = "SQLAzure"
-    value = "Server=tcp:dev-idr-sql.database.windows.net,1433;Initial Catalog=dev-idr-db;User ID=sqladmin;Password=P@ssw0rd123!;Encrypt=True;"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/arbitration-idr-connection)"
   }
 }
 arbitration_app_settings = {
-  "Storage__Connection" = "DefaultEndpointsProtocol=https;AccountName=devarbitstorage;AccountKey=FakeKeyForDev==;EndpointSuffix=core.windows.net"
+  "Storage__Connection" = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/arbitration-storage-connection)"
   "Storage__Container"  = "arbitration-calculator"
 }
 
@@ -121,8 +124,8 @@ sql_max_size_gb          = 75
 sql_min_capacity         = 0.5
 sql_max_capacity         = 4
 sql_public_network_access = true
-sql_admin_login          = "sqladmin"
-sql_admin_password       = "P@ssw0rd1234!"
+sql_admin_login          = ""
+sql_admin_password       = ""
 
 sql_firewall_rules = [
   {

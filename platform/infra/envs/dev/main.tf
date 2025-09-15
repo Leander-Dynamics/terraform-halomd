@@ -68,7 +68,7 @@ module "app_gateway" {
 }
 
 module "sql" {
-  count                         = var.enable_sql ? 1 : 0
+  count = var.enable_sql && var.sql_admin_login != "" && var.sql_admin_password != "" ? 1 : 0
   source                        = "../../Azure/modules/sql-serverless"
   server_name                   = local.sql_server_name
   database_name                 = var.sql_database_name
