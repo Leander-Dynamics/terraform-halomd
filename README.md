@@ -3,7 +3,7 @@
 This repository contains:
 - **Terraform modules** under `platform/infra/Azure/modules`.
 - **Per-environment Terraform roots** under `platform/infra/envs/{dev,stage,prod}` with independent backends.
-- **Azure DevOps CI/CD** under `.ado/` (multi-stage pipeline + per-env pipelines + reusable templates).
+- **Azure DevOps CI/CD** under `.ado/` (reusable templates consumed by the multi-stage pipeline).
 - **Bootstrap scripts** for Terraform state.
 - **Docs** for setup, naming, and migration.
 
@@ -22,7 +22,7 @@ This repository contains:
 3. **Verify backends**: in `platform/infra/envs/<env>/backend.tfvars` (prefilled) and **keep** `use_azuread_auth = true`.
 
 4. **Run the pipeline**:
-   - Use the root **`azure-pipelines.yml`** or `.ado/pipelines/terraform-multi.yml`.
+   - Use the root **`azure-pipelines.yml`** (multi-stage entry point that consumes `.ado/templates/*`).
    - **PR to main** → Validate & Plan (no apply).
    - **Merge to main** → Apply **dev**, then gated **stage**, then gated **prod**.
 
@@ -34,11 +34,6 @@ Folder/File Structure:
 arbit-consolidated-infra-ado/
 ├── azure-pipelines.yml                # Multi-stage pipeline (PR->Plan; merge->Apply dev -> gated stage/prod)
 ├── .ado/
-│   ├── pipelines/
-│   │   ├── terraform-multi.yml       # Same as root pipeline; use either
-│   │   ├── terraform-dev.yml         # Per-env pipeline (dev)
-│   │   ├── terraform-stage.yml       # Per-env pipeline (stage)
-│   │   └── terraform-prod.yml        # Per-env pipeline (prod)
 │   └── templates/
 │       ├── tf-validate.yml           # fmt + init/validate
 │       ├── tf-plan.yml               # plan & publish plan artifact
