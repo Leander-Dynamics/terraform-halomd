@@ -57,7 +57,6 @@ variable "sql_firewall_rules" {
     start_ip_address = string
     end_ip_address   = string
   }))
-}
 
 variable "dns_zone_name" {
   description = "Public DNS zone name to manage."
@@ -82,3 +81,43 @@ variable "dns_cname_records" {
   }))
   default = {}
 }
+=======
+variable "arbitration_plan_sku" {
+  type        = string
+  description = "App Service plan SKU for the arbitration app"
+  default     = "P1v3"
+}
+
+variable "arbitration_runtime_stack" {
+  type        = string
+  description = "Runtime stack for the arbitration app"
+  default     = "dotnet"
+}
+
+variable "arbitration_runtime_version" {
+  type        = string
+  description = "Runtime version for the arbitration app"
+  default     = "8.0"
+}
+
+variable "arbitration_connection_strings" {
+  description = "Connection strings applied to the arbitration app"
+  type = map(object({
+    type  = string
+    value = string
+  }))
+  default = {}
+}
+
+variable "arbitration_app_settings" {
+  description = "Additional app settings for the arbitration app"
+  type        = map(string)
+  default     = {}
+}
+
+variable "arbitration_run_from_package" {
+  description = "Whether the arbitration app runs from package"
+  type        = bool
+  default     = true
+}
+

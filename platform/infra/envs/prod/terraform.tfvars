@@ -50,6 +50,24 @@ web_dotnet_version        = "8.0"
 function_external_runtime = "dotnet"
 function_cron_runtime     = "python"
 
+arbitration_plan_sku         = "P1v3"
+arbitration_runtime_stack    = "dotnet"
+arbitration_runtime_version  = "8.0"
+arbitration_connection_strings = {
+  ConnStr = {
+    type  = "SQLAzure"
+    value = "Server=tcp:prod-arbit-sql.database.windows.net,1433;Initial Catalog=prod-arbit-db;User ID=sqladmin;Password=P@ssw0rd123!;Encrypt=True;"
+  }
+  IDRConnStr = {
+    type  = "SQLAzure"
+    value = "Server=tcp:prod-idr-sql.database.windows.net,1433;Initial Catalog=prod-idr-db;User ID=sqladmin;Password=P@ssw0rd123!;Encrypt=True;"
+  }
+}
+arbitration_app_settings = {
+  "Storage__Connection" = "DefaultEndpointsProtocol=https;AccountName=prodarbitstorage;AccountKey=FakeKeyForProd==;EndpointSuffix=core.windows.net"
+  "Storage__Container"  = "arbitration-calculator"
+}
+
 sql_db_name               = "halomd"
 sql_sku_name              = "GP_S_Gen5_2"
 sql_auto_pause_minutes    = 60

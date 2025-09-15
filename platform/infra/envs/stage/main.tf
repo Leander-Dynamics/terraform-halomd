@@ -9,6 +9,8 @@ locals {
 
   web_plan  = "asp-halomdweb-${var.env_name}-${var.location}"
   web_name  = "app-halomdweb-${var.env_name}"
+  arbitration_plan = "asp-${var.project_name}-arb-${var.env_name}-${var.location}"
+  arbitration_name = "app-${var.project_name}-arb-${var.env_name}"
 
   func_external_plan = "asp-external-${var.env_name}-${var.location}"
   func_external_name = "func-external-${var.env_name}"
@@ -90,6 +92,22 @@ module "web" {
   tags                           = var.tags
 }
 
+module "arbitration_app" {
+  source                         = "../../Azure/modules/app-service-arbitration"
+  name                           = local.arbitration_name
+  plan_name                      = local.arbitration_plan
+  resource_group_name            = module.rg.name
+  location                       = var.location
+  plan_sku                       = var.arbitration_plan_sku
+  runtime_stack                  = var.arbitration_runtime_stack
+  runtime_version                = var.arbitration_runtime_version
+  app_insights_connection_string = module.logs.app_insights_connection_string
+  connection_strings             = var.arbitration_connection_strings
+  app_settings                   = var.arbitration_app_settings
+  run_from_package               = var.arbitration_run_from_package
+  tags                           = var.tags
+}
+
 module "func_external" {
   source                         = "../../Azure/modules/function-app"
   name                           = local.func_external_name
@@ -151,6 +169,7 @@ output "resource_group_name"        { value = module.rg.name }
 output "acr_name"                   { value = var.enable_acr ? module.acr[0].name : null }
 output "aks_name"                   { value = var.enable_aks ? module.aks[0].name : null }
 output "web_app_name"               { value = module.web.name }
+output "arbitration_app_name"       { value = module.arbitration_app.name }
 output "func_external_name"         { value = module.func_external.name }
 output "func_cron_name"             { value = module.func_cron.name }
 output "storage_data_account_name"  { value = var.enable_storage ? module.storage_data[0].name : null }
