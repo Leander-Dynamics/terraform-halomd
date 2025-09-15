@@ -11,11 +11,9 @@ variable "location" {
 }
 variable "admin_login" {
   type    = string
-  default = ""
 }
 variable "admin_password" {
   type      = string
-  default   = ""
   sensitive = true
 }
 variable "public_network_access_enabled" {
