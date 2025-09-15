@@ -1,8 +1,23 @@
 # main.tf - Module declarations only (NO provider or required_providers block)
 
+locals {
+  rg_name           = "rg-${var.project_name}-${var.env_name}"
+  acr_name          = lower(replace("acr${var.project_name}${var.env_name}", "-", ""))
+  aks_name          = "aks-${var.project_name}-${var.env_name}"
+  kv_name           = "kv-${var.project_name}-${var.env_name}"
+  log_name          = "log-${var.project_name}-${var.env_name}"
+  plan_name         = "asp-${var.project_name}-${var.env_name}"
+  func_cron_name    = "func-cron-${var.project_name}-${var.env_name}"
+  func_external_name = "func-ext-${var.project_name}-${var.env_name}"
+  web_name          = "web-${var.project_name}-${var.env_name}"
+  storage_data_name = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
+  sql_server_name   = "sql-${var.project_name}-${var.env_name}"
+  aad_app_display   = "aad-${var.project_name}-${var.env_name}"
+}
+
 module "rg" {
   source   = "../../Azure/modules/resource-group"
-  name     = "${var.project_name}-${var.env_name}-rg"
+  name     = local.rg_name
   location = var.location
   tags     = var.tags
 }
@@ -10,7 +25,7 @@ module "rg" {
 module "acr" {
   count               = var.enable_acr ? 1 : 0
   source              = "../../Azure/modules/acr"
-  name                = "${var.project_name}-${var.env_name}-acr"
+  name                = local.acr_name
   resource_group_name = module.rg.name
   location            = var.location
   sku                 = var.acr_sku
@@ -20,7 +35,7 @@ module "acr" {
 module "aks" {
   count               = var.enable_aks ? 1 : 0
   source              = "../../Azure/modules/aks"
-  name                = "${var.project_name}-${var.env_name}-aks"
+  name                = local.aks_name
   resource_group_name = module.rg.name
   location            = var.location
   node_count          = var.aks_node_count
@@ -31,7 +46,7 @@ module "aks" {
 module "sql" {
   count                         = var.enable_sql ? 1 : 0
   source                        = "../../Azure/modules/sql-database"
-  server_name                   = "${var.project_name}-${var.env_name}-sqlsrv"
+  server_name                   = local.sql_server_name
   db_name                       = var.sql_db_name
   resource_group_name           = module.rg.name
   location                      = var.location
@@ -46,12 +61,12 @@ module "sql" {
 
 module "aad_app" {
   source       = "../../Azure/modules/aad-app"
-  display_name = "${var.project_name}-${var.env_name}-app"
+  display_name = local.aad_app_display
 }
 
 module "kv" {
   source                        = "../../Azure/modules/key-vault"
-  name                          = "${var.project_name}-${var.env_name}-kv"
+  name                          = local.kv_name
   resource_group_name           = module.rg.name
   location                      = var.location
   public_network_access_enabled = var.kv_public_network_access
@@ -62,15 +77,15 @@ module "logs" {
   source              = "../../Azure/modules/logs-insights"
   resource_group_name = var.app_insights_rg
   location            = var.location
-  log_name            = "${var.project_name}-${var.env_name}-logs"
+  log_name            = local.log_name
   appi_name           = var.app_insights_name
   tags                = var.tags
 }
 
 module "func_cron" {
   source                         = "../../Azure/modules/function-app"
-  name                           = "${var.project_name}-${var.env_name}-func-cron"
-  plan_name                      = "${var.project_name}-${var.env_name}-asp"
+  name                           = local.func_cron_name
+  plan_name                      = local.plan_name
   resource_group_name            = module.rg.name
   location                       = var.location
   plan_sku                       = var.func_plan_sku
@@ -81,8 +96,8 @@ module "func_cron" {
 
 module "func_external" {
   source                         = "../../Azure/modules/function-app"
-  name                           = "${var.project_name}-${var.env_name}-func-ext"
-  plan_name                      = "${var.project_name}-${var.env_name}-asp"
+  name                           = local.func_external_name
+  plan_name                      = local.plan_name
   resource_group_name            = module.rg.name
   location                       = var.location
   plan_sku                       = var.func_plan_sku
@@ -93,8 +108,8 @@ module "func_external" {
 
 module "web" {
   source                         = "../../Azure/modules/app-service-web"
-  name                           = "${var.project_name}-${var.env_name}-web"
-  plan_name                      = "${var.project_name}-${var.env_name}-asp"
+  name                           = local.web_name
+  plan_name                      = local.plan_name
   resource_group_name            = module.rg.name
   location                       = var.location
   plan_sku                       = var.web_plan_sku
@@ -106,7 +121,7 @@ module "web" {
 module "storage_data" {
   count               = var.enable_storage ? 1 : 0
   source              = "../../Azure/modules/storage-account"
-  name                = "${var.project_name}${var.env_name}data"
+  name                = local.storage_data_name
   resource_group_name = module.rg.name
   location            = var.location
   tags                = var.tags
