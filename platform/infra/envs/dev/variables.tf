@@ -197,6 +197,15 @@ variable "app_service_connection_strings" {
 }
 
 # -------------------------
+# Monitoring
+# -------------------------
+variable "app_insights_resource_group_name" {
+  description = "Optional resource group where Application Insights resources are created."
+  type        = string
+  default     = null
+}
+
+# -------------------------
 # DNS
 # -------------------------
 variable "dns_zone_name" {
