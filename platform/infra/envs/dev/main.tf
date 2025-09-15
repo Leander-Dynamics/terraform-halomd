@@ -6,10 +6,12 @@ locals {
   aks_name          = "aks-${var.project_name}-${var.env_name}"
   kv_name           = "kv-${var.project_name}-${var.env_name}"
   log_name          = "log-${var.project_name}-${var.env_name}"
-  plan_name         = "asp-${var.project_name}-${var.env_name}"
-  func_cron_name    = "func-cron-${var.project_name}-${var.env_name}"
+  plan_name          = "asp-${var.project_name}-${var.env_name}"
+  func_cron_name     = "func-cron-${var.project_name}-${var.env_name}"
   func_external_name = "func-ext-${var.project_name}-${var.env_name}"
-  web_name          = "web-${var.project_name}-${var.env_name}"
+  web_name           = "web-${var.project_name}-${var.env_name}"
+  arbitration_plan_name = "asp-${var.project_name}-${var.env_name}-arb"
+  arbitration_app_name  = "web-${var.project_name}-${var.env_name}-arb"
   storage_data_name = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
   sql_server_name   = "sql-${var.project_name}-${var.env_name}"
   aad_app_display   = "aad-${var.project_name}-${var.env_name}"
@@ -115,6 +117,22 @@ module "web" {
   plan_sku                       = var.web_plan_sku
   dotnet_version                 = var.web_dotnet_version
   app_insights_connection_string = var.app_insights_connection_string
+  tags                           = var.tags
+}
+
+module "arbitration_app" {
+  source                         = "../../Azure/modules/app-service-arbitration"
+  name                           = local.arbitration_app_name
+  plan_name                      = local.arbitration_plan_name
+  resource_group_name            = module.rg.name
+  location                       = var.location
+  plan_sku                       = var.arbitration_plan_sku
+  runtime_stack                  = var.arbitration_runtime_stack
+  runtime_version                = var.arbitration_runtime_version
+  app_insights_connection_string = var.app_insights_connection_string
+  connection_strings             = var.arbitration_connection_strings
+  app_settings                   = var.arbitration_app_settings
+  run_from_package               = var.arbitration_run_from_package
   tags                           = var.tags
 }
 
