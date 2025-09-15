@@ -1,0 +1,46 @@
+# Template: Deploy the Arbitration web application to a specific environment
+parameters:
+- name: jobName
+  type: string
+- name: environmentName
+  type: string
+- name: displayNameSuffix
+  type: string
+- name: azureSubscription
+  type: string
+- name: appType
+  type: string
+  default: webAppLinux
+jobs:
+- deployment: ${{ parameters.jobName }}
+  displayName: Deploy to ${{ parameters.displayNameSuffix }}
+  environment: ${{ parameters.environmentName }}
+  pool:
+    vmImage: 'ubuntu-latest'
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - download: current
+          artifact: drop
+        - task: AzureAppServiceSettings@1
+          displayName: Apply app settings (${{ parameters.displayNameSuffix }})
+          condition: and(succeeded(), ne(variables['appSettingsJson'], ''), ne(variables['appSettingsJson'], 'null'))
+          inputs:
+            azureSubscription: ${{ parameters.azureSubscription }}
+            appName: $(webAppName)
+            appSettings: $(appSettingsJson)
+        - task: AzureAppServiceSettings@1
+          displayName: Apply connection strings (${{ parameters.displayNameSuffix }})
+          condition: and(succeeded(), ne(variables['connectionStringsJson'], ''), ne(variables['connectionStringsJson'], 'null'))
+          inputs:
+            azureSubscription: ${{ parameters.azureSubscription }}
+            appName: $(webAppName)
+            connectionStrings: $(connectionStringsJson)
+        - task: AzureWebApp@1
+          displayName: Deploy artifact (${{ parameters.displayNameSuffix }})
+          inputs:
+            azureSubscription: ${{ parameters.azureSubscription }}
+            appType: ${{ parameters.appType }}
+            appName: $(webAppName)
+            package: '$(Pipeline.Workspace)/drop/$(artifactName).zip'
