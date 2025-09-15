@@ -16,11 +16,13 @@ variable "project_name" {
 variable "subscription_id" {
   description = "Azure subscription ID."
   type        = string
+  default     = null
 }
 
 variable "tenant_id" {
   description = "Azure tenant ID."
   type        = string
+  default     = null
 }
 
 variable "tags" {

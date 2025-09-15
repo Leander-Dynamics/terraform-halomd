@@ -36,6 +36,7 @@ stages:
       serviceConnection: sc-azure-oidc-dev
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-dev
       # Pass the CI/CD principal Object ID if provided (used to grant KV Secrets User via TF)
       extraVarFlags: '-var "kv_cicd_principal_id=$(KV_CICD_PRINCIPAL_ID_DEV)"'
       # AKV integration (pull SQL secrets at plan time)
@@ -50,6 +51,7 @@ stages:
       serviceConnection: sc-azure-oidc-stage
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-stage
       extraVarFlags: '-var "kv_cicd_principal_id=$(KV_CICD_PRINCIPAL_ID_STAGE)"'
       useAkv: '$(USE_AKV_FOR_SECRETS)'
       akvName: '$(KV_NAME_STAGE)'
@@ -62,6 +64,7 @@ stages:
       serviceConnection: sc-azure-oidc-prod
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-prod
       extraVarFlags: '-var "kv_cicd_principal_id=$(KV_CICD_PRINCIPAL_ID_PROD)"'
       useAkv: '$(USE_AKV_FOR_SECRETS)'
       akvName: '$(KV_NAME_PROD)'
@@ -80,6 +83,7 @@ stages:
       serviceConnection: sc-azure-oidc-dev
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-dev
 
 - stage: Apply_Stage
   displayName: Terraform Apply (stage)
@@ -92,6 +96,7 @@ stages:
       serviceConnection: sc-azure-oidc-stage
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-stage
 
 - stage: Apply_Prod
   displayName: Terraform Apply (prod)
@@ -104,3 +109,4 @@ stages:
       serviceConnection: sc-azure-oidc-prod
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-prod

@@ -14,6 +14,9 @@
 - `KV_NAME_STAGE` = `kv-arbit-stage`
 - `KV_NAME_PROD` = `kv-arbit-prod`
 
+- `AZ_SUBSCRIPTION_ID` = `<subscription guid>`
+- `AZ_TENANT_ID` = `<tenant guid>`
+
 - `AKV_ENABLE_DYNAMIC_IP_DEV` = `true`   # temp IP allow during plan on hosted agents
 - `AKV_ENABLE_DYNAMIC_IP_STAGE` = `false`
 - `AKV_ENABLE_DYNAMIC_IP_PROD` = `false`
