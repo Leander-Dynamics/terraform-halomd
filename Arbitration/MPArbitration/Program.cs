@@ -1,256 +1,57 @@
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Web;
-using MPArbitration.Model;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Text.Json;
-using System.Security.Principal;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Http.Json;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging.Console;
-using Microsoft.OpenApi.Models;
-using MPArbitration.Utility;
-using System.Linq;
-using System.Reflection;
+        app.Run();
+    }
 
-internal class Program
-{
-    private static void Main(string[] args)
+    private static void ConfigureCorsPolicy(CorsPolicyBuilder policyBuilder, string[] allowedOrigins, string[] allowedMethods, string[] allowedHeaders)
     {
-        var builder = WebApplication.CreateBuilder(args);
-        // The following line enables Application Insights telemetry collection.
-        builder.Services.AddApplicationInsightsTelemetry();
-        var configuration = builder.Configuration;
-        static string[] ReadCorsValues(IConfigurationSection section)
+        if (allowedOrigins.Length == 0 || allowedOrigins.Any(origin => string.Equals(origin, "*", StringComparison.Ordinal)))
         {
-            return section.Get<string[]>()?
+            policyBuilder.AllowAnyOrigin();
+        }
+        else
+        {
+            policyBuilder.WithOrigins(allowedOrigins);
+        }
+
+        if (allowedMethods.Length == 0 || allowedMethods.Any(method => string.Equals(method, "*", StringComparison.Ordinal)))
+        {
+            policyBuilder.AllowAnyMethod();
+        }
+        else
+        {
+            policyBuilder.WithMethods(allowedMethods);
+        }
+
+        if (allowedHeaders.Length == 0 || allowedHeaders.Any(header => string.Equals(header, "*", StringComparison.Ordinal)))
+        {
+            policyBuilder.AllowAnyHeader();
+        }
+        else
+        {
+            policyBuilder.WithHeaders(allowedHeaders);
+        }
+    }
+
+    private static string[] GetConfiguredValues(IConfiguration configuration, string key)
+    {
+        var section = configuration.GetSection(key);
+        var values = section.Get<string[]>() ?? Array.Empty<string>();
+
+        if (values.Length > 0)
+        {
+            values = values
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .Select(value => value.Trim())
-                .ToArray() ?? Array.Empty<string>();
+                .ToArray();
         }
 
-        var corsSection = configuration.GetSection("Cors");
-        var allowedOrigins = ReadCorsValues(corsSection.GetSection("AllowedOrigins"));
-        var allowedMethods = ReadCorsValues(corsSection.GetSection("AllowedMethods"));
-        var allowedHeaders = ReadCorsValues(corsSection.GetSection("AllowedHeaders"));
-
-        builder.Services.AddCors(options =>
+        if (values.Length == 0 && !string.IsNullOrWhiteSpace(section.Value))
         {
-            options.AddDefaultPolicy(policy =>
-            {
-                if (Array.Exists(allowedOrigins, origin => string.Equals(origin, "*", StringComparison.Ordinal)))
-                {
-                    policy.AllowAnyOrigin();
-                }
-                else if (allowedOrigins.Length > 0)
-                {
-                    policy.WithOrigins(allowedOrigins);
-                }
-                else
-                {
-                    policy.AllowAnyOrigin();
-                }
-
-                if (Array.Exists(allowedMethods, method => string.Equals(method, "*", StringComparison.Ordinal)))
-                {
-                    policy.AllowAnyMethod();
-                }
-                else if (allowedMethods.Length > 0)
-                {
-                    policy.WithMethods(allowedMethods);
-                }
-                else
-                {
-                    policy.AllowAnyMethod();
-                }
-
-                if (Array.Exists(allowedHeaders, header => string.Equals(header, "*", StringComparison.Ordinal)))
-                {
-                    policy.AllowAnyHeader();
-                }
-                else if (allowedHeaders.Length > 0)
-                {
-                    policy.WithHeaders(allowedHeaders);
-                }
-                else
-                {
-                    policy.AllowAnyHeader();
-                }
-            });
-        });
-        // increase file upload size to handle the benchmark files
-        // https://bartwullems.blogspot.com/2022/01/aspnet-core-configure-file-upload-size.html
-        // https://stackoverflow.com/questions/38698350/increase-upload-file-size-in-asp-net-core
-
-        builder.Services.Configure<IISServerOptions>(options => options.MaxRequestBodySize = int.MaxValue);
-        builder.Services.Configure<FormOptions>(o =>
-        {
-            o.ValueLengthLimit = int.MaxValue;
-            o.MultipartBodyLengthLimit = int.MaxValue;
-            o.MultipartBoundaryLengthLimit = int.MaxValue;
-            o.MultipartHeadersCountLimit = int.MaxValue;
-            o.MultipartHeadersLengthLimit = int.MaxValue;
-            o.BufferBodyLengthLimit = int.MaxValue;
-            o.BufferBody = true;
-            o.ValueCountLimit = int.MaxValue;
-        });
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
-        builder.Services.AddSwaggerGen(opt =>
-        {
-            opt.SwaggerDoc("v1", new OpenApiInfo { Title = "Arbit API Documentation", Version = "v1" });
-            opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-            {
-                In = ParameterLocation.Header,
-                Description = "Please enter authentication token",
-                Name = "Authorization",
-                Type = SecuritySchemeType.Http,
-                BearerFormat = "JWT",
-                Scheme = "bearer"
-            });
-
-            opt.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
-            {
-                Name = "X-API-KEY",
-                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-                Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-                Scheme = "ApiKeyScheme",
-                Description = "Enter API Key",
-            });
-
-            opt.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type=ReferenceType.SecurityScheme,
-                            Id="Bearer"
-                        }
-                    },
-                    new string[]{}
-                },
-                {
-                new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "ApiKey"
-                    }
-                },
-               new string[]{}
-            }
-            });
-            // Set the comments path for the Swagger JSON and UI.
-            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-            opt.IncludeXmlComments(xmlPath);
-        });
-
-        builder.WebHost.ConfigureKestrel(serverOptions =>
-        {
-            serverOptions.Limits.MaxRequestBodySize = 100_000_000;
-        });
-
-        // Add services to the container.
-        //Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
-
-        builder.Services.AddMicrosoftIdentityWebAppAuthentication(configuration);
-        builder.Services.AddAuthentication(options =>
-                            {
-                                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                            })
-                      .AddMicrosoftIdentityWebApi(configuration, "AzureAd");
-
-        // Add API key authentication
-        builder.Services.AddAuthentication("ApiKey").AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>("ApiKey", null);
-
-        builder.Services.AddControllersWithViews();
-        //    .AddJsonOptions(c => c.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve);
-
-        builder.Services.AddHttpContextAccessor();
-        builder.Services.AddTransient<IPrincipal>(provider => provider.GetService<IHttpContextAccessor>().HttpContext?.User);
-
-        // Best article on configuring Angular SPA on the entire WWW ;)
-        // https://roma-rathi17.medium.com/msal2-0-errors-and-their-resolution-9a776e254a2c
-        // This was a good one, too
-        // https://github.com/AzureAD/microsoft-identity-web/issues/549
-
-        builder.Services.AddTransient<IImportDataSynchronizer, ImportDataSynchronizer>();
-
-        var cs = configuration.GetConnectionString("ConnStr");
-        builder.Services.AddDbContext<ArbitrationDbContext>(options =>
-        {
-            options.UseSqlServer(cs, sqlServerOptionsAction: sqlOptions =>
-            {
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(60),
-                    errorNumbersToAdd: null);
-            });
-            //providerOptions => providerOptions.EnableRetryOnFailure());
-            //options.ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
-        });
-
-
-        var idr_cs = configuration.GetConnectionString("IDRConnStr");
-        builder.Services.AddDbContext<DisputeIdrDbContext>(options =>
-        {
-            options.UseSqlServer(idr_cs, sqlServerOptionsAction: sqlOptions =>
-            {
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(60),
-                    errorNumbersToAdd: null);
-            });
-            //providerOptions => providerOptions.EnableRetryOnFailure());
-            //options.ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
-        });
-
-
-        //------------------- BUILD AND USE MIDDLEWARE ----------------------------------------------
-        var app = builder.Build();
-        if (!app.Environment.IsProduction())
-        {
-            app.UseDeveloperExceptionPage();
-            app.UseSwagger();
-            app.UseSwaggerUI();
+            values = section.Value
+                .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(value => value.Trim())
+                .ToArray();
         }
 
-        // Configure the HTTP request pipeline.
-        if (!app.Environment.IsDevelopment())
-        {
-            // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-            app.UseHsts();
-        }
-        app.MapSwagger().RequireAuthorization();
-        app.UseCors(/*policy name if not default*/);
-        app.UseHttpsRedirection();
-        app.UseStaticFiles();
-        app.UseRouting();
-        // Handle any exception occurred in application
-        app.UseMiddleware<ExceptionHandlingMiddleware>();
-
-        app.UseAuthentication();
-        
-        app.UseAuthorization();
-        // NOTE: If you come here because a recently-added controller is 
-        // returning a 404 Not Found error, check your proxy.conf.js configuration!
-        // Service endpoints have to be explicitly-configured in the proxy
-        // because Microsoft is stupid that way :)
-        app.MapControllerRoute(
-            name: "default",
-            pattern: "{controller}/{action=Index}/{id?}");
-
-        app.MapFallbackToFile("index.html");
-        
-        app.Run();
+        return values;
     }
 }

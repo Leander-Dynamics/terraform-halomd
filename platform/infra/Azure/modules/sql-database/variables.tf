@@ -10,11 +10,23 @@ variable "location" {
   type = string
 }
 variable "admin_login" {
-  type    = string
+  description = "Administrator login for the SQL server."
+  type        = string
+
+  validation {
+    condition     = length(trimspace(var.admin_login)) > 0
+    error_message = "Administrator login must be provided."
+  }
 }
 variable "admin_password" {
-  type      = string
-  sensitive = true
+  description = "Administrator password for the SQL server."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(trimspace(var.admin_password)) > 0
+    error_message = "Administrator password must be provided."
+  }
 }
 variable "public_network_access_enabled" {
   type    = bool
