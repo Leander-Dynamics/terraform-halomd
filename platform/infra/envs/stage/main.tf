@@ -1,24 +1,24 @@
 locals {
-  rg_name   = "rg-${var.project_name}-${var.env}"
-  kv_name   = "kv-${var.project_name}-${var.env}"
-  log_name  = "log-${var.project_name}-${var.env}"
-  appi_name = "appi-${var.project_name}-${var.env}"
+  rg_name   = "rg-${var.project_name}-${var.env_name}"
+  kv_name   = "kv-${var.project_name}-${var.env_name}"
+  log_name  = "log-${var.project_name}-${var.env_name}"
+  appi_name = "appi-${var.project_name}-${var.env_name}"
 
-  acr_name  = lower(replace("acr${var.project_name}${var.env}", "-", ""))
-  aks_name  = "aks-${var.project_name}-${var.env}-${var.location}"
+  acr_name  = lower(replace("acr${var.project_name}${var.env_name}", "-", ""))
+  aks_name  = "aks-${var.project_name}-${var.env_name}-${var.location}"
 
-  web_plan  = "asp-halomdweb-${var.env}-${var.location}"
-  web_name  = "app-halomdweb-${var.env}"
+  web_plan  = "asp-halomdweb-${var.env_name}-${var.location}"
+  web_name  = "app-halomdweb-${var.env_name}"
 
-  func_external_plan = "asp-external-${var.env}-${var.location}"
-  func_external_name = "func-external-${var.env}"
-  func_cron_plan     = "asp-cron-${var.env}-${var.location}"
-  func_cron_name     = "func-cron-${var.env}"
+  func_external_plan = "asp-external-${var.env_name}-${var.location}"
+  func_external_name = "func-external-${var.env_name}"
+  func_cron_plan     = "asp-cron-${var.env_name}-${var.location}"
+  func_cron_name     = "func-cron-${var.env_name}"
 
-  storage_data_name  = lower(replace("st${var.project_name}${var.env}data", "-", ""))
-  sql_server_name    = "sql-${var.project_name}-${var.env}"
+  storage_data_name  = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
+  sql_server_name    = "sql-${var.project_name}-${var.env_name}"
 
-  aad_app_display    = "aad-${var.project_name}-${var.env}"
+  aad_app_display    = "aad-${var.project_name}-${var.env_name}"
 }
 
 module "rg" {
