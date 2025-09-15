@@ -47,3 +47,29 @@ resource "azurerm_linux_function_app" "func" {
   }, var.app_settings)
   tags = var.tags
 }
+
+resource "azurerm_monitor_diagnostic_setting" "func" {
+  count = var.log_analytics_workspace_id == null || var.log_analytics_workspace_id == "" ? 0 : 1
+
+  name                       = "${var.name}-diag"
+  target_resource_id         = azurerm_linux_function_app.func.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+
+  log {
+    category = "FunctionAppLogs"
+    enabled  = true
+
+    retention_policy {
+      enabled = false
+    }
+  }
+
+  metric {
+    category = "AllMetrics"
+    enabled  = true
+
+    retention_policy {
+      enabled = false
+    }
+  }
+}

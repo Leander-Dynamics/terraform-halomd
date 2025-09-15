@@ -13,6 +13,12 @@ variable "runtime" {
 variable "app_insights_connection_string" {
   type = string
 }
+
+variable "log_analytics_workspace_id" {
+  description = "Log Analytics workspace resource ID for diagnostic settings."
+  type        = string
+  default     = null
+}
 variable "app_settings" {
   type    = map(string)
   default = {}

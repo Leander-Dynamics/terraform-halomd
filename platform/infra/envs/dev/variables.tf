@@ -25,19 +25,15 @@ variable "tenant_id" {
   type        = string
 }
 
-variable "app_insights_connection_string" {
-  type        = string
-  description = "App Insights connection string"
-}
-
 variable "app_insights_name" {
   type        = string
   description = "App Insights name"
 }
 
-variable "app_insights_rg" {
+variable "app_insights_resource_group_name" {
   type        = string
-  description = "App Insights Resource Group name"
+  description = "Optional resource group name for monitoring resources"
+  default     = null
 }
 
 variable "tags" {

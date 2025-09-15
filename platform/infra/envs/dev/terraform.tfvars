@@ -5,9 +5,8 @@ env_name = "dev"
 subscription_id = "930755b1-ef22-4721-a31a-1b6fbecf7da6"
 tenant_id = "70750cc4-6f21-4c27-bb0e-8b7e66bcb2dd"
 
-app_insights_name = "arbit-dev-appi"
-app_insights_rg = "arbit-dev-rg"
-app_insights_connection_string = "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://example.com/"
+app_insights_name                   = "arbit-dev-appi"
+app_insights_resource_group_name    = "arbit-dev-rg"
 tags = {
   project = "arbit"
   env = "dev"

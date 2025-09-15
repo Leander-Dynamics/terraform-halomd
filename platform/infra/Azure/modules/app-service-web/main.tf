@@ -23,3 +23,39 @@ resource "azurerm_linux_web_app" "app" {
   }, var.app_settings)
   tags = var.tags
 }
+
+resource "azurerm_monitor_diagnostic_setting" "app" {
+  count = var.log_analytics_workspace_id == null || var.log_analytics_workspace_id == "" ? 0 : 1
+
+  name                       = "${var.name}-diag"
+  target_resource_id         = azurerm_linux_web_app.app.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+
+  dynamic "log" {
+    for_each = [
+      "AppServiceHTTPLogs",
+      "AppServiceConsoleLogs",
+      "AppServiceAppLogs",
+      "AppServiceAuditLogs",
+      "AppServiceFileAuditLogs",
+      "AppServicePlatformLogs",
+    ]
+    content {
+      category = log.value
+      enabled  = true
+
+      retention_policy {
+        enabled = false
+      }
+    }
+  }
+
+  metric {
+    category = "AllMetrics"
+    enabled  = true
+
+    retention_policy {
+      enabled = false
+    }
+  }
+}

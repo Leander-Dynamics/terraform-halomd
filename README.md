@@ -51,7 +51,7 @@ arbit-consolidated-infra-ado/
 │       │       ├── app-service-web/
 │       │       ├── function-app/
 │       │       ├── key-vault/
-│       │       ├── logs-insights/
+│       │       ├── app-insights/
 │       │       ├── resource-group/
 │       │       ├── sql-database/
 │       │       └── storage-account/

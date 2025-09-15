@@ -14,5 +14,12 @@ resource "azurerm_kubernetes_cluster" "this" {
     type = "SystemAssigned"
   }
 
+  dynamic "oms_agent" {
+    for_each = var.log_analytics_workspace_id == null || var.log_analytics_workspace_id == "" ? [] : [var.log_analytics_workspace_id]
+    content {
+      log_analytics_workspace_id = oms_agent.value
+    }
+  }
+
   tags = var.tags
 }
