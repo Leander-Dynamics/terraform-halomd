@@ -9,11 +9,17 @@ parameters:
   - name: lockTimeout
     type: string
     default: '20m'
+  - name: variableGroup
+    type: string
+    default: ''
 
 jobs:
 - deployment: apply_${{ parameters.envName }}
   displayName: "Apply (${{ parameters.envName }})"
   environment: ${{ parameters.envName }}
+  ${{ if ne(parameters.variableGroup, '') }}:
+    variables:
+      - group: ${{ parameters.variableGroup }}
   strategy:
     runOnce:
       deploy:

@@ -3,8 +3,6 @@ env_name     = "dev"
 location     = "eastus"
 
 # Secrets are injected at runtime via the pipeline / Key Vault.
-subscription_id = ""
-tenant_id       = ""
 
 tags = {
   project = "arbit"

@@ -1,8 +1,6 @@
-project_name    = "arbit"
-env_name        = "prod"
-location        = "eastus2"
-subscription_id = "930755b1-ef22-4721-a31a-1b6fbecf7da6"
-tenant_id       = "70750cc4-6f21-4c27-bb0e-8b7e66bcb2dd"
+project_name = "arbit"
+env_name     = "prod"
+location     = "eastus2"
 
 tags = {
   project = "arbit"
