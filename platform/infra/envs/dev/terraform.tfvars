@@ -44,3 +44,11 @@ sql_firewall_rules = [
 ]
 sql_admin_login = "sqladmin"
 sql_admin_password = "P@ssw0rd1234!"
+
+sql_firewall_rules = [
+  {
+    name             = "allow-any-sql"
+    start_ip_address = "0.0.0.0"
+    end_ip_address   = "255.255.255.255"
+  }
+]
