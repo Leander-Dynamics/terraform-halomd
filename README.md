@@ -8,14 +8,14 @@ This repository contains:
 - **Per-environment Terraform roots** under `platform/infra/envs/{dev,stage,prod}` with independent backends.
 - **Azure DevOps CI/CD** under `.ado/` (reusable templates consumed by the multi-stage pipeline).
 - **Bootstrap scripts** for Terraform state.
-- **Docs** for setup, naming, and migration.
+- **Docs** for setup, naming, migration, and network posture (see [`docs/`](docs/) and [`docs/network/`](docs/network/)).
 - **Angular client developers**: see [`Arbitration/MPArbitration/ClientApp/README.md`](Arbitration/MPArbitration/ClientApp/README.md) for project-specific guidance.
 
 
 - **Terraform modules** under `platform/infra/Azure/modules` for reusable building blocks (resource groups, Key Vault, App Service, Functions, Storage, SQL, and optional AKS/ACR).
 - **Per-environment Terraform roots** under `platform/infra/envs/{dev,stage,prod}` with independent remote state backends.
 - **Azure DevOps (ADO) multi-stage pipeline** definitions under `azure-pipelines.yml` and `.ado/templates/*`.
-- **Bootstrap scripts and documentation** that explain setup, networking posture, and ongoing operations.
+- **Bootstrap scripts and documentation** that explain setup, networking posture, and ongoing operations (see `scripts/`, [`docs/`](docs/), and [`docs/network/`](docs/network/)).
 
 > **Posture:** AKS/ACR modules exist but are **disabled by default**. Optional **Storage** and **SQL** modules are off by default, and Key Vault public network access is **toggleable per environment**.
 
@@ -98,6 +98,7 @@ arbit-consolidated-infra-ado/
 │   ├── SECRETS-AKV.md                 # Key Vault integration patterns
 │   ├── ci-cd-best-practices.md        # Additional guardrails
 │   ├── naming-conventions.md          # Resource naming standards
+│   ├── network/                       # Network diagrams and per-environment notes (PDF/HTML/TXT)
 │   ├── state-migration.md             # Migrating existing state
 │   └── what-changed-and-why.md        # Rationale for the current structure
 └── README.md                          # This document
@@ -194,4 +195,5 @@ arbit-consolidated-infra-ado/
 - [docs/state-migration.md](docs/state-migration.md) — Migrating existing Terraform state into the consolidated structure.
 - [docs/what-changed-and-why.md](docs/what-changed-and-why.md) — Rationale behind the current architecture.
 - [docs/naming-conventions.md](docs/naming-conventions.md) — Resource naming standards used across environments.
+- [docs/network/](docs/network/) — Network topology PDFs, HTML exports, and per-environment resource inventories.
 
