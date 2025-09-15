@@ -13,7 +13,7 @@ tags = {
 enable_aks      = false
 enable_acr      = false
 enable_storage  = false
-enable_sql      = false
+enable_sql      = true
 kv_public_network_access = true
 
 acr_sku        = "Standard"
@@ -31,5 +31,12 @@ sql_sku_name              = "GP_S_Gen5_2"
 sql_auto_pause_minutes    = 60
 sql_max_size_gb           = 32
 sql_public_network_access = true
+sql_firewall_rules = [
+  {
+    name             = "allow-any-sql"
+    start_ip_address = "0.0.0.0"
+    end_ip_address   = "255.255.255.255"
+  }
+]
 # sql_admin_login    = ""
 # sql_admin_password = ""

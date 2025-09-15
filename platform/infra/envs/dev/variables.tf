@@ -154,6 +154,14 @@ variable "sql_public_network_access" {
   default     = true
 }
 
+variable "sql_firewall_rules" {
+  type = list(object({
+    name             = string
+    start_ip_address = string
+    end_ip_address   = string
+  }))
+}
+
 variable "sql_admin_login" {
   type        = string
   description = "SQL administrator login"
