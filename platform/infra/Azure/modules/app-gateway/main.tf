@@ -1,89 +1,38 @@
-resource "azurerm_public_ip" "this" {
-  name                = "${var.name}-pip"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  allocation_method   = "Static"
-  sku                 = "Standard"
-  domain_name_label   = var.fqdn_prefix
-  tags                = var.tags
+resource "azurerm_mssql_server" "this" {
+  name                          = var.server_name
+  resource_group_name           = var.resource_group_name
+  location                      = var.location
+  version                       = "12.0"
+
+  administrator_login           = var.administrator_login
+  administrator_login_password  = var.administrator_password
+
+  minimum_tls_version           = var.minimum_tls_version
+  public_network_access_enabled = var.public_network_access_enabled
+
+  tags = var.tags
 }
 
-resource "azurerm_application_gateway" "this" {
-  name                = var.name
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  tags                = var.tags
-  enable_http2        = var.enable_http2
+resource "azurerm_mssql_database" "this" {
+  name                        = var.database_name
+  server_id                   = azurerm_mssql_server.this.id
+  sku_name                    = var.sku_name
+  collation                   = var.collation
+  max_size_gb                 = var.max_size_gb
+  auto_pause_delay_in_minutes = var.auto_pause_delay_in_minutes
+  min_capacity                = var.min_capacity
+  max_capacity                = var.max_capacity
+  read_scale                  = var.read_scale
+  zone_redundant              = var.zone_redundant
+  backup_storage_redundancy   = var.backup_storage_redundancy
 
-  sku {
-    name     = var.sku_name
-    tier     = var.sku_tier
-    capacity = var.sku_capacity
-  }
+  tags = var.tags
+}
 
-  gateway_ip_configuration {
-    name      = "gateway-ip-config"
-    subnet_id = var.subnet_id
-  }
-
-  frontend_port {
-    name = "frontend-port"
-    port = var.frontend_port
-  }
-
-  frontend_ip_configuration {
-    name                 = "public-frontend"
-    public_ip_address_id = azurerm_public_ip.this.id
-  }
-
-  backend_address_pool {
-    name  = "default-backend"
-    fqdns = var.backend_fqdns
-  }
-
-  backend_http_settings {
-    name                  = "http-settings"
-    cookie_based_affinity = "Disabled"
-    port                  = var.backend_port
-    protocol              = var.backend_protocol
-    request_timeout       = var.backend_request_timeout
-    pick_host_name_from_backend_address = var.pick_host_name_from_backend_address
-  }
-
-  http_listener {
-    name                           = "listener-http"
-    frontend_ip_configuration_name = "public-frontend"
-    frontend_port_name             = "frontend-port"
-    protocol                       = var.listener_protocol
-  }
-
-  request_routing_rule {
-    name                       = "routing-rule"
-    rule_type                  = "Basic"
-    http_listener_name         = "listener-http"
-    backend_address_pool_name  = "default-backend"
-    backend_http_settings_name = "http-settings"
-    priority                   = 100
-  }
-
-  dynamic "ssl_certificate" {
-    for_each = var.ssl_certificate == null ? [] : [var.ssl_certificate]
-    content {
-      name     = ssl_certificate.value.name
-      data     = ssl_certificate.value.data
-      password = ssl_certificate.value.password
-    }
-  }
-
-  dynamic "trusted_client_certificate" {
-    for_each = var.trusted_client_certificates
-    content {
-      name = trusted_client_certificate.value.name
-      data = trusted_client_certificate.value.data
-    }
-  }
-
-  lifecycle {
-    ignore_changes = [backend_address_pool]
-  }
+resource "azurerm_mssql_firewall_rule" "this" {
+  for_each         = { for rule in var.firewall_rules : rule.name => rule }
+  name             = each.value.name
+  server_id        = azurerm_mssql_server.this.id
+  start_ip_address = each.value.start_ip_address
+  end_ip_address   = each.value.end_ip_address
 }

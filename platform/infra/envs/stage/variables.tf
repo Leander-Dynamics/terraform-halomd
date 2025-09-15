@@ -29,6 +29,9 @@ variable "tags" {
   default     = {}
 }
 
+# -------------------------
+# Networking
+# -------------------------
 variable "vnet_address_space" {
   description = "Address space assigned to the virtual network."
   type        = list(string)
@@ -60,6 +63,14 @@ variable "app_gateway_subnet_key" {
   type        = string
 }
 
+variable "app_gateway_subnet_id" {
+  description = "Subnet resource ID for the Application Gateway."
+  type        = string
+}
+
+# -------------------------
+# Application Gateway
+# -------------------------
 variable "app_gateway_fqdn_prefix" {
   description = "Domain name label for the Application Gateway public IP."
   type        = string
@@ -69,6 +80,11 @@ variable "app_gateway_backend_fqdns" {
   description = "Additional backend FQDNs joined to the App Gateway pool."
   type        = list(string)
   default     = []
+}
+
+variable "app_gateway_backend_hostnames" {
+  description = "List of backend hostnames for the Application Gateway."
+  type        = list(string)
 }
 
 variable "app_gateway_backend_port" {
@@ -131,6 +147,9 @@ variable "app_gateway_pick_host_name" {
   default     = true
 }
 
+# -------------------------
+# App Service
+# -------------------------
 variable "app_service_plan_sku" {
   description = "SKU used for the App Service plan."
   type        = string
@@ -174,6 +193,9 @@ variable "app_service_connection_strings" {
   default = {}
 }
 
+# -------------------------
+# DNS
+# -------------------------
 variable "dns_zone_name" {
   description = "DNS zone managed within the environment."
   type        = string
@@ -197,6 +219,9 @@ variable "dns_cname_records" {
   default = {}
 }
 
+# -------------------------
+# SQL
+# -------------------------
 variable "sql_database_name" {
   description = "Optional SQL database name override."
   type        = string
@@ -281,4 +306,13 @@ variable "sql_admin_password" {
   description = "Administrator password for the SQL server."
   type        = string
   sensitive   = true
+}
+
+# -------------------------
+# Arbitration
+# -------------------------
+variable "arbitration_plan_sku" {
+  description = "SKU for the arbitration App Service plan."
+  type        = string
+  default     = ""
 }

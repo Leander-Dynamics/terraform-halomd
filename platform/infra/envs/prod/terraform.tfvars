@@ -10,6 +10,9 @@ tags = {
   owner   = "platform"
 }
 
+# -------------------------
+# Networking
+# -------------------------
 vnet_address_space = ["10.30.0.0/16"]
 subnets = {
   gateway = {
@@ -19,10 +22,42 @@ subnets = {
     address_prefixes = ["10.30.1.0/24"]
   }
 }
-app_gateway_subnet_key  = "gateway"
-app_gateway_fqdn_prefix = "agw-arbit-prod"
-app_gateway_backend_fqdns = []
 
+# For module using subnet keys
+app_gateway_subnet_key  = "gateway"
+
+# For module using direct subnet id
+app_gateway_subnet_id = "/subscriptions/930755b1-ef22-4721-a31a-1b6fbecf7da6/resourceGroups/rg-arbit-prod/providers/Microsoft.Network/virtualNetworks/vnet-arbit-prod/subnets/appgw"
+
+app_gateway_fqdn_prefix    = "agw-arbit-prod"
+app_gateway_backend_fqdns  = []
+app_gateway_backend_hostnames = [
+  "app-halomdweb-prod.azurewebsites.net",
+  "app-arbit-arb-prod.azurewebsites.net",
+]
+
+# -------------------------
+# DNS
+# -------------------------
+dns_zone_name = "az.halomd.com"
+
+dns_a_records = {
+  "api-prod" = {
+    ttl     = 3600
+    records = ["10.30.1.10"]
+  }
+}
+
+dns_cname_records = {
+  "web-prod" = {
+    ttl    = 3600
+    record = "app-arbit-prod.azurewebsites.net"
+  }
+}
+
+# -------------------------
+# App Service
+# -------------------------
 app_service_plan_sku    = "P2v3"
 app_service_fqdn_prefix = "app-arbit-prod"
 app_service_app_settings = {
@@ -35,28 +70,34 @@ app_service_connection_strings = {
   }
 }
 
-dns_zone_name = "az.halomd.com"
-dns_a_records = {
-  "api-prod" = {
-    ttl     = 3600
-    records = ["10.30.1.10"]
-  }
-}
-dns_cname_records = {
-  "web-prod" = {
-    ttl   = 3600
-    record = "app-arbit-prod.azurewebsites.net"
-  }
+# -------------------------
+# Arbitration App
+# -------------------------
+arbitration_app_settings = {
+  "Storage__Connection" = "DefaultEndpointsProtocol=https;AccountName=prodarbitstorage;AccountKey=FakeKeyForProd==;EndpointSuffix=core.windows.net"
+  "Storage__Container"  = "arbitration-calculator"
 }
 
+# -------------------------
+# SQL Database
+# -------------------------
+# Support both sql_database_name and sql_db_name for different modules
 sql_database_name        = "halomd"
+sql_db_name              = "halomd"
+
+# Extended config
 sql_sku_name             = "GP_S_Gen5_4"
 sql_max_size_gb          = 128
 sql_auto_pause_delay     = 60
+sql_auto_pause_minutes   = 60
 sql_min_capacity         = 2
 sql_max_capacity         = 8
-sql_admin_login          = "sqladminprod"
-sql_admin_password       = "P@ssw0rd123!Prod"
+sql_public_network_access = true
+
+sql_admin_login    = "sqladminprod"
+sql_admin_password = "P@ssw0rd123!Prod"
+
+# Firewall rules
 sql_firewall_rules = [
   {
     name             = "allow-all"

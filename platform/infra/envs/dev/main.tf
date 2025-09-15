@@ -1,25 +1,34 @@
 # Environment composition for the dev environment
 
 locals {
-  base_name              = "${var.project_name}-${var.env_name}"
-  resource_group_name    = "rg-${local.base_name}"
-  virtual_network_name   = "vnet-${local.base_name}"
-  app_gateway_name       = "agw-${local.base_name}"
-  app_service_plan_name  = "asp-${local.base_name}"
-  sql_server_name        = "sql-${local.base_name}"
-  sql_database_name      = var.sql_database_name != "" ? var.sql_database_name : "${var.project_name}-${var.env_name}"
+  rg_name              = "rg-${var.project_name}-${var.env_name}"
+  acr_name             = lower(replace("acr${var.project_name}${var.env_name}", "-", ""))
+  aks_name             = "aks-${var.project_name}-${var.env_name}"
+  kv_name              = "kv-${var.project_name}-${var.env_name}"
+  log_name             = "log-${var.project_name}-${var.env_name}"
+  appi_name            = var.app_insights_name != "" ? var.app_insights_name : "appi-${var.project_name}-${var.env_name}"
+  plan_name            = "asp-${var.project_name}-${var.env_name}"
+  func_cron_name       = "func-cron-${var.project_name}-${var.env_name}"
+  func_external_name   = "func-ext-${var.project_name}-${var.env_name}"
+  web_name             = "web-${var.project_name}-${var.env_name}"
+  app_gateway_name     = "agw-${var.project_name}-${var.env_name}"
+  arbitration_plan_name = "asp-${var.project_name}-${var.env_name}-arb"
+  arbitration_app_name  = "web-${var.project_name}-${var.env_name}-arb"
+  storage_data_name    = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
+  sql_server_name      = "sql-${var.project_name}-${var.env_name}"
+  aad_app_display      = "aad-${var.project_name}-${var.env_name}"
 }
 
 module "resource_group" {
   source   = "../../Azure/modules/resource-group"
-  name     = local.resource_group_name
+  name     = local.rg_name
   location = var.location
   tags     = var.tags
 }
 
 module "network" {
   source              = "../../Azure/modules/network"
-  name                = local.virtual_network_name
+  name                = "vnet-${var.project_name}-${var.env_name}"
   resource_group_name = module.resource_group.name
   location            = var.location
   address_space       = var.vnet_address_space
@@ -28,18 +37,12 @@ module "network" {
   tags                = var.tags
 }
 
-module "app_service" {
-  source              = "../../Azure/modules/app-service"
-  plan_name           = local.app_service_plan_name
-  plan_sku            = var.app_service_plan_sku
-  plan_os_type        = var.app_service_plan_os_type
-  app_name            = var.app_service_fqdn_prefix
+module "acr" {
+  count               = var.enable_acr ? 1 : 0
+  source              = "../../Azure/modules/acr"
+  name                = local.acr_name
   resource_group_name = module.resource_group.name
   location            = var.location
-  https_only          = var.app_service_https_only
-  always_on           = var.app_service_always_on
-  app_settings        = var.app_service_app_settings
-  connection_strings  = var.app_service_connection_strings
   tags                = var.tags
 }
 
@@ -50,7 +53,7 @@ module "app_gateway" {
   location            = var.location
   subnet_id           = module.network.subnet_ids[var.app_gateway_subnet_key]
   fqdn_prefix         = var.app_gateway_fqdn_prefix
-  backend_fqdns       = distinct(concat(var.app_gateway_backend_fqdns, [module.app_service.default_hostname]))
+  backend_fqdns       = var.app_gateway_backend_fqdns
   backend_port        = var.app_gateway_backend_port
   backend_protocol    = var.app_gateway_backend_protocol
   frontend_port       = var.app_gateway_frontend_port
@@ -65,25 +68,47 @@ module "app_gateway" {
 }
 
 module "sql" {
-  source                       = "../../Azure/modules/sql-serverless"
-  server_name                  = local.sql_server_name
-  database_name                = local.sql_database_name
-  resource_group_name          = module.resource_group.name
-  location                     = var.location
-  administrator_login          = var.sql_admin_login
-  administrator_password       = var.sql_admin_password
-  sku_name                     = var.sql_sku_name
-  max_size_gb                  = var.sql_max_size_gb
-  auto_pause_delay_in_minutes  = var.sql_auto_pause_delay
-  min_capacity                 = var.sql_min_capacity
-  max_capacity                 = var.sql_max_capacity
-  read_scale                   = var.sql_read_scale
-  zone_redundant               = var.sql_zone_redundant
-  collation                    = var.sql_collation
-  minimum_tls_version          = var.sql_minimum_tls_version
+  count                         = var.enable_sql ? 1 : 0
+  source                        = "../../Azure/modules/sql-serverless"
+  server_name                   = local.sql_server_name
+  database_name                 = var.sql_database_name
+  resource_group_name           = module.resource_group.name
+  location                      = var.location
+  administrator_login           = var.sql_admin_login
+  administrator_password        = var.sql_admin_password
   public_network_access_enabled = var.sql_public_network_access
-  firewall_rules               = var.sql_firewall_rules
-  tags                         = var.tags
+  sku_name                      = var.sql_sku_name
+  auto_pause_delay_in_minutes   = var.sql_auto_pause_minutes
+  max_size_gb                   = var.sql_max_size_gb
+  min_capacity                  = var.sql_min_capacity
+  max_capacity                  = var.sql_max_capacity
+  read_scale                    = var.sql_read_scale
+  zone_redundant                = var.sql_zone_redundant
+  collation                     = var.sql_collation
+  minimum_tls_version           = var.sql_minimum_tls_version
+  firewall_rules                = var.sql_firewall_rules
+  tags                          = var.tags
+}
+
+module "aad_app" {
+  source       = "../../Azure/modules/aad-app"
+  display_name = local.aad_app_display
+}
+
+module "kv" {
+  source                        = "../../Azure/modules/key-vault"
+  name                          = local.kv_name
+  resource_group_name           = module.resource_group.name
+  location                      = var.location
+  public_network_access_enabled = var.kv_public_network_access
+  tags                          = var.tags
+}
+
+module "app_insights" {
+  source              = "../../Azure/modules/app-insights"
+  resource_group_name = coalesce(var.app_insights_resource_group_name, module.resource_group.name)
+  location            = var.location
+  tags                = var.tags
 }
 
 module "dns_zone" {
@@ -95,6 +120,10 @@ module "dns_zone" {
   cname_records       = var.dns_cname_records
 }
 
+# ----------------------
+# Outputs
+# ----------------------
+
 output "resource_group_name" {
   description = "Resource group provisioned for the environment."
   value       = module.resource_group.name
@@ -105,9 +134,14 @@ output "virtual_network_id" {
   value       = module.network.virtual_network_id
 }
 
-output "app_service_default_hostname" {
-  description = "Default hostname assigned to the App Service."
-  value       = module.app_service.default_hostname
+output "app_gateway_id" {
+  description = "ID of the Application Gateway."
+  value       = module.app_gateway.id
+}
+
+output "app_gateway_public_ip_address" {
+  description = "Allocated public IP address of the Application Gateway."
+  value       = module.app_gateway.public_ip_address
 }
 
 output "app_gateway_public_fqdn" {
@@ -116,6 +150,6 @@ output "app_gateway_public_fqdn" {
 }
 
 output "sql_server_fqdn" {
-  description = "Fully qualified domain name of the SQL server."
-  value       = module.sql.server_fqdn
+  description = "Fully qualified domain name of the SQL Server."
+  value       = var.enable_sql ? module.sql[0].server_fqdn : null
 }
