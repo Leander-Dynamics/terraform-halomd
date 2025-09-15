@@ -1,6 +1,16 @@
 # ARBIT — Consolidated Infrastructure (Terraform) + Azure DevOps CI/CD
 
+
 ARBIT centralizes cloud infrastructure for dev, stage, and prod along with the automation that deploys it. This repository provides:
+=======
+This repository contains:
+- **Terraform modules** under `platform/infra/Azure/modules`.
+- **Per-environment Terraform roots** under `platform/infra/envs/{dev,stage,prod}` with independent backends.
+- **Azure DevOps CI/CD** under `.ado/` (reusable templates consumed by the multi-stage pipeline).
+- **Bootstrap scripts** for Terraform state.
+- **Docs** for setup, naming, and migration.
+- **Angular client developers**: see [`Arbitration/MPArbitration/ClientApp/README.md`](Arbitration/MPArbitration/ClientApp/README.md) for project-specific guidance.
+
 
 - **Terraform modules** under `platform/infra/Azure/modules` for reusable building blocks (resource groups, Key Vault, App Service, Functions, Storage, SQL, and optional AKS/ACR).
 - **Per-environment Terraform roots** under `platform/infra/envs/{dev,stage,prod}` with independent remote state backends.
