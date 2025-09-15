@@ -146,7 +146,7 @@ module "storage_data" {
 
 module "sql" {
   count                            = var.enable_sql ? 1 : 0
-  source                           = "../../Azure/modules/sql-database"
+  source                           = "../../Azure/modules/sql-serverless"
   server_name                      = local.sql_server_name
   db_name                          = var.sql_db_name
   resource_group_name              = module.rg.name
@@ -178,6 +178,7 @@ output "func_cron_name"             { value = module.func_cron.name }
 output "storage_data_account_name"  { value = var.enable_storage ? module.storage_data[0].name : null }
 output "sql_server_name"            { value = var.enable_sql ? module.sql[0].server_name : null }
 output "sql_database_id"            { value = var.enable_sql ? module.sql[0].database_id : null }
+output "sql_server_fqdn"            { value = var.enable_sql ? module.sql[0].server_fqdn : null }
 output "aad_app_client_id"          { value = var.enable_aad_app ? module.aad_app[0].client_id : null }
 output "app_insights_connection_string"        { value = module.app_insights.application_insights_connection_string }
 output "app_insights_instrumentation_key"      { value = module.app_insights.application_insights_instrumentation_key }

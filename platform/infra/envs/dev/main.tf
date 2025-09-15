@@ -58,7 +58,7 @@ module "aks" {
 
 module "sql" {
   count                         = var.enable_sql ? 1 : 0
-  source                        = "../../Azure/modules/sql-database"
+  source                        = "../../Azure/modules/sql-serverless"
   server_name                   = local.sql_server_name
   db_name                       = var.sql_db_name
   resource_group_name           = module.rg.name
@@ -170,4 +170,8 @@ output "app_insights_instrumentation_key" {
 
 output "log_analytics_workspace_id" {
   value = module.app_insights.log_analytics_workspace_id
+}
+
+output "sql_server_fqdn" {
+  value = var.enable_sql ? module.sql[0].server_fqdn : null
 }

@@ -204,7 +204,7 @@ variable "sql_auto_pause_minutes" {
 variable "sql_max_size_gb" {
   type        = number
   description = "Maximum size of the SQL database in GB"
-  default     = 32
+  default     = 75
 }
 
 variable "sql_public_network_access" {
