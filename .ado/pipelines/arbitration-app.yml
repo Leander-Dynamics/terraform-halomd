@@ -1,0 +1,197 @@
+# Azure DevOps multi-stage pipeline for the Arbitration web application
+# Build -> Deploy (dev -> stage -> prod)
+# Environment approvals for stage/prod should be configured on the
+# corresponding Azure DevOps environments (arbitration-stage, arbitration-prod).
+
+trigger:
+  branches: { include: [ main ] }
+  paths: { include: [ 'Arbitration/**', '.ado/pipelines/arbitration-app.yml' ] }
+
+pr:
+  branches: { include: [ main, feature/*, hotfix/*, release/* ] }
+  paths: { include: [ 'Arbitration/**', '.ado/pipelines/arbitration-app.yml' ] }
+
+variables:
+  buildConfiguration: 'Release'
+  dotnetVersion: '8.0.x'
+  nodeVersion: '16.x'
+  artifactName: 'arbitration-app'
+
+stages:
+- stage: build
+  displayName: Build & Package
+  jobs:
+  - job: build
+    displayName: Build arbitration web app
+    pool: { vmImage: 'ubuntu-latest' }
+    steps:
+    - checkout: self
+    - task: UseDotNet@2
+      displayName: Install .NET SDK
+      inputs:
+        packageType: 'sdk'
+        version: $(dotnetVersion)
+    - task: NodeTool@0
+      displayName: Use Node.js
+      inputs:
+        versionSpec: $(nodeVersion)
+    - script: npm ci
+      workingDirectory: Arbitration/MPArbitration/ClientApp
+      displayName: Install npm dependencies
+    - script: npm run build
+      workingDirectory: Arbitration/MPArbitration/ClientApp
+      displayName: Build Angular client
+    - script: dotnet restore Arbitration/MPArbitration.sln
+      displayName: dotnet restore
+    - script: dotnet build Arbitration/MPArbitration.sln --configuration $(buildConfiguration) --no-restore
+      displayName: dotnet build
+    - script: dotnet test Arbitration/TestArbitApi/Tests.csproj --configuration $(buildConfiguration) --no-build
+      displayName: dotnet test
+    - script: dotnet publish Arbitration/MPArbitration/MPArbitration.csproj --configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)/publish
+      displayName: dotnet publish
+    - task: ArchiveFiles@2
+      displayName: Create deployment package
+      inputs:
+        rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/publish'
+        includeRootFolder: false
+        archiveType: zip
+        archiveFile: '$(Build.ArtifactStagingDirectory)/$(artifactName).zip'
+        replaceExistingArchive: true
+    - publish: '$(Build.ArtifactStagingDirectory)/$(artifactName).zip'
+      artifact: drop
+      displayName: Publish artifact
+
+- stage: deploy_dev
+  displayName: Deploy to dev
+  dependsOn: build
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  variables:
+  - name: webAppName
+    value: ''
+  - name: appSettingsJson
+    value: ''
+  - name: connectionStringsJson
+    value: ''
+  - group: arbitration-app-dev  # optional variable group for dev-specific settings
+  jobs:
+  - deployment: deploy_dev
+    displayName: Deploy to dev
+    environment: arbitration-dev
+    pool: { vmImage: 'ubuntu-latest' }
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureAppServiceSettings@1
+            displayName: Apply app settings (dev)
+            condition: and(succeeded(), ne(variables['appSettingsJson'], ''), ne(variables['appSettingsJson'], 'null'))
+            inputs:
+              azureSubscription: sc-azure-oidc-dev
+              appName: $(webAppName)
+              appSettings: $(appSettingsJson)
+          - task: AzureAppServiceSettings@1
+            displayName: Apply connection strings (dev)
+            condition: and(succeeded(), ne(variables['connectionStringsJson'], ''), ne(variables['connectionStringsJson'], 'null'))
+            inputs:
+              azureSubscription: sc-azure-oidc-dev
+              appName: $(webAppName)
+              connectionStrings: $(connectionStringsJson)
+          - task: AzureWebApp@1
+            displayName: Deploy artifact (dev)
+            inputs:
+              azureSubscription: sc-azure-oidc-dev
+              appType: webAppLinux
+              appName: $(webAppName)
+              package: '$(Pipeline.Workspace)/drop/$(artifactName).zip'
+
+- stage: deploy_stage
+  displayName: Deploy to stage
+  dependsOn: deploy_dev
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  variables:
+  - name: webAppName
+    value: ''
+  - name: appSettingsJson
+    value: ''
+  - name: connectionStringsJson
+    value: ''
+  - group: arbitration-app-stage  # optional variable group for stage-specific settings
+  jobs:
+  - deployment: deploy_stage
+    displayName: Deploy to stage
+    environment: arbitration-stage
+    pool: { vmImage: 'ubuntu-latest' }
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureAppServiceSettings@1
+            displayName: Apply app settings (stage)
+            condition: and(succeeded(), ne(variables['appSettingsJson'], ''), ne(variables['appSettingsJson'], 'null'))
+            inputs:
+              azureSubscription: sc-azure-oidc-stage
+              appName: $(webAppName)
+              appSettings: $(appSettingsJson)
+          - task: AzureAppServiceSettings@1
+            displayName: Apply connection strings (stage)
+            condition: and(succeeded(), ne(variables['connectionStringsJson'], ''), ne(variables['connectionStringsJson'], 'null'))
+            inputs:
+              azureSubscription: sc-azure-oidc-stage
+              appName: $(webAppName)
+              connectionStrings: $(connectionStringsJson)
+          - task: AzureWebApp@1
+            displayName: Deploy artifact (stage)
+            inputs:
+              azureSubscription: sc-azure-oidc-stage
+              appType: webAppLinux
+              appName: $(webAppName)
+              package: '$(Pipeline.Workspace)/drop/$(artifactName).zip'
+
+- stage: deploy_prod
+  displayName: Deploy to prod
+  dependsOn: deploy_stage
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  variables:
+  - name: webAppName
+    value: ''
+  - name: appSettingsJson
+    value: ''
+  - name: connectionStringsJson
+    value: ''
+  - group: arbitration-app-prod  # optional variable group for prod-specific settings
+  jobs:
+  - deployment: deploy_prod
+    displayName: Deploy to prod
+    environment: arbitration-prod
+    pool: { vmImage: 'ubuntu-latest' }
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureAppServiceSettings@1
+            displayName: Apply app settings (prod)
+            condition: and(succeeded(), ne(variables['appSettingsJson'], ''), ne(variables['appSettingsJson'], 'null'))
+            inputs:
+              azureSubscription: sc-azure-oidc-prod
+              appName: $(webAppName)
+              appSettings: $(appSettingsJson)
+          - task: AzureAppServiceSettings@1
+            displayName: Apply connection strings (prod)
+            condition: and(succeeded(), ne(variables['connectionStringsJson'], ''), ne(variables['connectionStringsJson'], 'null'))
+            inputs:
+              azureSubscription: sc-azure-oidc-prod
+              appName: $(webAppName)
+              connectionStrings: $(connectionStringsJson)
+          - task: AzureWebApp@1
+            displayName: Deploy artifact (prod)
+            inputs:
+              azureSubscription: sc-azure-oidc-prod
+              appType: webAppLinux
+              appName: $(webAppName)
+              package: '$(Pipeline.Workspace)/drop/$(artifactName).zip'
