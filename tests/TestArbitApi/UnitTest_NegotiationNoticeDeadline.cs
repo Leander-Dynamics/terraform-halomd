@@ -51,7 +51,7 @@ namespace TestArbitApi
             Assert.Null(arb.NegotiationNoticeDeadline);
         }
         [Fact]
-        public void TestNegotiationNoticeDeadline_NulData()
+        public void TestNegotiationNoticeDeadline_NullData()
         {
             string JSONDataBad = "{}";
             var arb = new ArbitrationCase();
