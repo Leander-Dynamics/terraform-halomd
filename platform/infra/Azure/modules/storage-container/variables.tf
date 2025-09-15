@@ -1,4 +1,8 @@
-variable "name" {}
+variable "name" {
+  type = string
+}
+
 variable "access_type" {
-  default = ""
+  type    = string
+  default = "private"
 }
