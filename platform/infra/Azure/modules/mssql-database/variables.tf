@@ -1,8 +1,11 @@
-variable "name" {}
+variable "name" {
+  type = string
+}
 
 variable "server_id" {
-  default = ""
+  type = string
 }
+
 variable "sku_name" {
-  default = ""
+  type = string
 }
