@@ -81,7 +81,6 @@ arbitration_app_settings = {
 # -------------------------
 # Support both sql_database_name and sql_db_name for different modules
 sql_database_name        = "halomd"
-sql_db_name              = "halomd"
 
 # Extended config
 sql_sku_name             = "GP_S_Gen5_4"
