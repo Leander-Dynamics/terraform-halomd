@@ -1,0 +1,307 @@
+<div class="card">
+  <div class="card-header d-block">
+    <div class="row justify-content-between">
+      <div class="col-auto">
+        <h4>
+          Notification Manager
+          <button type="button" class="btn btn-sm btn-outline-success" (click)="showHelp=!showHelp"
+                  title="Click to toggle the criteria for sending NSA request submissions">
+            <i class="bi bi-question-lg"></i>
+          </button>
+        </h4>
+      </div>
+      <div class="col-auto">
+        <button type="button" class="btn btn-sm btn-success me-2" (click)="loadPendingNSA()"
+                title="Load cases that are available for NSA appeal submission">
+          <i class="bi bi-search"></i> Load Pending NSA Claims
+        </button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-auto">
+        <!-- Customer -->
+        <div class="input-group input-group-sm mb-1">
+          <span class="input-group-text">Customer</span>
+          <select name="customer" [(ngModel)]="customer"
+                  class="form-select form-select-sm" autocomplete="off" aria-label="Customer"
+                  title="Filter by the Customer who owns the Claim.">
+            <option value="">(All)</option>
+            <option *ngFor="let s of allCustomers" [ngValue]="s.name">{{s.name}} ({{s.counter}}/{{s.arbitCasesCount}})</option>
+          </select>
+        </div>
+        <p class="fs-6 fst-italic">* requires NSAReplyTo configuration</p>
+      </div>
+      <div class="col-auto">
+        <!-- Entity -->
+        <div class="input-group input-group-sm mb-1">
+          <span class="input-group-text">Entity</span>
+          <select name="entity" [(ngModel)]="entity" (change)="applyFilters()"
+                  class="form-select form-select-sm" autocomplete="off" aria-label="Entity"
+                  title="Filter by the Entity who filed the Claim.">
+            <option value="">(All)</option>
+            <option *ngFor="let s of getFilteredEntities()" [ngValue]="s.name">{{s.name}} ({{s.counter}})</option>
+          </select>
+        </div>
+        <p class="fs-6 fst-italic">Applied After getting data</p>
+      </div>
+
+      <!--
+      <div class="col-auto">
+          <button [disabled]="!showSendEmail" type="button" class="btn btn-sm btn-outline-success"
+              (click)="sendNSAEmail()"
+              title="Flag the selected items as ready for NSA Request Submission">
+              <i class="bi bi-play-btn-fill"></i> Send Notification Now
+          </button>
+      </div>
+      -->
+      <!-- Deadline Filter -->
+      <div class="col-auto">
+        <div class="input-group input-group-sm mb-1">
+          <span class="input-group-text">Notification Deadline</span>
+          <input type="date" name="deadlineFilter" class="form-control"
+                 autocomplete="off"
+                 [(ngModel)]="deadlineFilter"
+                 aria-label="Notification Deadline" title="Last day the notification can be sent">
+        </div>
+        <p class="fs-6 fst-italic"></p>
+      </div>
+      <!-- Bulk Queue Filter -->
+      <div class="col-auto">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" role="switch" id="bulkReadySwitch"
+                 name="bulkReadySwitch" autocomplete="off" [ngClass]="{'bg-dirty':showBulkReady}"
+                 [(ngModel)]="showBulkReady"
+                 aria-label="Show Claims that are ready to queue"
+                 title="Filter out Claims that are not ready for queuing">
+          <label class="form-check-label" for="bulkReadySwitch">Bulk-Ready Claims Only</label>
+        </div>
+      </div>
+      <div class="col-auto" *ngIf="showBulkReady">
+        <button type="button" class="btn btn-sm btn-success"
+                (click)="queueAllSelected(NotificationType.NSANegotiationRequest)"
+                [disabled]="!countSelected()"
+                title="Send NSA Negotiation Requests for all selected claims">
+          <i class="bi bi-envelope"></i> Notify All Selected ({{countSelected()}})
+        </button>
+      </div>
+    </div>
+
+    <p *ngIf="showHelp">
+      <i>
+        Which Claims Appear Below? Those that meet this criteria:<br />
+        1. Payors with <b>"Send NSA Eligibility Emails?" checked</b><br />
+        2. A valid EOB Date<br />
+        3. NSA Status of "Pending NSA Negotiation Request"<br />
+        4. Values for Entity, EntityNPI, Payor and ProviderNPI<br />
+        5. NSA Negotiation Notice Deadline value within 29 work days after EOB Date<br />
+        6. Customers with an NSAReplyTo address<br />
+        7. Claims <u>without a State-Authority status</u> beginning with Assigned, Report or Settled<br />
+        NOTE: If you have filtered the list by Customer and do not see a Provider or Claim, try removing the
+        filter and looking again.
+      </i>
+    </p>
+  </div>
+</div>
+
+
+<div *ngIf="notifyType===NotificationType.NSANegotiationRequest" class="table-responsive">
+  <!-- replace this with a template reference as more batch types are handled on this page-->
+  <table id="payorsTable" class="table table-sm table-no-wrap table-normal-head bb-0">
+    <thead>
+      <tr>
+        <th class="button-cell">...</th>
+        <th>Payor</th>
+        <th>NSA Submission Address</th>
+        <th>Selected Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <ng-container *ngFor="let r of records">
+        <tr [ngClass]="{'bg-warning':r.isInternalEmail}">
+          <td>
+            <button type="button" class="btn btn-sm btn-success" (click)="toggleNSAPayor(r)" title="Expand">
+              <i *ngIf="!r.isExpanded" class="bi bi-chevron-right"></i>
+              <i *ngIf="r.isExpanded" class="bi bi-chevron-down"></i>
+            </button>
+          </td>
+          <td>{{r.name}} ({{r.count}})</td>
+          <td>{{r.NSAEmail}}</td>
+          <td>${{valueSelected(r) | number:'.2'}}</td>
+        </tr>
+        <tr *ngIf="r.isExpanded">
+          <td></td>
+          <td colspan="3">
+            <table class="table table-sm">
+              <!-- <thead>
+                          <tr>
+                              <th class="button-cell"></th>
+                              <th class="button-cell">...</th>
+                              <th>Entity</th>
+                              <th>NPI</th>
+                          </tr>
+                      </thead> -->
+              <tbody>
+                <ng-container *ngFor="let n of r.entities;let x=index">
+                  <tr>
+                    <td class="button-cell">
+                      <button type="button" class="btn btn-sm btn-info"
+                              (click)="toggleNSAEntity(r,n)" title="Expand">
+                        <i *ngIf="!n.isExpanded" class="bi bi-chevron-right"></i>
+                        <i *ngIf="n.isExpanded" class="bi bi-chevron-down"></i>
+                      </button>
+                    </td>
+                    <td [ngClass]="{'text-danger':!n.name||!n.NPINumber}">
+                      ({{n.cases.length}})
+                      {{n.name || '{no Entity}'}} - {{n.NPINumber || '{no Entity NPI}'}}
+                    </td>
+                    <td>${{valueSelected(n) | number:'.2'}}</td>
+                  </tr>
+                  <tr *ngIf="n.isExpanded">
+                    <td colspan="3">
+                      <table id="tbl_{{r.name.replaceAll(' ','-')}}_{{n.name.replaceAll(' ','-')}}"
+                             class="table table-sm font-small table-vertical-center">
+                        <thead>
+                          <tr>
+                            <th class="button-cell">
+                              <!-- removing for now - users must review each notification in order to queue it
+                                  <input *ngIf="!!n.name" class="form-check-input font-reset"
+                                              type="CheckBox"
+                                              (change)="toggleAllEntity(n)"
+                                              [attr.checked]="isAllNSAChecked(n) ? 'checked' : null"
+                                              name="selectAllNSA_{{x}}"
+                                              aria-label="Select to add to batch">
+                                  -->
+                              ...
+                            </th>
+                            <th>Files</th>
+                            <th>Authority</th>
+                            <th>Provider</th>
+                            <th>Provider NPI</th>
+                            <th>Patient Name</th>
+                            <th>Total Allowed</th>
+                            <th>NSA Notice Deadline</th>
+                            <th>Claim Number</th>
+                            <th>Plan Type</th>
+                            <th>FH 80th Charges</th>
+                            <th>Reduction</th>
+                            <th>NSA Offer</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let c of n.cases;let i=index"
+                              [attr.data-record-id]="c.id">
+                            <td>
+                              <div class="d-flex align-items-center">
+                                <div *ngIf="showBulkReady" class="form-check form-check-inline me-1">
+                                  <input class="form-check-input" type="checkbox"
+                                         autocomplete="off"
+                                         name="isSelected_{{i}}"
+                                         id="isSelected_{{i}}"
+                                         [(ngModel)]="c.isSelected"
+                                         title="Select">
+                                </div>
+                                <!-- Preview the notification -->
+                                <button type="button" class="btn btn-sm me-1"
+                                        (click)="previewNSAMail(c)"
+                                        [ngClass]="{'btn-outline-success':!c.isNotificationQueued, 'btn-warning':c.isNotificationQueued}"
+                                        title="Preview and manage notification">
+                                  <i class="bi bi-file-text"></i>
+                                </button>
+                                <!-- Multi-select of Claims - not yet used
+                                    <div class="form-check form-check-inline">
+                                        <ng-container *ngIf="!!n.name">
+                                            <input class="form-check-input me-1"
+                                                type="CheckBox"
+                                                (change)="updateNSACheckCount()"
+                                                [(ngModel)]="c.isSelected"
+                                                name="isSelected_{{x}}_{{i}}"
+                                                aria-label="Select to add to batch">
+                                        </ng-container>
+                                    </div>
+                                    -->
+                                <!-- Refresh Case Values -->
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-success me-1"
+                                        (click)="refreshVM(c)" title="Refresh">
+                                  <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <i class="bi bi-asterisk me-1 text-warning"
+                                   *ngIf="!c.isValidForNSAOpenRequest"
+                                   title="Claim appears invalid or incomplete.">
+                                </i>
+                                <i class="bi bi-dash me-1"
+                                   *ngIf="c.isValidForNSAOpenRequest"
+                                   title="Claim appears valid.">
+                                </i>
+                              </div>
+                            </td>
+                            <td class="text-center text-white"
+                                [ngClass]="{'bg-danger':!c.attachments.length}">
+                              <div triggers="mouseenter:mouseleave"
+                                   (mouseenter)="showFileList(c)" [ngbPopover]="popContent"
+                                   container="body" placement="end"
+                                   popoverClass="bs-popover-wide"
+                                   popoverTitle="Files List for {{c.id}}">
+                                <p class="pe-none m-0" *ngIf="!!c.attachments.length">
+                                  <a href="" tabindes="-1"
+                                     aria-disabled="true"><b>{{c.attachments.length}}</b></a>
+                                </p>
+                                <b *ngIf="!c.attachments.length">{{c.attachments.length}}</b>
+                              </div>
+                            </td>
+                            <td class="text-center"
+                                [ngClass]="{'bg-tx':c.record?.authority==='tx'}">
+                              {{
+!!c.record ?
+                                                            c.record.authority.toUpperCase()+'-'+c.record.locationGeoZip
+                                                            : '??'
+                              }}
+                            </td>
+                            <td>{{c.providerName}}</td>
+                            <td>{{c.providerNPI}}</td>
+                            <td>{{c.patientName.toUpperCase()}}</td>
+                            <td>{{c.totalAllowedAmount | currency}}</td>
+                            <td>{{c.NegotiationNoticeDeadline | date:'shortDate'}}</td>
+                            <td>
+                              <a [routerLink]="['/','calculator',c.id]" target="_blank"
+                                 class="">{{c.payorClaimNumber}}</a>
+                            </td>
+                            <td>{{c.planType}}</td>
+                            <td [ngClass]="{'text-danger':!c.fh80thPercentileExtendedCharges}">
+                              {{c.fh80thPercentileExtendedCharges | number:'.2-2'}}
+                            </td>
+                            <td>{{getSettlementReduction(c)}}</td>
+                            <td>{{c.calculatedNSAOffer | number:'.2-2'}}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                </ng-container>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </ng-container>
+    </tbody>
+  </table>
+</div>
+
+<!-- Files List -->
+<ng-template #popContent>
+  <div [innerHTML]="filesListHTML"></div>
+</ng-template>
+
+<!-- Batch submission error display -->
+<ng-template #confirmationDialog let-modal>
+
+  <div class="modal-header text-light bg-danger">
+    <h5 class="modal-title">{{confirmationTitle}}</h5>
+    <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()"
+            aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    {{confirmationMessage}}
+  </div>
+</ng-template>

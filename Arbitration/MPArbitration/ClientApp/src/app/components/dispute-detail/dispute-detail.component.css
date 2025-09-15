@@ -1,0 +1,33 @@
+:host{height:100%}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button {-webkit-appearance: none;margin:0;}
+input[type=number]{-moz-appearance: textfield;}
+table.batch-search>tbody>tr>td.text-center {
+    text-align: center !important;
+}
+tbody, td, tfoot, th, thead, tr {
+    border-color: inherit;
+    border-style: none;
+    border-width: 0;
+}
+.input-with-link {
+  display: flex;
+  align-items: center;
+}
+
+.input-with-link a {
+  margin-left: 10px;
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+}
+#help-dispute-cpt[title]:hover::after {
+  content: attr(title);
+  background-color: white;
+  color: red;
+  border-color: black;
+  border-style: solid;
+  border-width: 0.5px;
+  border-radius: 5px;
+  padding: 5px;
+  margin-left: 4px;
+}

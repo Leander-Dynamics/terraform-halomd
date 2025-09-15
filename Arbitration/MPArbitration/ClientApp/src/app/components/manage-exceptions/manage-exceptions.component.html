@@ -1,0 +1,107 @@
+<div class="card">
+    <div class="card-header d-block">
+        <div class="row justify-content-between">
+            <div class="col-auto">
+                <h4>Data Import Exceptions 
+                    <!--
+                    <button type="button" class="btn btn-sm btn-outline-success"
+                        (click)="showHelp=!showHelp"  
+                        title="Click to toggle the criteria for sending NSA request submissions">
+                        <i class="bi bi-question-lg"></i>
+                    </button>
+                    -->
+                </h4>
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-sm btn-success me-2"
+                    (click)="reload()"  
+                    title="Refresh the page data">
+                    <i class="bi bi-search"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-header">
+        <div class="card-body d-flex flex-column flex-auto">
+            <div class="table-responsive flex-auto">
+              <table datatable [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" class="table table-sm table-striped font-smaller">
+                <thead>
+                  <tr>
+                    <!-- <th scope="col">&nbsp;</th> -->
+                    <th scope="col">Fixed?</th>
+                    <th scope="col" class="text-left">Type</th>
+                    <th scope="col">Created On</th>        
+                    <th scope="col">Updated On</th>
+                    <th scope="col">Updated By</th>
+                    <th scope="col">Message</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+          </div>
+    </div>
+</div>
+
+<!-- Modal - Add a missing Payor reported in the data exceptions log -->
+<ng-template #payorModal let-modal>
+  <div class="modal-header text-light bg-success">
+      <h5 class="modal-title">New Payor</h5>
+      <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()" aria-label="Close">
+      </button>
+  </div>
+  <div class="modal-body">
+    <div class="input-group input-group-sm">
+      <span class="input-group-text col-auto">* Name</span>
+      <input type="text" required disabled
+          class="form-control form-control-sm"
+          [(ngModel)]="payorName" #np="ngModel"
+          pattern="^[a-zA-Z1-9]\S*$" aria-label="New Payor Name"
+          name="payorName" 
+          id="payorName">
+    </div>
+      
+    <!-- Parent Payor -->
+    <div class="input-group input-group-sm mt-2">
+      <span class="input-group-text col-auto">Parent Record</span>
+      <select class="form-select form-select-sm" 
+        name="parentId"
+        (change)="payorParentChanged()"
+        [(ngModel)]="parentId" 
+        aria-label="Parent Record"
+        title="Select a Parent record if this spelling of the Payor name is just an alias">
+        <option [ngValue]="null" selected disabled>Select...</option>
+        <option [ngValue]="0">(self)</option>
+        <option *ngFor="let s of allPayors" [ngValue]="s.id">{{s.name}}</option>
+      </select>
+      <p class="fs-6 fst-italic">Only choose (self) for the Payor Name spelling used on reports. </p>
+    </div>
+ 
+    <!-- NSARequestEmail -->
+    <div class="input-group input-group-sm mt-2" [hidden]="parentId!==0">
+      <span class="input-group-text col-auto">NSA Open Eligibility Email</span>
+      <input type="email" class="form-control" 
+        [(ngModel)]="NSARequestEmail" #em="ngModel"
+        [required]="parentId===0" id="NSARequestEmail"
+        aria-label="NSA Request Email" name="NSARequestEmail"
+        title="Send all NSA Eligibility requests to these addresses.">
+      <p class="fs-6 fst-italic">Separate multiple addresses with semi-colons (;)</p>
+    </div>
+
+    <!-- Send NSA Email Requests? -->
+    <div class="input-group mt-2 mb-2" *ngIf="parentId===0">
+      <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox"
+              [(ngModel)]="sendNSARequests" name="sendNSARequests"
+              aria-label="Send NSA Emails" 
+              title="Should the system send NSA Eligibility requests for this Payor?">
+          <label class="form-check-label" for="sendNSARequests">Send NSA Eligibility Emails?</label>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+      <button type="button" [disabled]="!payorName||parentId===null||np.invalid||em.invalid" class="btn btn-sm btn-success"
+          (click)="modal.close()" title="Add Payor">
+          <i class="bi bi-save"></i> Add Payor
+      </button>
+  </div>
+</ng-template>

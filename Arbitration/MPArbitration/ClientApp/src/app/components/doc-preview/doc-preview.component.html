@@ -1,0 +1,51 @@
+<div class="modal-header bg-primary text-light d-block">
+    <div class="row d-flex justify-content-between">
+        <div class="col">
+            <h4 class="modal-title">Notification Preview</h4>
+        </div>
+        <div class="col-auto">
+            <button type="button" (click)="activeModal.dismiss('dismiss click')" class="btn-close" title="Close">
+            </button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col" *ngFor="let z of items">
+            <button type="button" class="btn btn-sm btn-secondary" 
+                [ngClass]="{'btn-info':z===currentItem?.name}"
+                (click)="switchTemplates(z)">
+                {{z}}
+            </button>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <h6 class="col-auto me-1 p-1">
+            Other Notification Attachments: 
+        </h6>
+        <h6 class="col-auto col-highlight me-1 p-1" [ngClass]="'col-highlight-'+f.DocumentType" *ngFor="let f of allCaseFileVMs">{{getBlobName(f.blobName)}}</h6>
+    </div>
+    
+</div>
+
+<div class="modal-body">
+    <div class="row justify-content-end">
+        <div class="col-auto">
+            <button type="button" class="btn btn-sm btn-outline-danger"
+            (click)="activeModal.dismiss()" title="Cancel this dialog box">
+                <i class="bi  bi-arrow-counterclockwise"></i> Close
+            </button>
+        </div>
+        <div class="col-auto">
+            <button *ngIf="!isReviewing" type="button" class="btn btn-sm btn-success"
+                (click)="confirmDelivery()" title="Queue this document for delivery">
+                <i class="bi bi-save"></i> Queue for Delivery
+            </button>
+        </div>
+        <div class="col-auto">
+            <button *ngIf="isReviewing" type="button" class="btn btn-sm btn-danger"
+                (click)="confirmCancellation()" title="Remove this document from the queue and cancel delivery">
+                <i class="bi bi-save"></i> Cancel Notification Delivery!
+            </button>
+        </div>
+    </div>
+    <div [innerHTML]="html"></div>
+</div>

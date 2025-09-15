@@ -1,0 +1,6 @@
+.vh-50 {
+    height:50vh;
+    border-radius: 12px;
+    margin: 1rem;
+    overflow:auto;
+}

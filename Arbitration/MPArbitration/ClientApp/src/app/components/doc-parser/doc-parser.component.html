@@ -1,0 +1,56 @@
+<div class="card">
+    <div class="card-header">
+        <div class="row mb-4">
+            <div class="col">
+                <h3>EHR Document Parser (proof of concept)</h3>
+                <h6>Paste in raw, OCR text from a scan to see it transformed into a data object</h6>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-auto">
+                <div class="input-group input-group-sm mb-2">
+                    <span class="input-group-text">EHR Doc Type</span>
+                    <select name="emrDocType" 
+                        [(ngModel)]="ehrDocType" 
+                        class="form-select form-select-sm"
+                        (change)="docTypeChange()"
+                        aria-label="EHR Document Type" 
+                        title="Choose the type of document to parse">
+                        <option disabled selected value="">Select...</option>
+                        <option value="BCBSTXEOB">BCBSTX EOB</option>
+                    </select>
+                </div>
+                <button type="button" (click)="parse()" class="btn btn-sm btn-success"
+                    [disabled]="!fileSelected()">Parse!</button>
+            </div>
+            <div class="col">
+                <input [disabled]="!ehrDocType" 
+                    (change)="fileSelectionChanged()" 
+                    class="form-control-file" 
+                    type="file" 
+                    #summaryFile 
+                    id="summaryFile"> 
+                <h6 class="mt-2">
+                    <label for="summaryFile" class="form-label">Select .txt file...</label>
+                </h6>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <h6>JSON Conversion...</h6>
+        <div class="font-monospace bg-info vh-50" [innerHTML]="outputJSON"></div>
+    </div>
+</div>
+
+
+<ng-template #loadResult let-modal>
+
+    <div class="modal-header text-light" [ngClass]="{'bg-success':!isError,'bg-danger':isError}">
+        <h5 class="modal-title">{{loadTitle}}</h5>
+        <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        {{loadMessage}}
+    </div>
+
+</ng-template>

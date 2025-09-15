@@ -1,0 +1,136 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <h5>Manage Arbitrators</h5>
+        <div>
+            <button *ngIf="canEdit" type="button" 
+                (click)="addRecord()" 
+                class="btn btn-sm btn-success"
+                title="Edit">
+                <i class="bi bi-plus"></i> Add Arbitrator
+            </button>
+            <button *ngIf="canEdit" type="button" 
+                (click)="showUpload()" 
+                class="btn btn-sm btn-success ms-4"
+                title="Upload Arbitrators">
+                <i class="bi bi-upload"></i> Upload Arbitrators
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row justify-content-between mb-1">
+            <div class="col">
+                <div class="col table-responsive">
+                    <table class="table table-sm font-small table-no-wrap table-normal-head mb-0 bb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="text-center">...</th>
+                                <th scope="col">Type</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Cases</th>
+                                <th scope="col">Wins</th>
+                                <th scope="col">Losses</th>
+                                <th scope="col">Win %</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Fees</th>
+                                <!-- <th scope="col">Mediator Fixed Fee</th> -->
+                                <th scope="col">Phone</th>
+                                <!-- <th scope="col">Role</th> -->
+                                <th scope="col">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let u of allArbitrators;let i = index" class="vertical-align-middle" 
+                                [ngClass]="{'bg-certified-entity':u.arbitratorType===ArbitratorType.CertifiedEntity,
+                                            'bg-facilitator':u.arbitratorType===ArbitratorType.Facilitator,
+                                            'bg-mediator':u.arbitratorType===ArbitratorType.Mediator}">
+                                <td>
+                                    <button *ngIf="canEdit" type="button" 
+                                        (click)="editRecord(u)" 
+                                        class="btn btn-xs btn-success me-1"
+                                        title="Edit">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <span class="btn btn-xs bg-danger no-cursor" *ngIf="u.isLastResort">
+                                        <i class="bi bi-person-x text-light"></i>
+                                    </span>
+                                </td>
+                                <td>{{ArbitratorType[u.arbitratorType]}}</td>
+                                <td>
+                                    {{u.name}}
+                                </td>
+                                <td>{{u.cases}}</td>
+                                <td>{{u.wins}}</td>
+                                <td>{{u.losses}}</td>
+                                <td>{{(u.cases && u.wins ? (u.wins/u.cases)*100 : 0) | number:'1.2-2'}}</td>
+                                <td>
+                                    {{u.email}}
+                                </td>
+                                <td>
+                                    {{getFeeValues(u.fees)}}
+                                </td>
+                                <!-- <td>{{u.mediatorFixedFee | number:'.2'}}</td> -->
+                                <td class="no-wrap">
+                                    {{u.phone}}
+                                </td>
+                                <!-- <td class="no-wrap">{{u.role}}</td> -->
+                                <td class="col-notes">
+                                    {{u.notes}}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Form -->
+<ng-template #uploadDialog let-modal>
+    <div class="modal-header text-light bg-success">
+        <h5 class="modal-title">Upload Arbitrators and Statistics</h5>
+        <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()"
+            aria-label="Cancel"></button>
+    </div>
+    <div class="modal-body">
+        <div class="row">
+            <div class="col">
+                <h6 class="m-0">
+                    <label for="arbitratorsFile" class="form-label">Select .json file...</label>
+                </h6>
+                <input (change)="fileSelectionChanged()" 
+                    class="form-control-file" 
+                    type="file" 
+                    aria-label="Select Upload File"
+                    #arbitratorsFile 
+                    name="arbitratorsFile"
+                    id="arbitratorsFile">
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" 
+            (click)="modal.dismiss()" 
+            aria-label="Cancel">Cancel</button>
+        <button type="button" 
+            (click)="modal.close(arbitratorsFile)"
+            [disabled]="!arbitratorsFile?.files?.length"
+            class="btn btn-sm btn-success me-4" 
+            title="Begin Upload">
+            <i class="bi bi-save"></i> Begin Upload
+        </button>
+    </div>
+</ng-template>
+
+<!-- Modal -->
+<ng-template #loadResult let-modal>
+
+    <div class="modal-header text-light" [ngClass]="{'bg-success':!isError,'bg-danger':isError}">
+        <h5 class="modal-title">{{loadTitle}}</h5>
+        <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        {{loadMessage}}
+    </div>
+
+</ng-template>

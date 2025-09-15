@@ -1,0 +1,1161 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <h5>Manage Authorities</h5>
+        <button type="button" *ngIf="!authorityForm?.dirty"
+            (click)="showUpload=!showUpload"
+            class="btn btn-sm justify-self-start ms-4" 
+            [disabled]="!isAdmin&&!isManager"
+            [ngClass]="{'btn-primary':!showUpload,'btn-warning':showUpload}"
+            title="Cancel">
+            <i *ngIf="!showUpload" class="bi bi-upload"></i> {{showUpload?'Cancel Upload':'Upload Group Exclusions'}}
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="row mt-0 align-items-center">
+            <div class="col-auto d-flex align-items-start">
+                <!-- Authority -->
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text col-auto">Select an Authority</span>
+                    <select class="form-select form-select-sm" name="currentAuthority" (change)="authorityChange()"
+                        [(ngModel)]="currentAuthority" aria-label="Current Authority"
+                        [disabled]="!!authorityForm?.dirty"
+                        title="View the configuration for an Authority by selecting it here">
+                        <option [value]="null" selected disabled>Select...</option>
+                        <option *ngFor="let a of allAuthorities" [ngValue]="a">{{a.name}}</option>
+                    </select>
+                </div>
+            </div>
+            <!--  && !!currentAuthority.trackingDetails.length  && currentAuthority.isActive -->
+            <div class="col ms-auto d-flex" *ngIf="canEdit && !!currentAuthority">
+                <button type="button" 
+                    [disabled]="!!currentJob || isJobStalled" 
+                    class="btn btn-sm btn-primary align-self-baseline" 
+                    (click)="recalc()">
+                    Recalc Tracking
+                </button>
+                <div class="ms-3 form-check form-check-inline fs-5">
+                    <input type="checkbox" class="form-check-input"
+                        name="recalcAll" id="recalcAll" 
+                        [disabled]="!!currentJob || isJobStalled" 
+                        [(ngModel)]="recalcAll" title="WARNING: This job could take 24 hours or more to run depending on the size of the Authority. Use at your own peril.">
+                    <label class="form-label" for="recalcAll">Recalc All?</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Group Exclusions -->
+        <div class="card mt-2" *ngIf="showUpload">
+            <div class="card-header">
+                <h6>Upload Payor Group Exclusions by Authority</h6>
+                <p class="font-small">CSV specification: authority, payorName, groupNumber, isNSAIneligible, isStateIneligible</p>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-6 col-lg-4 col-xl-3">
+                        <h6 class="m-0">
+                            <label for="groupsFile" class="form-label">Select .csv file...</label>
+                        </h6>
+                        <input (change)="fileSelectionChanged()" 
+                            class="form-control-file" 
+                            type="file" 
+                            #groupsFile 
+                            id="groupsFile">
+                    </div>
+                </div>
+            </div>
+            <div class="form-footer">
+                <div class="row pb-2">
+                    <div class="col text-right">
+                        <button type="button" 
+                            (click)="uploadGroups()"
+                            [disabled]="!fileSelected()"
+                            class="btn btn-sm btn-success me-4" 
+                            title="Begin Upload">
+                            <i class="bi bi-upload"></i> Begin Upload
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-2" *ngIf="!!currentJob">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header"><h6>Current Job Status {{currentJob.jobStatus.lastUpdated | date:'medium'}}</h6></div>
+                    <div class="card-body">
+                        <p class="fs-6">{{currentJob.jobStatus.status}} - {{currentJob.jobStatus.recordsProcessed}} of {{currentJob.jobStatus.totalRecords}}</p>
+                        <p class="fs-6" [innerHTML]="jobMessage"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-2">
+            <!-- Authority stats -->
+            <div class="col">
+                <table class="table table-sm small table-info text-center">
+                    <thead>
+                        <tr>
+                            <th *ngFor="let k of statKeys">{{k}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td *ngFor="let k of statKeys">{{getStat(k) | number:'1.0-0'}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col">
+                <form #authorityForm="ngForm" (ngSubmit)="onSubmit()" novalidate="novalidate">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between">
+                            <h6>Authority: {{currentAuthority ? currentAuthority.name:'(none)'}}</h6>
+                        </div>
+                        <div class="card-body bg-light">
+                            <ng-container *ngIf="currentAuthority">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <!-- key -->
+                                        <div class="">
+                                            <label class="form-label">* Key (use this for all CSV Import files)</label>
+                                            <input type="text" required 
+                                                (focus)="selectAll($event)"
+                                                class="form-control form-control-sm" 
+                                                minlength="2" maxlength="8"
+                                                [disabled]="!!currentAuthority.id||!canEdit"
+                                                [(ngModel)]="currentAuthority.key" 
+                                                aria-label="Key" name="key"
+                                                title="The lookup key for this Authority.">
+                                        </div>
+                                        <!-- name -->
+                                        <div class="mt-2">
+                                            <label class="form-label">* Name</label>
+                                            <input type="text" required (focus)="selectAll($event)"
+                                                class="form-control form-control-sm" 
+                                                [disabled]="currentAuthority.key==='nsa'||!canEdit"
+                                                minlength="3" maxlength="50"
+                                                [(ngModel)]="currentAuthority.name" 
+                                                aria-label="Authority name" name="name"
+                                                title="The common name of the Authority">
+                                        </div>
+                                        <!-- IsActive -->
+                                        <div class="input-group mb-2">
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox" 
+                                                    [(ngModel)]="currentAuthority.isActive" 
+                                                    (change)="isActiveChange()"
+                                                    name="isActive" id="isActive" aria-label="Is Authority Active">
+                                                <label class="form-check-label" for="isActive">Has an Active Arbitration Process?</label>
+                                            </div>
+                                        </div>
+                                        <!-- Active As Of -->
+                                        <div class="input-group input-group-sm">
+                                            <div class="input-group-text col-7 justify-content-between">
+                                            <span>Active As Of Date</span>
+                                            <i class="bi bi-question-circle-fill"
+                                                title="Earliest ServiceDate that can be filed with this Authority. Useful if an Authority will bring an arbitration process online in the future."></i>
+                                            </div>
+                                            <input type="text" class="form-control" ngbDatepicker
+                                                [disabled]="!currentAuthority.isActive"
+                                                [(ngModel)]="activeAsOfDate"
+                                                [ngModelOptions]="{updateOn:'blur'}"
+                                                name="activeAsOf" aria-label="Active As Of"
+                                                (dateSelect)="setActiveAsOfDate($event)" 
+                                                (change)="activeAsOfDateChange($event)"
+                                                title="First eligible Service Date that can be filed with this Authority. Leave blank for all."
+                                                #aao="ngbDatepicker">
+                        
+                                            <button type="button" class="btn btn-outline-secondary" 
+                                                (click)="aao.toggle()"
+                                                [disabled]="!currentAuthority.isActive"
+                                                title="Pick Active As Of Date">
+                                                <i class="bi bi-calendar"></i>
+                                            </button>
+                                        </div>
+                                        <!-- statuses -->
+                                        <div class="mt-2">
+                                            <label class="form-label">Status List</label>
+                                            <input type="text" 
+                                                class="form-control form-control-sm" maxlength="1024"
+                                                [disabled]="!isDeveloper&&(currentAuthority.key==='nsa'||!isAdmin)"
+                                                [(ngModel)]="currentAuthority.statusValues" 
+                                                aria-label="Status Values" name="statusValues"
+                                                title="Enter a list of statuses the Authority could possibly assign to a case. Separate values with a ; (semi-colon) or | (pipe) symbol.">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <!-- Use Charge Pct -->
+                                        <div>
+                                            <label class="form-label">* Offer Calculation Method</label>
+                                            <select name="calculatorOption" 
+                                                [(ngModel)]="currentAuthority.calculatorOption" 
+                                                class="form-select form-select-sm" 
+                                                [disabled]="currentAuthority.key==='nsa'||!isAdmin"
+                                                autocomplete="off"
+                                                aria-label="Offer Calculation Method" 
+                                                title="How are benchmarks computed and used when calculating a Provider Offer?">
+                                                <option *ngFor="let s of allCalculatorOptions" [ngValue]="s.id">{{s.key}}</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- unnecessary -- >
+                                        <div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" 
+                                                    type="radio" 
+                                                    [(ngModel)]="currentAuthority.useChargePct" 
+                                                    name="useChargePct" 
+                                                    id="useChargePct"
+                                                    aria-label="Use Charge Percentage">
+                                                <label class="form-check-label" for="useChargePct">Use Charge Percentage Instead Of Benchmark</label>
+                                            </div>
+                                        </div>
+                                        -->
+
+                                        <!-- Charge / Benchmark Pct -->
+                                        <div class="mt-2">
+                                            <label class="form-label">Percent of Benchmark to Use (experimental)</label>
+                                            <input type="number" min="1" max="200"
+                                                class="form-control form-control-sm"
+                                                [disabled]="currentAuthority.calculatorOption===AuthorityCalculatorOption.Default || currentAuthority.key==='nsa'||!isAdmin"
+                                                [required]="currentAuthority.calculatorOption!==AuthorityCalculatorOption.Default"
+                                                (focus)="selectAll($event)"
+                                                [(ngModel)]="currentAuthority.chargePct" 
+                                                aria-label="Charge Percent" name="chargePct"
+                                                title="The percentage of included charges to use as a benchmark instead of a dedicated source such as Fair Health.">
+                                        </div>
+                                        
+                                        <!-- website -->
+                                        <div class="mt-2">
+                                            <label class="form-label">Website</label>
+                                            <input type="text" (focus)="selectAll($event)"
+                                                class="form-control form-control-sm" minlength="15" maxlength="255"
+                                                [disabled]="!isAdmin"
+                                                [(ngModel)]="currentAuthority.website" aria-label="Authority website"
+                                                name="website"
+                                                title="The website where Authority data can be retrieved. Leave this blank if there is no BOT or automation associated with the website.">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Save and Cancel button row -->
+                                <div class="row mt-2" *ngIf="!!currentAuthority">
+                                    <div class="col d-flex justify-content-end pe-15">
+                                        <button type="button" class="btn btn-sm btn-secondary" [disabled]="!authorityForm.dirty"
+                                            (click)="cancelChanges()" aria-label="Cancel">Cancel</button>
+                                        <button type="submit" class="btn btn-sm btn-success ms-2"
+                                            [disabled]="!authorityForm.valid||!authorityForm.dirty"
+                                            aria-label="Save Authority Changes">Save Changes</button>
+                                    </div>
+                                </div>
+                            </ng-container>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Fees -->
+        <br/>
+        <list-fees *ngIf="!!currentAuthority" 
+            [allFees$]="allFees$" 
+            [canAdd]="currentAuthority.isActive" 
+            [canEdit]="canEdit"
+            (onAddFee)="addFee($event)"
+            (onEditFee)="editFee($event)">
+        </list-fees>
+
+        <!-- Files -->
+        <br/>
+        <app-file-upload *ngIf="!!currentAuthority" [allCaseFileVMs$]="allCaseFileVMs$" 
+            [disableUpload]="!!(currentAuthority.id < 1)" [isAdmin]="isAdmin" [canEdit]="canEdit"
+            (onFileAdded)="addFile($event)" (onFileDelete)="deleteFile($event)"
+            (onViewFile)="viewFile($event)"></app-file-upload>
+        
+        <!-- Customer Mapping -->
+        <div class="row mt-2" *ngIf="!!currentAuthority?.isActive">
+            <div class="d-flex">
+                <button class="btn btn-sm btn-outline-primary" type="button" 
+                    (click)="hideCustomerMap=!hideCustomerMap" 
+                    [disabled]="!currentAuthority"
+                    [attr.aria-expanded]="!hideCustomerMap" 
+                    title="Toggle Customer Mapping">
+                    <i *ngIf="hideCustomerMap" class="bi bi-chevron-right"></i>
+                    <i *ngIf="!hideCustomerMap" class="bi bi-chevron-down"></i>
+                </button>
+
+                <div class="card col">
+                    <div class="card-header">
+                        <h6 class="ms-2">Customer Portal Mapping</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row" *ngIf="!!currentAuthority?.isActive">
+            <div class="col">
+                <div class="card">
+                    <!-- Status Mapping Expander Section -->
+                    <div class="card-body" #collapseStatusMapping="ngbCollapse" [(ngbCollapse)]="hideCustomerMap">
+                        <div class="row">
+                            <div class="col">
+                                <div class="col table-responsive">
+                                    <table class="table table-sm font-small table-no-wrap table-normal-head mb-0 bb-0">
+                                        <thead>
+                                            <tr>
+                                                <th *ngIf="isAdmin||isManager">...</th>
+                                                <th><b>Portal User ID</b></th>
+                                                <th><b>Portal Display Name</b></th>
+                                                <th><b>Customer Assignment</b></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody *ngIf="!!currentAuthority">
+                                            <tr *ngFor="let r of customerMappings;let i = index">
+                                                <td *ngIf="isAdmin||isManager">
+                                                    <button type="button" class="btn btn-sm btn-danger" 
+                                                        (click)="deleteCustomerMapping(r)"
+                                                        title="Remove this Customer Mapping">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </td>
+                                                <td>
+                                                    <input class="form-control form-control-sm font-small"
+                                                        [(ngModel)]="r.userId" 
+                                                        readonly
+                                                        aria-label="Portal User Id" 
+                                                        name="userId_{{i}}"
+                                                        title="Authority portal user id (login)">
+                                                </td>
+                                                <td>
+                                                    <input class="form-control form-control-sm font-small"
+                                                        [(ngModel)]="r.displayName" 
+                                                        [disabled]="!canEdit"
+                                                        (change)="customerMapChange(r)"
+                                                        aria-label="Portal User's Name" 
+                                                        name="displayName_{{i}}"
+                                                        title="Authority portal display name">
+                                                </td>
+                                                <td>
+                                                    <input class="form-control form-control-sm font-small"
+                                                        [(ngModel)]="r.customerName" 
+                                                        [disabled]="!canEdit"
+                                                        (change)="customerMapChange(r)"
+                                                        aria-label="Application Customer Name" 
+                                                        name="customerName_{{i}}"
+                                                        title="Customer name in this application">
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th *ngIf="isAdmin||isManager">
+                                                    <i class="bi bi-plus bg-success text-light p-2"></i>
+                                                </th>
+                                                <th>
+                                                    <input class="form-control form-control-sm font-small"
+                                                        name="newUserId"    
+                                                        [(ngModel)]="newAuthorityUser.userId" 
+                                                        (change)="customerMapChange(newAuthorityUser,true)"
+                                                        [disabled]="!canEdit"
+                                                        aria-label="Portal User Id" 
+                                                        title="Authority portal user id (login)">
+                                                </th>
+                                                <th>
+                                                    <input class="form-control form-control-sm font-small"
+                                                        name="newDisplayName"
+                                                        [(ngModel)]="newAuthorityUser.displayName" 
+                                                        [disabled]="!canEdit"
+                                                        (change)="customerMapChange(newAuthorityUser,true)"
+                                                        aria-label="Portal User's Name" 
+                                                        title="Authority portal user id (login)">
+                                                </th>
+                                                <th>
+                                                    <input class="form-control form-control-sm font-small"
+                                                        name="newCustomerName"
+                                                        [(ngModel)]="newAuthorityUser.customerName" 
+                                                        [disabled]="!canEdit"
+                                                        (change)="customerMapChange(newAuthorityUser,true)"
+                                                        aria-label="Application Customer Name" 
+                                                        title="Customer name in this application">
+                                                </th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ineligibility and Status Configuration -->
+        <div class="row mt-4" *ngIf="!!currentAuthority?.isActive">
+            <div class="d-flex">
+                <button class="btn btn-sm btn-outline-primary" type="button" 
+                    (click)="hideStatusMap=!hideStatusMap" 
+                    [disabled]="!currentAuthority"
+                    [attr.aria-expanded]="!hideStatusMap" 
+                    title="Toggle Status Mapping">
+                    <i *ngIf="hideStatusMap" class="bi bi-chevron-right"></i>
+                    <i *ngIf="!hideStatusMap" class="bi bi-chevron-down"></i>
+                </button>
+
+                <div class="card col">
+                    <div class="card-header">
+                        <h6 class="ms-2">Ineligibility and Status Configuration</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row" *ngIf="!!currentAuthority?.isActive">
+            <div class="col">
+                <div class="card">
+                    <!-- Status Mapping Expander Section -->
+                    <div class="card-body" #collapseStatusMapping="ngbCollapse" [(ngbCollapse)]="hideStatusMap">
+                        <h6>Ineligibility Reason Tagging</h6>
+                        <hr/>
+                        <div class="row">
+                            <div class="col">
+                                <div class="col table-responsive">
+                                    <table class="table table-sm font-small table-no-wrap table-normal-head mb-0 bb-0">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col text"><b>Ineligibility Reason Contains...</b></th>
+                                                <th><b>Ineligibility Tag</b></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody *ngIf="!!currentAuthority">
+                                            <tr *ngFor="let r of allIneligibilityReasons">
+                                                <td>
+                                                    <input class="form-control form-control-sm font-small"
+                                                        [(ngModel)]="r.search" 
+                                                        [disabled]="!canEdit"
+                                                        (change)="ineligibilitySearchChange(r)"
+                                                        aria-label="Ineligibility Reason Contains" 
+                                                        name="ineligibilitySearch"
+                                                        title="Words to match in the Authority's ineligibility reason">
+                                                </td>
+                                                <td>
+                                                    <input class="form-control form-control-sm font-small"
+                                                        [(ngModel)]="r.tag" 
+                                                        [disabled]="!canEdit"
+                                                        (change)="ineligibilitySearchChange(r)"
+                                                        aria-label="Ineligibility Reason Contains" 
+                                                        name="ineligibilityAction"
+                                                        title="The Ineligibility tag to associate with the search words">
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th>
+                                                    <input class="form-control form-control-sm font-small"
+                                                        name="newIneligibilitySearch"    
+                                                        [(ngModel)]="newIneligibilitySearch" 
+                                                        (change)="newIneligibilityChange()"
+                                                        [disabled]="!canEdit"
+                                                        aria-label="Ineligibility Reason Search" 
+                                                        title="Words to match in the Authority's ineligibility reason">
+                                                </th>
+                                                <th>
+                                                    <input class="form-control form-control-sm font-small"
+                                                        name="newIneligibilityTag"    
+                                                        [(ngModel)]="newIneligibilityTag" 
+                                                        (change)="newIneligibilityChange()"
+                                                        [disabled]="!canEdit"
+                                                        aria-label="Ineligibility Tag (Action)" 
+                                                        title="Tag to assign for reporting or other action">
+                                                </th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Workflow mapping -->
+                        <h6 class="mt-4">Authority Status To Workflow Status</h6>
+                        <hr/>
+                        <div class="row">
+                            <div class="col-auto">
+                                <div class="col table-responsive">
+                                    <table class="table table-sm font-small table-no-wrap table-normal-head mb-0 bb-0">
+                                        <thead>
+                                            <tr>
+                                                <!-- <th>Order</th> -->
+                                                <th><b>Authority Status</b></th>
+                                                <th><b>Workflow Status</b></th>
+                                                <th><b>Arbitration Result</b></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody *ngIf="!!currentAuthority && allStatusMappings.length">
+                                            <tr *ngFor="let s of allStatusMappings">
+                                                <!-- <td>
+                                                    <input class="form-control form-control-sm font-small w-2" 
+                                                        (change)="wfOrderChange(s)"
+                                                        [(ngModel)]="s.order" 
+                                                        aria-label="Order" 
+                                                        title="Order prevents items from moving backwards during data import">
+                                                </td> -->
+                                                <td>{{s.authorityStatus}}</td>
+                                                <td>
+                                                    <select class="form-select form-select-sm font-small"
+                                                        name="workflowStatus"
+                                                        [disabled]="!isAdmin||(currentAuthority.key==='nsa'&&!isDeveloper)"
+                                                        [(ngModel)]="s.workflowStatus"
+                                                        (change)="workflowStatusChange(s)"
+                                                        aria-label="Workflow Status" 
+                                                        title="Internal workflow status / work queue">
+                                                        <option [ngValue]="null" selected>Select...</option>
+                                                        <option *ngFor="let s of statuses" [ngValue]="s.id">{{s.key}}</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm font-small"
+                                                        name="arbitrationResult"
+                                                        [disabled]="!isAdmin||(currentAuthority.key==='nsa'&&!isDeveloper)"
+                                                        [(ngModel)]="s.arbitrationResult"
+                                                        (change)="workflowStatusChange(s)"
+                                                        aria-label="Arbitration Result" 
+                                                        title="Result of the Arbitrator's decision">
+                                                        <option [ngValue]="null" selected>Select...</option>
+                                                        <option *ngFor="let s of allArbitrationResults" [ngValue]="s.id">{{s.key}}</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        
+        <!-- Payor Group Exclusions -->
+        <div class="row mt-4" *ngIf="!!currentAuthority?.isActive">
+            <div class="d-flex">
+                <button class="btn btn-sm btn-outline-primary" type="button" 
+                    (click)="hideExclusions=!hideExclusions" 
+                    [disabled]="!currentAuthority"
+                    [attr.aria-expanded]="!hideExclusions" 
+                    title="Toggle Customer Mapping">
+                    <i *ngIf="hideExclusions" class="bi bi-chevron-right"></i>
+                    <i *ngIf="!hideExclusions" class="bi bi-chevron-down"></i>
+                </button>
+
+                <div class="card col">
+                    <div class="card-header d-flex justify-content-between">
+                        <h6 class="ms-2">Payor Group Exclusions</h6>
+                        <button *ngIf="!hideExclusions && (isAdmin || isManager)" 
+                            type="button" 
+                            (click)="addExclusion()" 
+                            [disabled]="!currentAuthority"
+                            class="btn btn-sm btn-success" 
+                            title="Add Tracking Configuration">
+                            <i class="bi bi-plus"></i> Add Payor Group Exclusion
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row" *ngIf="!!currentAuthority?.isActive">
+            <div class="col">
+                <div class="card">
+                    <!-- Status Mapping Expander Section -->
+                    <div class="card-body" #collapseStatusMapping="ngbCollapse" [(ngbCollapse)]="hideExclusions">
+                        <div class="row">
+                            <div class="col">
+                                <div class="col table-responsive">
+                                    <table class="table table-sm font-small table-no-wrap table-normal-head ">
+                                        <colgroup>
+                                            <col style="width:3rem;">
+                                        </colgroup>
+                                        <thead>
+                                            <tr>
+                                                <th *ngIf="isAdmin||isManager"></th>
+                                                <th><b>Payor</b></th>
+                                                <th><b>Group Number</b></th>
+                                                <th><b>NSA Exclusion</b></th>
+                                                <th><b>State Exclusion</b></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody *ngIf="!!currentAuthority">
+                                            <tr *ngFor="let r of allAuthorityExclusions;let i = index">
+                                                <td *ngIf="isAdmin||isManager">
+                                                    <button type="button" class="btn btn-sm btn-danger" 
+                                                        (click)="deleteExclusion(r)"
+                                                        title="Remove this Customer Mapping">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </td>
+                                                <td>
+                                                    <input class="form-control form-control-sm font-small"
+                                                        [(ngModel)]="r.payorName" 
+                                                        readonly
+                                                        aria-label="Payor" 
+                                                        name="exclPayor_{{i}}"
+                                                        title="Payor">
+                                                </td>
+                                                <td>
+                                                    <input class="form-control form-control-sm font-small"
+                                                        [(ngModel)]="r.groupNumber" 
+                                                        readonly
+                                                        (change)="exclusionChange(r)"
+                                                        aria-label="Payor Group Number" 
+                                                        name="exclGroupNumber_{{i}}"
+                                                        title="Payor Group Number">
+                                                </td>
+                                                <td>
+                                                    <i class="bi bi-check-square-fill text-success fs-3" *ngIf="r.isNSAIneligible"></i>
+                                                </td>
+                                                <td>
+                                                    <i class="bi bi-check-square-fill text-success fs-3" *ngIf="r.isStateIneligible"></i>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benchmark Configuration -->
+        <ng-container *ngIf="!!currentAuthority">
+            <div class="row mt-4">
+                <div class="d-flex">
+                    <button class="btn btn-sm btn-outline-primary" type="button" 
+                        (click)="collapseBenchmarks.toggle()" 
+                        [disabled]="!currentAuthority"
+                        [attr.aria-expanded]="!hideBenchmarks" 
+                        title="Toggle Benchmark Configuration">
+                        <i *ngIf="hideBenchmarks" class="bi bi-chevron-right"></i>
+                        <i *ngIf="!hideBenchmarks" class="bi bi-chevron-down"></i>
+                    </button>
+
+                    <div class="card col">
+                        <div class="card-header">
+                            <h6 class="ms-2">Benchmark Configuration</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <div class="card" #collapseBenchmarks="ngbCollapse" [(ngbCollapse)]="hideBenchmarks">
+                        <!-- Benchmark Configuration Expander Section -->
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm font-small table-no-wrap table-normal-head mb-0 bb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Add/Remove</th>
+                                            <th class="text-center">Used</th>
+                                            <th class="text-center">Default</th>
+                                            <th>Year</th>
+                                            <th>Service</th>
+                                            <th>Name</th>
+                                            <th>Vendor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let a of allBenchmarkDetails">
+                                            <td>
+                                                <button *ngIf="a.service===a.availableForService" type="button" 
+                                                    class="btn btn-sm btn-danger" 
+                                                    (click)="removeBenchmark(a)" 
+                                                    [disabled]="!isAdmin"
+                                                    title="Remove this Benchmark">
+                                                    <i class="bi bi-dash"></i>
+                                                </button>
+                                                <button *ngIf="!a.service" type="button" 
+                                                    class="btn btn-sm btn-success" 
+                                                    (click)="addBenchmark(a)" 
+                                                    [disabled]="!isAdmin"
+                                                    title="Add this Benchmark">
+                                                    <i class="bi bi-plus"></i>
+                                                </button>
+                                            </td>
+                                            <td class="text-center">
+                                                <button *ngIf="!!a.service" type="button" class="btn btn-sm btn-primary" 
+                                                    (click)="editBenchmark(a)" 
+                                                    title="Edit this Benchmark configuration">
+                                                    <span>Yes</span>
+                                                </button>
+                                                <span *ngIf="!a.service">No</span>
+                                            </td>
+                                            <td class="bm-check-success text-center">
+                                                <i *ngIf="a.isDefault" class="bi bi-check-square-fill text-success"></i>
+                                                <span *ngIf="!a.isDefault">&nbsp;</span>
+                                            </td>
+                                            <td>
+                                                {{a.dataYear}}
+                                            </td>
+                                            <td>{{a.availableForService}}</td>
+                                            <td>
+                                                {{a.name}}
+                                            </td>
+                                            <td>
+                                                {{a.vendor}}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>    
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </ng-container>
+
+        <!-- Tracking Configuration -->
+        <div class="row mt-4" *ngIf="!!currentAuthority?.isActive">
+            <div class="d-flex">
+                <button class="btn btn-sm btn-outline-primary" type="button" 
+                    (click)="hideTracking=!hideTracking" 
+                    [disabled]="!currentAuthority"
+                    [attr.aria-expanded]="!hideTracking" 
+                    title="Toggle Tracking Configuration">
+                    <i *ngIf="hideTracking" class="bi bi-chevron-right"></i>
+                    <i *ngIf="!hideTracking" class="bi bi-chevron-down"></i>
+                </button>
+                <!-- Tracking Configuration Expand Section -->
+                <div class="card col">
+                    <div class="card-header d-flex justify-content-between">
+                        <h6 class="ms-2">Tracking Configuration <span *ngIf="currentAuthority?.key==='tx'">(customization not available for TDI)</span></h6>
+                        <button *ngIf="!hideTracking&&isAdmin&&currentAuthority?.key!=='tx'" 
+                            type="button" (click)="addRecord()" [disabled]="!currentAuthority"
+                            class="btn btn-sm btn-success" title="Add Tracking Configuration">
+                            <i class="bi bi-plus"></i> Add Tracking Configuration
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4" *ngIf="!!currentAuthority && !!currentAuthority?.isActive">
+            <div class="col">
+                <div class="card" [(ngbCollapse)]="hideTracking" #collapseTracking="ngbCollapse">
+                    <div class="card-body">
+                        <div *ngIf="currentAuthority.key!=='tx'" class="row justify-content-between mb-1">
+                            <div class="col">
+                                <div class="col table-responsive">
+                                    <table class="table table-sm font-small table-no-wrap table-normal-head mb-0 bb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>...</th>
+                                                <th>Order</th>
+                                                <th>Hidden</th>
+                                                <th>Column</th>
+                                                <th>Label
+                                                    <!-- <i class="bi bi-question-circle-fill" title="Inactive users cannot search or view cases."></i> -->
+                                                </th>
+                                                <th>Field Name</th>
+                                                <th>Data Type</th>
+                                                <th>Field Context (scope)</th>
+                                                <th>Sync To Field</th>
+                                                <th>Reference Field</th>
+                                                <th>Units</th>
+                                                <th>Unit Type</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let u of currentAuthority.trackingDetails;let i = index">
+                                                <td class="d-flex justify-content-start">
+                                                    <button *ngIf="canEdit" type="button" class="btn btn-sm btn-danger" 
+                                                        (click)="deleteRecord(u)"
+                                                        [disabled]="!!authorityForm?.dirty" 
+                                                        title="Delete">
+                                                        <i class="bi bi-trash3-fill"></i>
+                                                    </button>
+                                                    <!-- ||currentAuthority.key === 'nsa' -->
+                                                    <button *ngIf="canEdit" type="button" class="btn btn-sm btn-success ms-1" 
+                                                        (click)="editRecord(u)"
+                                                        [disabled]="!!authorityForm?.dirty" 
+                                                        title="Edit">
+                                                        <i class="bi bi-pencil-square"></i>
+                                                    </button>
+                                                    <!-- ||currentAuthority.key === 'nsa' -->
+                                                    <button type="button" class="btn btn-sm btn-warning ms-1" 
+                                                        (click)="decOrder(u)"       
+                                                        [disabled]="i===0||!!authorityForm?.dirty" 
+                                                        title="Move Up">
+                                                        <i class="bi bi-dash-circle"></i>
+                                                    </button>
+                                                    <!-- ||currentAuthority.key === 'nsa' -->
+                                                    <button type="button" class="btn btn-sm btn-success ms-1" 
+                                                        (click)="incOrder(u)"
+                                                        [disabled]="i===currentAuthority.trackingDetails.length-1||!isAdmin||!!authorityForm?.dirty"
+                                                        title="Move Down">
+                                                        <i class="bi bi-plus-circle"></i>
+                                                    </button>
+                                                </td>
+                                                <td>
+                                                    {{u.order}}
+                                                </td>
+                                                <td>
+                                                    {{u.isHidden?'Y':'N'}}
+                                                </td>
+                                                <td>
+                                                    {{u.displayColumn}}
+                                                </td>
+                                                <td>
+                                                    {{u.trackingLabel}}
+                                                </td>
+                                                <td>
+                                                    {{u.trackingFieldName}}
+                                                </td>
+                                                <td>
+                                                    {{u.trackingFieldType}}
+                                                </td>
+                                                <td>
+                                                    {{AuthorityTrackingDetailScope[u.scope]}}
+                                                </td>
+                                                <td>
+                                                    {{u.mapToCaseField}}
+                                                </td>
+                                                <td class="no-wrap">
+                                                    {{u.referenceFieldName}}
+                                                </td>
+                                                <td class="no-wrap">
+                                                    {{u.unitsFromReference}}
+                                                </td>
+                                                <td class="col-notes">
+                                                    {{u.unitsType}}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Tracking Config Modal -->
+<ng-template #addDialog let-modal>
+    <div class="modal-header text-light bg-success">
+        <h5 class="modal-title">{{isEditing?'Edit':'Add'}} Tracking Configuration</h5>
+        <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()" aria-label="Cancel">
+        </button>
+    </div>
+    <div class="modal-body">
+        <!-- ...to be used on all cases not already locked into formal arbitration or closed.-->
+        <form #trackingForm="ngForm" id="trackingForm" novalidate="novalidate">
+            <!-- trackingLabel -->
+            <div class="mb-3">
+                <label class="form-label">* Tracking Label</label>
+                <input type="text" required (focus)="selectAll($event)" class="form-control form-control-sm"
+                    [(ngModel)]="newTracking.trackingLabel" aria-label="Tracking Label" maxlength="50"
+                    name="trackingLabel" title="Label text to display next to the field.">
+            </div>
+            <!-- trackingFieldName -->
+            <div class="mb-3">
+                <label class="form-label">* Tracking Field Name</label>
+                <input type="text" required 
+                    class="form-control form-control-sm" 
+                    (change)="trackingFieldNameChanged()"
+                    pattern="[A-Za-z]*"
+                    [disabled]="isEditing" (focus)="selectAll($event)" aria-label="Tracking FieldName"
+                    title="Fieldname to use for calculations. Cannot contain spaces!"
+                    [(ngModel)]="newTracking.trackingFieldName" maxlength="50" name="trackingFieldName">
+            </div>
+            <!-- Tracking Datatype -->
+            <div class="mb-3">
+                <label class="form-label">* Tracking Datatype</label>
+                <select class="form-select form-select-sm" name="trackingFieldType"
+                    [(ngModel)]="newTracking.trackingFieldType" aria-label="Tracking Datatype"
+                    title="The type of data stored in the tracking field. Only Date is supported at this time.">
+                    <option value="" disabled>Select...</option>
+                    <option value="Date" selected>Date</option>
+                </select>
+            </div>
+            <!-- Related Record Type -->
+            <div class="mb-3">
+                <label class="form-label">Field Context (Scope)</label>
+                <select class="form-select form-select-sm" name="scope"
+                    [(ngModel)]="newTracking.scope" aria-label="Field Context"
+                    title="The context (type of record) applicable to this tracking field, e.g. Arbitrator assignment only happens on Disputes, not Claims.">
+                    <option value="" disabled>Select...</option>
+                    <option [ngValue]="0" selected>All</option>
+                    <option [ngValue]="1" selected title="ArbitrationCase record only">Claim</option>
+                    <option [ngValue]="2" selected title="AuthorityDispute record only">Dispute</option>
+                </select>
+            </div>
+            <!-- Map To Case Field - removed due to people not understanding that it causes a tracking field to overwrite a field on the ArbitrationCase object -->
+            <!--
+            <div class="mb-3">
+                <label for="mediatorFixedFee" class="form-label">Map To Case Field</label>
+                <input type="text" class="form-control form-control-sm" 
+                    pattern="[A-Za-z]*"
+                    (focus)="selectAll($event)" aria-label="Map To Case Field"
+                    title="Fieldname on the main Case record that receives a copy of this value. Cannot contain spaces!"
+                    [(ngModel)]="newTracking.mapToCaseField" 
+                    maxlength="50" name="mapToCaseField">
+            </div>
+            -->
+            <!-- Reference Field Name -->
+            <div class="mb-3">
+                <label for="mediatorFixedFee" class="form-label">Reference Field Name</label>
+
+                <select class="form-select form-select-sm" name="referenceFieldName"
+                    [(ngModel)]="newTracking.referenceFieldName" aria-label="Reference Field Name"
+                    title="Another field to use as a basis for calculating this tracking configuration value, e.g. 5 days from StartDate.">
+                    <option value="" disabled>Select...</option>
+                    <option *ngFor="let f of getReferenceFieldNames()">{{f}}</option>
+                </select>
+            </div>
+            <!-- Units From Reference -->
+            <div class="mb-3">
+                <label class="form-label">Units From Reference</label>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="newTracking.unitsFromReference"
+                    [required]="!!newTracking.referenceFieldName" (focus)="selectAll($event)" name="unitsFromReference"
+                    title="How many units (e.g. days) to add or subtract from the Reference Field.">
+            </div>
+            <!-- Reference Unit Type -->
+            <div class="mb-3">
+                <label class="form-label">Reference Unit Type</label>
+                <select type="text" class="form-select form-select-sm" name="unitsType"
+                    [(ngModel)]="newTracking.unitsType" [required]="!!newTracking.unitsFromReference"
+                    title="Select the type of unit represented by Units From Reference.">
+                    <option value="" disabled selected>Select...</option>
+                    <option value="Days">Calendar Days</option>
+                    <option value="Workdays">Workdays</option>
+                </select>
+            </div>
+            <!-- Help Text -->
+            <div class="mb-3">
+                <label class="form-label">Help Text</label>
+                <textarea rows="2" maxlength="255" class="form-control form-control-sm"
+                    [(ngModel)]="newTracking.helpText" name="helpText" aria-label="Help Text"
+                    title="Up to 255 characters of help text the user will see when hovering over an info icon">
+                </textarea>
+            </div>
+            <!-- Is Hidden -->
+            <div class="input-group mb-2">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" 
+                        type="checkbox" 
+                        [(ngModel)]="newTracking.isHidden" 
+                        name="isHidden" 
+                        id="isHidden"
+                        aria-label="Is Customer Active">
+                    <label class="form-check-label" for="isHidden">Is Hidden</label>
+                </div>
+            </div>
+            <!-- Display Column -->
+            <div class="mb-3">
+                <label class="form-label">Display Column</label>
+                <select type="text" class="form-select form-select-sm" 
+                    name="displayColumn" required
+                    [(ngModel)]="newTracking.displayColumn" 
+                    title="Select the preferred location to display this tracking field.">
+                    <option value="" disabled selected>Select...</option>
+                    <option value="Left">Left</option>
+                    <option value="Right">Right</option>
+                </select>
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()" aria-label="Cancel">Cancel</button>
+        <button type="button" class="btn btn-success" [disabled]="!isAdmin||!trackingForm.valid" (click)="modal.close()"
+            aria-label="Add Formula Variables">{{isEditing?'Save':'Add'}} Tracking</button>
+    </div>
+</ng-template>
+
+<!-- Manage Benchmarks -->
+<ng-template #editDialog let-modal>
+    <div class="modal-header text-light bg-success">
+        <div class="d-flex justify-content-between flex-grow-1">
+            <h5 class="modal-title">{{isEditing?'Edit':'Add'}} Benchmark Configuration</h5>
+            <h5 class="modal-title h-margin-auto">{{$any(newBenchmark).name}}</h5>
+        </div>
+        <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()" aria-label="Cancel">
+        </button>
+    </div>
+    <div class="modal-body">
+        <!-- ...to be used on all cases not already locked into formal arbitration or closed.-->
+        <form #benchmarkForm="ngForm" id="benchmarkForm" novalidate="novalidate">
+            <div class="row mb-3">
+                <div class="col-lg-8">
+                    <!-- Service -->
+                    <div class="input-group input-group-sm mb-3">
+                        <span class="input-group-text col-4">Service</span>
+                        <span class="input-group-text col bg-light">{{newBenchmark.service}}</span>
+                    </div>
+                
+                    <!-- Is Default -->
+                    <div class="input-group">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" 
+                                type="checkbox" 
+                                [(ngModel)]="newBenchmark.isDefault" 
+                                name="isDefault" 
+                                id="isDefault"
+                                title="Is this a default benchmark that should always appear on the Calculations?"
+                                aria-label="Is Default">
+                            <label class="form-check-label" for="isDefault">Is Default</label>
+                        </div>
+                    </div>
+                    <!-- Payor Allowed -->
+                    <div class="input-group input-group-sm mb-2">
+                        <span class="input-group-text col-md-6">* Payor Allowed field (50th)</span>
+                        <select class="form-select form-select-sm" 
+                            required
+                            name="payorAllowedField" 
+                            [(ngModel)]="newBenchmark.payorAllowedField" 
+                            aria-label="Payor Allowed Field"
+                            title="Single benchmark field to map into the CPT's fh50thPercentile column.">
+                            <option value="" selected disabled>Select...</option>
+                            <option *ngFor="let a of allFieldsForAllowed" [value]="a">{{a}}</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Provider Charges -->
+                    <div class="input-group input-group-sm mb-2">
+                        <span class="input-group-text col-md-6">* Provider Charges field (80th)</span>
+                        <select class="form-select form-select-sm" 
+                            required
+                            name="providerChargesField" 
+                            [(ngModel)]="newBenchmark.providerChargesField" 
+                            aria-label="Provider Charges Field"
+                            title="Single benchmark field to map into the CPT's fh80thPercentile column.">
+                            <option value="" selected disabled>Select...</option>
+                            <option *ngFor="let a of allFieldsForCharges" [value]="a">{{a}}</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <!-- Additional Allowed -->
+                    <div class="input-group input-group-sm mb-2">
+                        <span class="input-group-text col-4">Additional Allowed Fields</span>
+                        <input type="text" required (focus)="selectAll($event)" 
+                            class="form-control form-control-sm"
+                            disabled
+                            [(ngModel)]="newBenchmark.additionalAllowedFields" 
+                            aria-label="Additional Allowed" 
+                            maxlength="255"
+                            name="additionalAllowedFields" 
+                            title="Delimited list of additional benchmarks to substitute for Payor Allowed during analytics.">
+                    </div>
+
+                    <!-- Additional Charges -->
+                    <div class="input-group input-group-sm mb-2">
+                        <span class="input-group-text col-4">Additional Charges Fields</span>
+                        <input type="text" required (focus)="selectAll($event)" 
+                            class="form-control form-control-sm"
+                            disabled
+                            [(ngModel)]="newBenchmark.additionalChargesFields" 
+                            aria-label="Form Labels" 
+                            maxlength="255"
+                            name="additionalChargesFields" 
+                            title="Delimited list of additional benchmarks to substitute for Provider Charges during analytics.">
+                    </div>
+                </div>
+            </div>
+            
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()" aria-label="Cancel">Cancel</button>
+        <button type="button" class="btn btn-success" [disabled]="!isAdmin||!benchmarkForm.valid" (click)="modal.close()"
+            aria-label="Add Formula Variables">{{isEditing?'Save':'Add'}} Benchmark</button>
+    </div>
+</ng-template>
+
+<!-- Add Payor Group Exclusion Modal -->
+<ng-template #payorGroupModal let-modal>
+
+    <div class="modal-header text-light bg-success">
+        <h5 class="modal-title">Add Payor Group Exclusion</h5>
+        <button type="button" class="btn btn-close btn-close-white" 
+            (click)="modal.dismiss()" 
+            aria-label="Close">
+        </button>
+    </div>
+    <div class="modal-body">
+         <!-- Payor -->
+         <div class="input-group input-group-sm">
+            <span class="input-group-text col-5">Select a Payor...</span>
+            <select class="form-select form-select-sm me-2" 
+                name="newPayor" 
+                [(ngModel)]="currentPayor"
+                (change)="payorChange()" aria-label="Payor"
+                title="Payor is typically the insurance company, healthcare plan or responsible party">
+                <option [ngValue]="null" selected disabled>Select...</option>
+                <option *ngFor="let s of allPayors" [ngValue]="s">{{s.name}}</option>
+            </select>
+        </div>
+        <!-- Payor Group Number -->
+        <div class="input-group input-group-sm mt-2">
+            <span class="input-group-text col-5">* Payor Group Number</span>
+            <select class="form-select form-select-sm me-2" 
+                name="newPayorGroupNumber" 
+                [(ngModel)]="newPayorGroupNumber"
+                #newPGNumber="ngModel"
+                aria-label="Payor Group Number"
+                title="Payor Group Number to exclude from a juridiction">
+                <option [ngValue]="''" selected disabled>Select...</option>
+                <option *ngFor="let s of currentPayor?.payorGroups" [ngValue]="s.groupNumber">{{s.groupNumber}}</option>
+            </select>
+        </div>
+        <!-- Is NSA Ineligible -->
+        <div class="input-group input-group-sm mt-2">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" 
+                    [(ngModel)]="newIsNSAIneligible"
+                    name="newIsNSAIneligible" 
+                    id="newIsNSAIneligible" 
+                    title="Is this group INELIGIBLE for NSA arbitration?"
+                    aria-label="Is Ineligible for NSA">
+                <label class="form-check-label" for="newIsNSAIneligible">Is Ineligible for NSA?</label>
+            </div>
+        </div>
+        <!-- Is State Ineligible -->
+        <div class="input-group input-group-sm mt-2">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" 
+                    [(ngModel)]="newIsStateIneligible"
+                    name="newIsStateIneligible" 
+                    id="newIsStateIneligible" 
+                    title="Is this group INELIGIBLE for State arbitration?"
+                    aria-label="Is Ineligible for State">
+                <label class="form-check-label" for="isDefault">Is Ineligible for State?</label>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" [disabled]="!newPayorGroupNumber||(!newIsNSAIneligible&&!newIsStateIneligible)" 
+            class="btn btn-sm btn-success"
+            (click)="modal.close()" title="Add Payor Group">
+            <i class="bi bi-save"></i> Add Group
+        </button>
+    </div>
+</ng-template>
+
+<!-- Results Modal -->
+<ng-template #loadResult let-modal>
+
+    <div class="modal-header text-light" [ngClass]="{'bg-success':!isError,'bg-danger':isError}">
+        <h5 class="modal-title">{{loadTitle}}</h5>
+        <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body scroll-y-300" [innerHTML]="loadMessage">
+    </div>
+
+</ng-template>

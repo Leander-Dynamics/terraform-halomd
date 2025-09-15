@@ -1,0 +1,1 @@
+start E:/Work/Projects/ArbitrationPOC/mpnotify.exe GenerateBriefAssets

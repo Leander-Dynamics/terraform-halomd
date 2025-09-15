@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MPNotify": {
+      "commandName": "Project",
+      "commandLineArgs": "RebuildNSANotifications"
+    }
+  }
+}

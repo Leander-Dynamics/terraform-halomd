@@ -1,0 +1,88 @@
+<div class="modal-header bg-info text-light">
+    <h4 class="modal-title">{{name}} an Offer</h4>
+    <button type="button" 
+    (click)="activeModal.dismiss('dismiss click')"
+    class="btn-close"
+    title="Close">
+  </button>
+</div>
+        
+<div class="modal-body">
+    <h6 class="bg-warning p-2" *ngIf="isOfferLow()">The offer you entered is below the minimum suggested provider offer.</h6>
+    <form #offerForm="ngForm" id="ngForm" novalidate="novalidate">
+        <div class="mb-3 row">
+            <div class="col">
+                <label class="form-label">* Offer Type</label>
+                <div>
+                    <div class="form-check form-check-inline" *ngFor="let t of allOfferTypes;let i = index">
+                        <input class="form-check-input" 
+                            type="radio" 
+                            [attr.disabled]="true"
+                            [(ngModel)]="offerType" 
+                            name="offerType" 
+                            id="offerType{{i}}" 
+                            [value]="t">
+                        <label class="form-check-label" for="offerType{{i}}">{{t}}</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col text-center">
+                <label class="form-label">Was Offer Accepted?</label>
+                <div *ngIf="!wasOfferAccepted">No</div>
+                <div *ngIf="wasOfferAccepted">Yes</div>
+                <!-- <div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                            [(ngModel)]="wasOfferAccepted"
+                            disabled
+                            name="wasOfferAccepted"
+                            aria-label="Was Offer Accepted?">
+                        <label class="form-check-label">Accepted</label>
+                    </div>
+                </div> -->
+            </div>
+        </div>
+        
+        <p *ngIf="hasSettlements" class="small text-success"><i>The current claim has one or more settlements</i></p>
+
+        <div class="mb-3" *ngIf="offerType==='Provider'">
+            <label class="form-label">NSA Suggested Offer</label>
+            <span class="input-group-text col bg-disabled overflow-hidden">{{fh80 | currency}}</span>
+
+        </div>
+        <div class="mb-3">
+            <label for="offerAmount" class="form-label">* Offer Amount</label>
+            <input type="text" required  (focus)="selectAll($event)" 
+            pattern="^(0*[1-9][0-9]*(\.[0-9]+)?|0+\.[0-9]*[1-9][0-9]*)$"
+            class="form-control form-control-sm" 
+            [(ngModel)]="offerAmount" name="offerAmount" id="offerAmount">
+        </div>
+        <div class="mb-3">
+            <label for="offerSource" class="form-label">* Offer Source {{offerSource}}</label>
+            <select class="form-select" [(ngModel)]="offerSource"
+                required name="offerSource" 
+                aria-label="Offer Source" 
+                title="How the offer was communicated">
+                    <option selected disabled [ngValue]="null">Select...</option>
+                    <option *ngFor="let n of allOfferSources" [ngValue]="n">{{n}}</option>
+                  </select>
+        </div>
+        <div class="mb-3">
+            <label for="notes" class="form-label">{{!!offerId?'* ':''}}Notes</label>
+            <textarea class="form-control form-control-sm" 
+            [(ngModel)]="notes" name="notes" id="notes" rows="3"
+            [required]="offerId>0" minlength="5" pattern="^\S.*[^\s]$"
+            title="Notes about this Offer or edits to an Offer"></textarea>
+            <p *ngIf="!!offerId" class="text-danger"><i>(Editing an existing Offer requires a Note)</i></p>
+        </div>
+    </form>
+</div>
+
+<div class="modal-footer">
+    <button type="button" [disabled]="!offerForm.form.valid" 
+    class="btn btn-sm btn-success" 
+    (click)="activeModal.close()"
+    title="Add Offer">
+    <i class="bi bi-save"></i> {{!!offerId?'Update':'Add'}} Offer
+  </button>
+</div>
