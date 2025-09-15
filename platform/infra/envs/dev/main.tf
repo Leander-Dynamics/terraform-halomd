@@ -6,6 +6,7 @@ locals {
   aks_name          = "aks-${var.project_name}-${var.env_name}"
   kv_name           = "kv-${var.project_name}-${var.env_name}"
   log_name          = "log-${var.project_name}-${var.env_name}"
+  appi_name         = var.app_insights_name != "" ? var.app_insights_name : "appi-${var.project_name}-${var.env_name}"
   plan_name          = "asp-${var.project_name}-${var.env_name}"
   func_cron_name     = "func-cron-${var.project_name}-${var.env_name}"
   func_external_name = "func-ext-${var.project_name}-${var.env_name}"
@@ -51,6 +52,7 @@ module "aks" {
   location            = var.location
   node_count          = var.aks_node_count
   vm_size             = var.aks_vm_size
+  log_analytics_workspace_id = module.app_insights.log_analytics_workspace_id
   tags                = var.tags
 }
 
@@ -84,13 +86,13 @@ module "kv" {
   tags                          = var.tags
 }
 
-module "logs" {
-  source              = "../../Azure/modules/logs-insights"
-  resource_group_name = var.app_insights_rg
-  location            = var.location
-  log_name            = local.log_name
-  appi_name           = var.app_insights_name
-  tags                = var.tags
+module "app_insights" {
+  source                       = "../../Azure/modules/app-insights"
+  resource_group_name          = coalesce(var.app_insights_resource_group_name, module.rg.name)
+  location                     = var.location
+  log_analytics_workspace_name = local.log_name
+  application_insights_name    = local.appi_name
+  tags                         = var.tags
 }
 
 module "func_cron" {
@@ -101,7 +103,8 @@ module "func_cron" {
   location                       = var.location
   plan_sku                       = var.func_plan_sku
   runtime                        = var.function_cron_runtime
-  app_insights_connection_string = var.app_insights_connection_string
+  app_insights_connection_string = module.app_insights.application_insights_connection_string
+  log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
   tags                           = var.tags
 }
 
@@ -113,7 +116,8 @@ module "func_external" {
   location                       = var.location
   plan_sku                       = var.func_plan_sku
   runtime                        = var.function_external_runtime
-  app_insights_connection_string = var.app_insights_connection_string
+  app_insights_connection_string = module.app_insights.application_insights_connection_string
+  log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
   tags                           = var.tags
 }
 
@@ -125,7 +129,8 @@ module "web" {
   location                       = var.location
   plan_sku                       = var.web_plan_sku
   dotnet_version                 = var.web_dotnet_version
-  app_insights_connection_string = var.app_insights_connection_string
+  app_insights_connection_string = module.app_insights.application_insights_connection_string
+  log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
   tags                           = var.tags
 }
 
@@ -138,7 +143,8 @@ module "arbitration_app" {
   plan_sku                       = var.arbitration_plan_sku
   runtime_stack                  = var.arbitration_runtime_stack
   runtime_version                = var.arbitration_runtime_version
-  app_insights_connection_string = var.app_insights_connection_string
+  app_insights_connection_string = module.app_insights.application_insights_connection_string
+  log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
   connection_strings             = var.arbitration_connection_strings
   app_settings                   = var.arbitration_app_settings
   run_from_package               = var.arbitration_run_from_package
@@ -152,4 +158,16 @@ module "storage_data" {
   resource_group_name = module.rg.name
   location            = var.location
   tags                = var.tags
+}
+
+output "app_insights_connection_string" {
+  value = module.app_insights.application_insights_connection_string
+}
+
+output "app_insights_instrumentation_key" {
+  value = module.app_insights.application_insights_instrumentation_key
+}
+
+output "log_analytics_workspace_id" {
+  value = module.app_insights.log_analytics_workspace_id
 }

@@ -39,13 +39,13 @@ module "dns_zone" {
   cname_records       = var.dns_cname_records
 }
 
-module "logs" {
-  source              = "../../Azure/modules/logs-insights"
-  resource_group_name = module.rg.name
-  location            = var.location
-  log_name            = local.log_name
-  appi_name           = local.appi_name
-  tags                = var.tags
+module "app_insights" {
+  source                       = "../../Azure/modules/app-insights"
+  resource_group_name          = module.rg.name
+  location                     = var.location
+  log_analytics_workspace_name = local.log_name
+  application_insights_name    = local.appi_name
+  tags                         = var.tags
 }
 
 module "kv" {
@@ -75,8 +75,7 @@ module "aks" {
   location            = var.location
   node_count          = var.aks_node_count
   vm_size             = var.aks_vm_size
-  log_analytics_ws_id = module.logs.log_analytics_workspace_id
-  acr_id              = var.enable_acr && var.enable_aks ? module.acr[0].id : ""
+  log_analytics_workspace_id = module.app_insights.log_analytics_workspace_id
   tags                = var.tags
 }
 
@@ -88,7 +87,8 @@ module "web" {
   location                       = var.location
   plan_sku                       = var.web_plan_sku
   dotnet_version                 = var.web_dotnet_version
-  app_insights_connection_string = module.logs.app_insights_connection_string
+  app_insights_connection_string = module.app_insights.application_insights_connection_string
+  log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
   tags                           = var.tags
 }
 
@@ -101,7 +101,8 @@ module "arbitration_app" {
   plan_sku                       = var.arbitration_plan_sku
   runtime_stack                  = var.arbitration_runtime_stack
   runtime_version                = var.arbitration_runtime_version
-  app_insights_connection_string = module.logs.app_insights_connection_string
+  app_insights_connection_string = module.app_insights.application_insights_connection_string
+  log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
   connection_strings             = var.arbitration_connection_strings
   app_settings                   = var.arbitration_app_settings
   run_from_package               = var.arbitration_run_from_package
@@ -116,7 +117,8 @@ module "func_external" {
   location                       = var.location
   plan_sku                       = var.func_plan_sku
   runtime                        = var.function_external_runtime
-  app_insights_connection_string = module.logs.app_insights_connection_string
+  app_insights_connection_string = module.app_insights.application_insights_connection_string
+  log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
   tags                           = var.tags
 }
 
@@ -128,7 +130,8 @@ module "func_cron" {
   location                       = var.location
   plan_sku                       = var.func_plan_sku
   runtime                        = var.function_cron_runtime
-  app_insights_connection_string = module.logs.app_insights_connection_string
+  app_insights_connection_string = module.app_insights.application_insights_connection_string
+  log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
   tags                           = var.tags
 }
 
@@ -176,3 +179,6 @@ output "storage_data_account_name"  { value = var.enable_storage ? module.storag
 output "sql_server_name"            { value = var.enable_sql ? module.sql[0].server_name : null }
 output "sql_database_id"            { value = var.enable_sql ? module.sql[0].database_id : null }
 output "aad_app_client_id"          { value = var.enable_aad_app ? module.aad_app[0].client_id : null }
+output "app_insights_connection_string"        { value = module.app_insights.application_insights_connection_string }
+output "app_insights_instrumentation_key"      { value = module.app_insights.application_insights_instrumentation_key }
+output "log_analytics_workspace_id"           { value = module.app_insights.log_analytics_workspace_id }
