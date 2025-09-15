@@ -11,9 +11,9 @@ variable "replication_type" {
 }
 
 variable "allow_blob_public_access" {
-  description = "Controls whether anonymous public access to blob data is permitted."
-  type    = bool
-  default = false
+  description = "When true, anonymous clients can read container and blob data; false disables all anonymous access."
+  type        = bool
+  default     = false
 }
 
 variable "min_tls_version" {
