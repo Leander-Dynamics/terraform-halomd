@@ -1,6 +1,6 @@
 
 resource_group_name  = "staging-eus2-ops-rg-1"
-storage_account_name = "stagingeeus2terraform"
+storage_account_name = "deveus2terraform"
 container_name       = "arbit"
 key                  = "arbit/stage.tfstate"
 use_azuread_auth     = true
