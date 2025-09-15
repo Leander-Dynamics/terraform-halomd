@@ -28,13 +28,7 @@ stages:
   dependsOn: build
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   variables:
-  - name: webAppName
-    value: ''
-  - name: appSettingsJson
-    value: ''
-  - name: connectionStringsJson
-    value: ''
-  - group: arbitration-app-dev  # optional variable group for dev-specific settings
+  - group: arbitration-app-dev  # provides webAppName/appSettingsJson/connectionStringsJson
   jobs:
   - template: .ado/templates/arbitration-deploy.yml
     parameters:
@@ -48,13 +42,7 @@ stages:
   dependsOn: deploy_dev
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   variables:
-  - name: webAppName
-    value: ''
-  - name: appSettingsJson
-    value: ''
-  - name: connectionStringsJson
-    value: ''
-  - group: arbitration-app-stage  # optional variable group for stage-specific settings
+  - group: arbitration-app-stage  # provides webAppName/appSettingsJson/connectionStringsJson
   jobs:
   - template: .ado/templates/arbitration-deploy.yml
     parameters:
@@ -68,13 +56,7 @@ stages:
   dependsOn: deploy_stage
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   variables:
-  - name: webAppName
-    value: ''
-  - name: appSettingsJson
-    value: ''
-  - name: connectionStringsJson
-    value: ''
-  - group: arbitration-app-prod  # optional variable group for prod-specific settings
+  - group: arbitration-app-prod  # provides webAppName/appSettingsJson/connectionStringsJson
   jobs:
   - template: .ado/templates/arbitration-deploy.yml
     parameters:
