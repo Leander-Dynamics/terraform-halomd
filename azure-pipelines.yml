@@ -1,6 +1,12 @@
 # Multi-stage ADO pipeline (PR -> Validate & Plan; merge -> Apply dev -> gated stage/prod)
 # Includes AKV-driven secrets and optional temporary IP allow-listing for hosted agents.
 
+variables:
+  - group: terraform-global-common
+  - group: terraform-dev        # for Validate & Plan dev
+  - group: terraform-stage      # used during Plan_All and Apply_Stage
+  - group: terraform-prod       # used during Plan_All and Apply_Prod
+
 trigger:
   branches: { include: [ main ] }
   paths: { include: [ 'platform/infra/**', '.ado/**' ] }
@@ -10,10 +16,6 @@ pr:
   paths: { include: [ 'platform/infra/**', '.ado/**' ] }
 
 pool: { vmImage: 'ubuntu-latest' }
-
-variables:
-  TF_VERSION: '1.7.5'
-  TF_LOCK_TIMEOUT: '20m'
 
 stages:
 - stage: Validate
