@@ -52,18 +52,6 @@ variable "kv_public_network_access" {
   default     = true
 }
 
-variable "enable_aks" {
-  description = "Flag to enable Azure Kubernetes Service provisioning."
-  type        = bool
-  default     = false
-}
-
-variable "enable_storage" {
-  description = "Flag to provision the ancillary storage account resources."
-  type        = bool
-  default     = false
-}
-
 # -------------------------
 # Networking
 # -------------------------

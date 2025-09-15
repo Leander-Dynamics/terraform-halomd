@@ -66,9 +66,7 @@ app_service_connection_strings = {
 # -------------------------
 # Feature flags
 # -------------------------
-enable_aks      = false
 enable_acr      = false
-enable_storage  = false
 enable_sql      = true
 kv_public_network_access = true
 
