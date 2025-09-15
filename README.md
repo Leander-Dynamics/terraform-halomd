@@ -6,6 +6,7 @@ This repository contains:
 - **Azure DevOps CI/CD** under `.ado/` (reusable templates consumed by the multi-stage pipeline).
 - **Bootstrap scripts** for Terraform state.
 - **Docs** for setup, naming, and migration.
+- **Angular client developers**: see [`Arbitration/MPArbitration/ClientApp/README.md`](Arbitration/MPArbitration/ClientApp/README.md) for project-specific guidance.
 
 > **Posture**: AKS/ACR are present as modules but **disabled by default**. Optional **Storage** and **SQL** modules exist and are **off by default**. Key Vault public access is **toggleable**.
 
