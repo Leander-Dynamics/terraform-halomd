@@ -11,7 +11,7 @@ This document explains **how our Azure DevOps (ADO) CI/CD YAML works**, step‑b
 - **Stage** and **Prod** applies are **gated by Environment approvals** (in ADO → *Pipelines → Environments*) **in addition** to PR review.  
 - The pipeline **applies the exact `.tfplan` artifact** that was generated earlier, ensuring the code reviewed is exactly what gets deployed.
 
-> The pipeline is implemented in **Bash-only** using `AzureCLI@2` (no Terraform marketplace tasks). A template-based variant exists under `.ado/templates/*`; a single-file multi-stage pipeline is at the repository root as `azure-pipelines.yml` (or `.ado/pipelines/terraform-multi.yml`).
+> The pipeline is implemented in **Bash-only** using `AzureCLI@2` (no Terraform marketplace tasks). The multi-stage pipeline lives at `azure-pipelines.yml` and composes the reusable building blocks under `.ado/templates/*`.
 
 ---
 
@@ -20,11 +20,6 @@ This document explains **how our Azure DevOps (ADO) CI/CD YAML works**, step‑b
 ```
 azure-pipelines.yml                  # Multi-stage pipeline (entry point)  ← Use this
 .ado/
-  pipelines/
-    terraform-multi.yml             # Same as root pipeline; alternative entry
-    terraform-dev.yml               # Per-env pipeline (dev) using templates
-    terraform-stage.yml             # Per-env pipeline (stage) using templates
-    terraform-prod.yml              # Per-env pipeline (prod) using templates
   templates/
     tf-validate.yml                 # fmt + init/validate (parameter: envName)
     tf-plan.yml                     # plan (publishes tfplan-<env>.tfplan artifact)
@@ -200,12 +195,6 @@ Terraform doesn’t “roll back”; you **roll forward** with another change. O
 | `Backend not found` | Wrong RG/SA/container in `backend.tfvars` | Correct names; ensure resources exist. |
 | `Provider version` errors | Agent downloads wrong TF or provider | Keep `TF_VERSION` pinned; run `terraform init -reconfigure`. |
 | OIDC login fails | Federated credential claims mismatch | Recreate service connection with Workload Identity and correct repo/project mapping. |
-
----
-
-## Optional: Per‑environment pipelines
-
-We also provide `.ado/pipelines/terraform-*.yml` per environment using the same templates. Use these when different teams own environments or when you need different schedules/policies per env. The logic (plan → apply approved plan) remains the same.
 
 ---
 
@@ -426,7 +415,6 @@ sequenceDiagram
 ## Optional Variants
 
 - **Release tagging**: add a tag (e.g., `vYYYY.MM.DD`) after merge for bookkeeping; the pipeline behavior doesn’t change (still gated by approvals).  
-- **Per‑env pipelines**: if teams are split by environment, use `.ado/pipelines/terraform-*.yml` with the same branching model.
 
 ---
 
