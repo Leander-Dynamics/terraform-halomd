@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MPArbitration\MPArbitration.csproj" />
+    <ProjectReference Include="..\..\Arbitration\MPArbitration\MPArbitration.csproj" />
   </ItemGroup>
 
   <ItemGroup>
