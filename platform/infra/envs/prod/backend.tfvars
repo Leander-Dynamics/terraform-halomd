@@ -4,3 +4,5 @@ storage_account_name = "prodeus2terraform"
 container_name       = "arbit"
 key                  = "arbit/prod.tfstate"
 use_azuread_auth     = true
+subscription_id = "930755b1-ef22-4721-a31a-1b6fbecf7da6"
+tenant_id       = "70750cc4-6f21-4c27-bb0e-8b7e66bcb2dd"
