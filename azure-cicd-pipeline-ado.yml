@@ -9,13 +9,13 @@
 # name to the `envName` parameter values.
 #
 # The remote backend configuration for each environment is derived from
-# variables at runtime.  For the dev and stage environments, the backend
-# resource group is fixed (`dev-eus2-ops-rg-1`).  For production, the
-# resource group follows the pattern `<envName>-<location>-ops-rg-1`.  The
-# storage account name is built as `st<envName>tfstate<location>` and
-# converted to lower case to satisfy Azure naming rules (storage account
-# names may not include dashes).  The container name is `<envName>-tfstate`
-# and may include a dash.  The key is `arbit/<envName>.tfstate`.
+# variables at runtime.  The backend resource group name follows the
+# pattern `rg-<proj>-ops-<env>-<loc>` using the project (default `arbit`),
+# environment and location values.  The storage account name is built as
+# `st<envName>tfstate<location>` and converted to lower case to satisfy
+# Azure naming rules (storage account names may not include dashes).  The
+# container name is `<envName>-tfstate` and may include a dash.  The key is
+# `arbit/<envName>.tfstate`.
 
 # The pipeline has three stages:
 # 1. **Bootstrap** – Ensures the backend resource group, storage account,
@@ -95,19 +95,16 @@ stages:
         scriptLocation: inlineScript
         inlineScript: |
           set -euo pipefail
-          # Compute environment and location strings
+          # Compute environment, location and project strings
           ENV="$(ENV_NAME)"
           LOC_RAW="$(LOCATION)"
-          # Lowercase the location for naming purposes
+          PROJ="${PROJECT:-arbit}"
+          # Lowercase for naming purposes
           LOC="${LOC_RAW,,}"
+          PROJ="${PROJ,,}"
 
-          # Determine the resource group.  Dev and stage share a fixed
-          # group name; prod uses a dynamic pattern.
-          if [[ "${{ parameters.envName }}" == "dev" || "${{ parameters.envName }}" == "stage" ]]; then
-            RG="dev-eus2-ops-rg-1"
-          else
-            RG="${ENV}-${LOC}-ops-rg-1"
-          fi
+          # Build the backend resource group name
+          RG="rg-${PROJ}-ops-${ENV}-${LOC}"
 
           # Construct a compliant storage account name.  Azure requires
           # storage account names to be 3-24 characters, lowercase,
@@ -175,15 +172,13 @@ stages:
         inlineScript: |
           set -euo pipefail
 
-          # Compute environment and location for backend names
+          # Compute environment, location and project for backend names
           ENV="$(ENV_NAME)"
           LOC_RAW="$(LOCATION)"
+          PROJ="${PROJECT:-arbit}"
           LOC="${LOC_RAW,,}"
-          if [[ "${{ parameters.envName }}" == "dev" || "${{ parameters.envName }}" == "stage" ]]; then
-            RG="dev-eus2-ops-rg-1"
-          else
-            RG="${ENV}-${LOC}-ops-rg-1"
-          fi
+          PROJ="${PROJ,,}"
+          RG="rg-${PROJ}-ops-${ENV}-${LOC}"
           SA="st${ENV}tfstate${LOC}"; SA="${SA,,}"
           CONT="${ENV}-tfstate"; CONT="${CONT,,}"
           KEY="arbit/${ENV}.tfstate"
@@ -245,12 +240,10 @@ stages:
           # Compute backend names again (as above)
           ENV="$(ENV_NAME)"
           LOC_RAW="$(LOCATION)"
+          PROJ="${PROJECT:-arbit}"
           LOC="${LOC_RAW,,}"
-          if [[ "${{ parameters.envName }}" == "dev" || "${{ parameters.envName }}" == "stage" ]]; then
-            RG="dev-eus2-ops-rg-1"
-          else
-            RG="${ENV}-${LOC}-ops-rg-1"
-          fi
+          PROJ="${PROJ,,}"
+          RG="rg-${PROJ}-ops-${ENV}-${LOC}"
           SA="st${ENV}tfstate${LOC}"; SA="${SA,,}"
           CONT="${ENV}-tfstate"; CONT="${CONT,,}"
           KEY="arbit/${ENV}.tfstate"
