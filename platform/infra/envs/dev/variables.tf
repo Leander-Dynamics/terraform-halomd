@@ -32,6 +32,39 @@ variable "tags" {
 }
 
 # -------------------------
+# Feature toggles
+# -------------------------
+variable "enable_acr" {
+  description = "Flag to enable Azure Container Registry provisioning."
+  type        = bool
+  default     = false
+}
+
+variable "enable_sql" {
+  description = "Flag to deploy the SQL Serverless resources."
+  type        = bool
+  default     = false
+}
+
+variable "kv_public_network_access" {
+  description = "Allow public network access to the Key Vault."
+  type        = bool
+  default     = true
+}
+
+variable "enable_aks" {
+  description = "Flag to enable Azure Kubernetes Service provisioning."
+  type        = bool
+  default     = false
+}
+
+variable "enable_storage" {
+  description = "Flag to provision the ancillary storage account resources."
+  type        = bool
+  default     = false
+}
+
+# -------------------------
 # Networking
 # -------------------------
 variable "vnet_address_space" {
