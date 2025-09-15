@@ -1,4 +1,6 @@
+using System;
 using MPArbitration.Model;
+using Xunit;
 
 namespace TestArbitApi
 {
