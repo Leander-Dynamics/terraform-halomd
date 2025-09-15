@@ -69,7 +69,7 @@ module "aks" {
 
 module "sql" {
   count                         = var.enable_sql ? 1 : 0
-  source                        = "../../Azure/modules/sql-database"
+  source                        = "../../Azure/modules/sql-serverless"
   server_name                   = local.sql_server_name
   db_name                       = var.sql_db_name
   resource_group_name           = module.rg.name
@@ -189,4 +189,8 @@ output "app_gateway_id" {
 
 output "app_gateway_public_ip_address" {
   value = module.app_gateway.public_ip_address
+
+output "sql_server_fqdn" {
+  value = var.enable_sql ? module.sql[0].server_fqdn : null
+
 }
