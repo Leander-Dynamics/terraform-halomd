@@ -78,7 +78,7 @@ module "sql" {
   administrator_password        = var.sql_admin_password
   public_network_access_enabled = var.sql_public_network_access
   sku_name                      = var.sql_sku_name
-  auto_pause_delay_in_minutes   = var.sql_auto_pause_minutes
+  auto_pause_delay_in_minutes   = var.sql_auto_pause_delay
   max_size_gb                   = var.sql_max_size_gb
   min_capacity                  = var.sql_min_capacity
   max_capacity                  = var.sql_max_capacity
