@@ -14,6 +14,9 @@ locals {
   app_gateway_name     = "agw-${var.project_name}-${var.env_name}"
   arbitration_plan_name = "asp-${var.project_name}-${var.env_name}-arb"
   arbitration_app_name  = "web-${var.project_name}-${var.env_name}-arb"
+  arbitration_plan_sku_effective       = coalesce(nullif(trimspace(coalesce(var.arbitration_plan_sku, "")), ""), "B1")
+  arbitration_runtime_stack_effective  = coalesce(nullif(trimspace(coalesce(var.arbitration_runtime_stack, "")), ""), "dotnet")
+  arbitration_runtime_version_effective = coalesce(nullif(trimspace(coalesce(var.arbitration_runtime_version, "")), ""), "8.0")
   storage_data_name    = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
   sql_server_name      = "sql-${var.project_name}-${var.env_name}"
   aad_app_display      = "aad-${var.project_name}-${var.env_name}"
@@ -46,6 +49,69 @@ module "acr" {
   tags                = var.tags
 }
 
+module "app_service" {
+  source              = "../../Azure/modules/app-service"
+  plan_name           = local.plan_name
+  plan_sku            = var.app_service_plan_sku
+  plan_os_type        = var.app_service_plan_os_type
+  app_name            = var.app_service_fqdn_prefix
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  https_only          = var.app_service_https_only
+  always_on           = var.app_service_always_on
+  app_settings        = var.app_service_app_settings
+  connection_strings  = var.app_service_connection_strings
+  tags                = var.tags
+}
+
+module "app_insights" {
+  source              = "../../Azure/modules/app-insights"
+  resource_group_name = coalesce(var.app_insights_resource_group_name, module.resource_group.name)
+  location            = var.location
+  tags                = var.tags
+}
+
+module "app_service_arbitration" {
+  source                        = "../../Azure/modules/app-service-arbitration"
+  name                          = local.arbitration_app_name
+  plan_name                     = local.arbitration_plan_name
+  plan_sku                      = local.arbitration_plan_sku_effective
+  resource_group_name           = module.resource_group.name
+  location                      = var.location
+  runtime_stack                 = local.arbitration_runtime_stack_effective
+  runtime_version               = local.arbitration_runtime_version_effective
+  app_insights_connection_string = module.app_insights.application_insights_connection_string
+  log_analytics_workspace_id    = module.app_insights.log_analytics_workspace_id
+  connection_strings            = var.arbitration_connection_strings
+  app_settings                  = var.arbitration_app_settings
+  tags                          = var.tags
+}
+
+locals {
+  app_gateway_backend_fqdns = distinct(compact(concat(
+    var.app_gateway_backend_fqdns,
+    [
+      module.app_service.default_hostname,
+      module.app_service_arbitration.default_hostname,
+    ],
+  )))
+
+  dns_hostname_overrides = {
+    for hostname, replacement in {
+      format("%s.azurewebsites.net", var.app_service_fqdn_prefix) = module.app_service.default_hostname
+      format("%s.azurewebsites.net", local.arbitration_app_name)  = module.app_service_arbitration.default_hostname
+    } : lower(hostname) => replacement
+    if replacement != null && replacement != ""
+  }
+
+  dns_cname_records = {
+    for name, cfg in var.dns_cname_records :
+    name => merge(cfg, {
+      record = lookup(local.dns_hostname_overrides, lower(cfg.record), cfg.record)
+    })
+  }
+}
+
 module "app_gateway" {
   source              = "../../Azure/modules/app-gateway"
   name                = local.app_gateway_name
@@ -53,7 +119,7 @@ module "app_gateway" {
   location            = var.location
   subnet_id           = module.network.subnet_ids[var.app_gateway_subnet_key]
   fqdn_prefix         = var.app_gateway_fqdn_prefix
-  backend_fqdns       = var.app_gateway_backend_fqdns
+  backend_fqdns       = local.app_gateway_backend_fqdns
   backend_port        = var.app_gateway_backend_port
   backend_protocol    = var.app_gateway_backend_protocol
   frontend_port       = var.app_gateway_frontend_port
@@ -104,20 +170,13 @@ module "kv" {
   tags                          = var.tags
 }
 
-module "app_insights" {
-  source              = "../../Azure/modules/app-insights"
-  resource_group_name = coalesce(var.app_insights_resource_group_name, module.resource_group.name)
-  location            = var.location
-  tags                = var.tags
-}
-
 module "dns_zone" {
   source              = "../../Azure/modules/dns-zone"
   zone_name           = var.dns_zone_name
   resource_group_name = module.resource_group.name
   tags                = var.tags
   a_records           = var.dns_a_records
-  cname_records       = var.dns_cname_records
+  cname_records       = local.dns_cname_records
 }
 
 # ----------------------
@@ -132,6 +191,16 @@ output "resource_group_name" {
 output "virtual_network_id" {
   description = "ID of the deployed virtual network."
   value       = module.network.virtual_network_id
+}
+
+output "app_service_default_hostname" {
+  description = "Default hostname assigned to the primary App Service."
+  value       = module.app_service.default_hostname
+}
+
+output "arbitration_app_service_default_hostname" {
+  description = "Default hostname assigned to the arbitration App Service."
+  value       = module.app_service_arbitration.default_hostname
 }
 
 output "app_gateway_id" {
