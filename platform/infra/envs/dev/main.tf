@@ -88,12 +88,14 @@ module "app_service_arbitration" {
 }
 
 locals {
+  default_app_gateway_backend_fqdns = compact([
+    module.app_service.default_hostname,
+    module.app_service_arbitration.default_hostname,
+  ])
+
   app_gateway_backend_fqdns = distinct(compact(concat(
     var.app_gateway_backend_fqdns,
-    [
-      module.app_service.default_hostname,
-      module.app_service_arbitration.default_hostname,
-    ],
+    local.default_app_gateway_backend_fqdns,
   )))
 
   dns_hostname_overrides = {

@@ -84,11 +84,6 @@ variable "app_gateway_backend_fqdns" {
   default     = []
 }
 
-variable "app_gateway_backend_hostnames" {
-  description = "List of backend hostnames for the Application Gateway."
-  type        = list(string)
-}
-
 variable "app_gateway_backend_port" {
   description = "Backend port used by the Application Gateway."
   type        = number

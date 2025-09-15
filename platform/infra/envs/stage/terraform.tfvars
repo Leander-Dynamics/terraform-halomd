@@ -27,9 +27,8 @@ app_gateway_subnet_key  = "gateway"
 # For module using direct subnet id
 app_gateway_subnet_id = "/subscriptions/930755b1-ef22-4721-a31a-1b6fbecf7da6/resourceGroups/rg-arbit-stage/providers/Microsoft.Network/virtualNetworks/vnet-arbit-stage/subnets/appgw"
 
-app_gateway_fqdn_prefix    = "agw-arbit-stage"
-app_gateway_backend_fqdns  = []
-app_gateway_backend_hostnames = [
+app_gateway_fqdn_prefix   = "agw-arbit-stage"
+app_gateway_backend_fqdns = [
   "app-halomdweb-stage.azurewebsites.net",
   "app-arbit-arb-stage.azurewebsites.net",
 ]

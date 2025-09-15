@@ -28,10 +28,6 @@ app_gateway_subnet_key = "gateway"
 
 app_gateway_fqdn_prefix = "agw-arbit-dev"
 app_gateway_backend_fqdns = []
-app_gateway_backend_hostnames = [
-  "web-arbit-dev.azurewebsites.net",
-  "web-arbit-dev-arb.azurewebsites.net",
-]
 
 # -------------------------
 # DNS
