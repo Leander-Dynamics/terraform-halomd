@@ -22,14 +22,12 @@ variable "location" {
 variable "administrator_login" {
   description = "Administrator login for the SQL Server."
   type        = string
-  default     = ""
 }
 
 variable "administrator_password" {
   description = "Administrator password for the SQL Server."
   type        = string
   sensitive   = true
-  default     = ""
 }
 
 variable "public_network_access_enabled" {
