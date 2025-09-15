@@ -1,7 +1,7 @@
 
  /**                            
  Script name		: DisputeMasterDisputeStatus-Data popoulation                          
- Description        : Adding new dispute status "Awarded – Additional Information Requested"                      
+   GO
  Purpose		    : To populate new status in Dispute-UI 
  DB Server			: DE-DWSQL21-VM
  Database Name		: SRC_IDRSupport                         
@@ -10,7 +10,7 @@
  Reviewed by        :                        
  Reviewed on        :                        
 **/  
-IF NOT EXISTS (SELECT TOP 1 1 FROM [dbo].[REF_DisputeMasterDisputeStatus]  WHERE DisputeStatus = 'Awarded – Additional Information Requested')
-   INSERT INTO [dbo].[REF_DisputeMasterDisputeStatus] (DisputeStatus) VALUES('Awarded – Additional Information Requested')
+IF NOT EXISTS (SELECT TOP 1 1 FROM [dbo].[REF_DisputeMasterDisputeStatus]  WHERE DisputeStatus = 'Awarded â€“ Additional Information Requested')
+   INSERT INTO [dbo].[REF_DisputeMasterDisputeStatus] (DisputeStatus) VALUES('Awarded â€“ Additional Information Requested')
 
    GO
