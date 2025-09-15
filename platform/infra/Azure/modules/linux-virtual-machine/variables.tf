@@ -5,6 +5,7 @@ variable "sku" { default = "Standard" }
 variable "nic_id" {
   description = "Resource ID of the primary network interface to attach to the VM."
   type        = string
+  nullable    = false
 
   validation {
     condition     = can(regex("^/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft\\.Network/networkInterfaces/[^/]+$", trimspace(var.nic_id)))
