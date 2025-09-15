@@ -1,0 +1,40 @@
+{
+  "AzureAd": {
+    "Instance": "https://login.microsoftonline.com/",
+    "ClientId": "@Microsoft.KeyVault(SecretName=<azuread-client-id-secret-name>)",
+    "TenantId": "@Microsoft.KeyVault(SecretName=<azuread-tenant-id-secret-name>)",
+    "Audience": "@Microsoft.KeyVault(SecretName=<azuread-audience-secret-name>)",
+    "CallbackPath": "/signin-oidc"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    },
+    "ApplicationInsights": {
+      "ConnectionString": "@Microsoft.KeyVault(SecretName=<app-insights-connection-string-secret-name>)",
+      "LogLevel": {
+        "Default": "Information"
+      }
+    }
+  },
+  "ConnectionStrings": {
+    "ConnStr": "@Microsoft.KeyVault(SecretName=<sql-connection-string-secret-name>)",
+    "IDRConnStr": "@Microsoft.KeyVault(SecretName=<idr-connection-string-secret-name>)"
+  },
+  "Storage": {
+    "Connection": "@Microsoft.KeyVault(SecretName=<storage-connection-string-secret-name>)",
+    "Container": "arbitration-calculator"
+  },
+  "AllowedHosts": "*",
+  "ApiKey": "@Microsoft.KeyVault(SecretName=<api-key-secret-name>)",
+  "DEFAULT_PAYOR_JSON": "{}",
+  "DEFAULT_ENTITY_ADDRESS": "1141 N Loop 1604 E #105-612",
+  "DEFAULT_ENTITY_CITY": "San Antonio",
+  "DEFAULT_ENTITY_STATE": "TX",
+  "DEFAULT_ENTITY_ZIP": "78332",
+  "SendGridApiKey": "@Microsoft.KeyVault(SecretName=<sendgrid-api-key-secret-name>)",
+  "FromAddress": "@Microsoft.KeyVault(SecretName=<from-address-secret-name>)",
+  "ReplyToAddress": "@Microsoft.KeyVault(SecretName=<reply-to-address-secret-name>)"
+}

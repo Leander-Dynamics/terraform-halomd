@@ -1,0 +1,94 @@
+project_name = "arbit"
+location     = "eastus"
+
+env_name        = "dev"
+subscription_id = "<subscription-id>"
+tenant_id       = "<tenant-id>"
+
+app_insights_name                = "arbit-dev-appi"
+app_insights_resource_group_name = "arbit-dev-rg"
+tags = {
+  project = "arbit"
+  env     = "dev"
+  owner   = "platform"
+}
+
+app_gateway_subnet_id = "/subscriptions/<subscription-id>/resourceGroups/rg-arbit-dev/providers/Microsoft.Network/virtualNetworks/vnet-arbit-dev/subnets/appgw"
+
+app_gateway_backend_hostnames = [
+  "web-arbit-dev.azurewebsites.net",
+  "web-arbit-dev-arb.azurewebsites.net",
+]
+
+dns_zone_name = "az.halomd.com"
+
+dns_a_records = {
+  "api-dev" = {
+    ttl     = 3600
+    records = ["10.0.0.10"]
+  }
+}
+
+dns_cname_records = {
+  "web-dev" = {
+    ttl   = 3600
+    record = "web-arbit-dev.azurewebsites.net"
+  }
+  "func-ext-dev" = {
+    ttl   = 3600
+    record = "func-ext-arbit-dev.azurewebsites.net"
+  }
+  "func-cron-dev" = {
+    ttl   = 3600
+    record = "func-cron-arbit-dev.azurewebsites.net"
+  }
+}
+
+enable_aks     = false
+enable_acr     = false
+enable_storage = false
+enable_sql     = true
+kv_public_network_access = true
+
+acr_sku        = "Basic"
+aks_node_count = 1
+aks_vm_size    = "Standard_DS2_v2"
+web_plan_sku   = "B1"
+func_plan_sku  = "Y1"
+
+web_dotnet_version        = "8.0"
+function_external_runtime = "dotnet"
+function_cron_runtime     = "python"
+
+arbitration_plan_sku        = "B1"
+arbitration_runtime_stack   = "dotnet"
+arbitration_runtime_version = "8.0"
+arbitration_connection_strings = {
+  ConnStr = {
+    type  = "SQLAzure"
+    value = "@Microsoft.KeyVault(SecretName=<arbitration-sql-connection-string-secret-name>)"
+  }
+  IDRConnStr = {
+    type  = "SQLAzure"
+    value = "@Microsoft.KeyVault(SecretName=<idr-sql-connection-string-secret-name>)"
+  }
+}
+arbitration_app_settings = {
+  "Storage__Connection" = "@Microsoft.KeyVault(SecretName=<storage-connection-string-secret-name>)"
+  "Storage__Container"  = "arbitration-calculator"
+}
+
+sql_db_name                = "halomd"
+sql_sku_name               = "GP_S_Gen5_2"
+sql_auto_pause_minutes     = 60
+sql_max_size_gb            = 75
+sql_public_network_access  = true
+sql_firewall_rules = [
+  {
+    name             = "allow-any-sql"
+    start_ip_address = "0.0.0.0"
+    end_ip_address   = "255.255.255.255"
+  }
+]
+sql_admin_login     = "sqladmin"
+sql_admin_password  = "<set via TF_VAR_sql_admin_password>"

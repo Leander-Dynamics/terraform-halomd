@@ -1,8 +1,9 @@
 project_name = "arbit"
 location     = "eastus"
-env_name = "prod"
-subscription_id = "930755b1-ef22-4721-a31a-1b6fbecf7da6"
-tenant_id       = "70750cc4-6f21-4c27-bb0e-8b7e66bcb2dd"
+
+env_name        = "prod"
+subscription_id = "<subscription-id>"
+tenant_id       = "<tenant-id>"
 
 tags = {
   project = "arbit"
@@ -10,7 +11,7 @@ tags = {
   owner   = "platform"
 }
 
-app_gateway_subnet_id = "/subscriptions/930755b1-ef22-4721-a31a-1b6fbecf7da6/resourceGroups/rg-arbit-prod/providers/Microsoft.Network/virtualNetworks/vnet-arbit-prod/subnets/appgw"
+app_gateway_subnet_id = "/subscriptions/<subscription-id>/resourceGroups/rg-arbit-prod/providers/Microsoft.Network/virtualNetworks/vnet-arbit-prod/subnets/appgw"
 
 app_gateway_backend_hostnames = [
   "app-halomdweb-prod.azurewebsites.net",
@@ -57,21 +58,21 @@ web_dotnet_version        = "8.0"
 function_external_runtime = "dotnet"
 function_cron_runtime     = "python"
 
-arbitration_plan_sku         = "P1v3"
-arbitration_runtime_stack    = "dotnet"
-arbitration_runtime_version  = "8.0"
+arbitration_plan_sku        = "P1v3"
+arbitration_runtime_stack   = "dotnet"
+arbitration_runtime_version = "8.0"
 arbitration_connection_strings = {
   ConnStr = {
     type  = "SQLAzure"
-    value = "Server=tcp:prod-arbit-sql.database.windows.net,1433;Initial Catalog=prod-arbit-db;User ID=sqladmin;Password=P@ssw0rd123!;Encrypt=True;"
+    value = "@Microsoft.KeyVault(SecretName=<arbitration-sql-connection-string-secret-name>)"
   }
   IDRConnStr = {
     type  = "SQLAzure"
-    value = "Server=tcp:prod-idr-sql.database.windows.net,1433;Initial Catalog=prod-idr-db;User ID=sqladmin;Password=P@ssw0rd123!;Encrypt=True;"
+    value = "@Microsoft.KeyVault(SecretName=<idr-sql-connection-string-secret-name>)"
   }
 }
 arbitration_app_settings = {
-  "Storage__Connection" = "DefaultEndpointsProtocol=https;AccountName=prodarbitstorage;AccountKey=FakeKeyForProd==;EndpointSuffix=core.windows.net"
+  "Storage__Connection" = "@Microsoft.KeyVault(SecretName=<storage-connection-string-secret-name>)"
   "Storage__Container"  = "arbitration-calculator"
 }
 
@@ -87,13 +88,6 @@ sql_firewall_rules = [
     end_ip_address   = "255.255.255.255"
   }
 ]
+# Provide via TF_VAR_sql_admin_login / TF_VAR_sql_admin_password when applying
 # sql_admin_login    = ""
 # sql_admin_password = ""
-
-sql_firewall_rules = [
-  {
-    name             = "allow-any-sql"
-    start_ip_address = "0.0.0.0"
-    end_ip_address   = "255.255.255.255"
-  }
-]

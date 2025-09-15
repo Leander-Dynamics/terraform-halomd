@@ -1,0 +1,21 @@
+{
+  "AzureAd": {
+    "Instance": "https://login.microsoftonline.com/",
+    "ClientId": "@Microsoft.KeyVault(SecretName=<azuread-client-id-secret-name>)",
+    "TenantId": "@Microsoft.KeyVault(SecretName=<azuread-tenant-id-secret-name>)",
+    "Audience": "@Microsoft.KeyVault(SecretName=<azuread-audience-secret-name>)",
+    "CallbackPath": "/signin-oidc"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "ConnStr": "@Microsoft.KeyVault(SecretName=<sql-connection-string-secret-name>)",
+    "IDRConnStr": "@Microsoft.KeyVault(SecretName=<idr-connection-string-secret-name>)"
+  },
+  "AllowedHosts": "*",
+  "ApiKey": "@Microsoft.KeyVault(SecretName=<api-key-secret-name>)"
+}

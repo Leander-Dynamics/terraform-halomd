@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <appSettings>
+    <add key="baseAppAddress" value="@Microsoft.KeyVault(SecretName=<base-app-address-secret-name>)" />
+    <add key="client_id" value="@Microsoft.KeyVault(SecretName=<azuread-client-id-secret-name>)" />
+    <add key="clientSecret" value="@Microsoft.KeyVault(SecretName=<azuread-client-secret-secret-name>)" />
+    <add key="resource" value="@Microsoft.KeyVault(SecretName=<azuread-resource-secret-name>)" />
+    <add key="tenant_id" value="@Microsoft.KeyVault(SecretName=<azuread-tenant-id-secret-name>)" />
+    <add key="EmailFromAddress" value="@Microsoft.KeyVault(SecretName=<email-from-address-secret-name>)" />
+    <add key="EmailFromName" value="HaloMD IDR" />
+    <add key="SendGridApiKey" value="@Microsoft.KeyVault(SecretName=<sendgrid-api-key-secret-name>)" />
+    <add key="ArbitrationDbConnectionString" value="@Microsoft.KeyVault(SecretName=<sql-connection-string-secret-name>)" />
+    <add key="daysToKeepLogFiles" value="30" />
+  </appSettings>
+  <connectionStrings>
+    <add name="ArbitrationDb" connectionString="@Microsoft.KeyVault(SecretName=<sql-connection-string-secret-name>)" />
+  </connectionStrings>
+</configuration>
