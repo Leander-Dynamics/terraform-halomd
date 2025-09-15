@@ -10,9 +10,11 @@ using System.Security.Principal;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.OpenApi.Models;
 using MPArbitration.Utility;
+using System.Linq;
 using System.Reflection;
 
 internal class Program
@@ -23,6 +25,63 @@ internal class Program
         // The following line enables Application Insights telemetry collection.
         builder.Services.AddApplicationInsightsTelemetry();
         var configuration = builder.Configuration;
+        static string[] ReadCorsValues(IConfigurationSection section)
+        {
+            return section.Get<string[]>()?
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .ToArray() ?? Array.Empty<string>();
+        }
+
+        var corsSection = configuration.GetSection("Cors");
+        var allowedOrigins = ReadCorsValues(corsSection.GetSection("AllowedOrigins"));
+        var allowedMethods = ReadCorsValues(corsSection.GetSection("AllowedMethods"));
+        var allowedHeaders = ReadCorsValues(corsSection.GetSection("AllowedHeaders"));
+
+        builder.Services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
+            {
+                if (Array.Exists(allowedOrigins, origin => string.Equals(origin, "*", StringComparison.Ordinal)))
+                {
+                    policy.AllowAnyOrigin();
+                }
+                else if (allowedOrigins.Length > 0)
+                {
+                    policy.WithOrigins(allowedOrigins);
+                }
+                else
+                {
+                    policy.AllowAnyOrigin();
+                }
+
+                if (Array.Exists(allowedMethods, method => string.Equals(method, "*", StringComparison.Ordinal)))
+                {
+                    policy.AllowAnyMethod();
+                }
+                else if (allowedMethods.Length > 0)
+                {
+                    policy.WithMethods(allowedMethods);
+                }
+                else
+                {
+                    policy.AllowAnyMethod();
+                }
+
+                if (Array.Exists(allowedHeaders, header => string.Equals(header, "*", StringComparison.Ordinal)))
+                {
+                    policy.AllowAnyHeader();
+                }
+                else if (allowedHeaders.Length > 0)
+                {
+                    policy.WithHeaders(allowedHeaders);
+                }
+                else
+                {
+                    policy.AllowAnyHeader();
+                }
+            });
+        });
         // increase file upload size to handle the benchmark files
         // https://bartwullems.blogspot.com/2022/01/aspnet-core-configure-file-upload-size.html
         // https://stackoverflow.com/questions/38698350/increase-upload-file-size-in-asp-net-core
@@ -172,7 +231,7 @@ internal class Program
             app.UseHsts();
         }
         app.MapSwagger().RequireAuthorization();
-        app.UseCors();
+        app.UseCors(/*policy name if not default*/);
         app.UseHttpsRedirection();
         app.UseStaticFiles();
         app.UseRouting();
