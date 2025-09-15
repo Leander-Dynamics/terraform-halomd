@@ -1,6 +1,6 @@
-project_name = "arbit"
-location     = "eastus"
-env_name = "stage"
+project_name    = "arbit"
+env_name        = "stage"
+location        = "eastus"
 subscription_id = "930755b1-ef22-4721-a31a-1b6fbecf7da6"
 tenant_id       = "70750cc4-6f21-4c27-bb0e-8b7e66bcb2dd"
 
@@ -10,82 +10,56 @@ tags = {
   owner   = "platform"
 }
 
-dns_zone_name = "az.halomd.com"
+vnet_address_space = ["10.20.0.0/16"]
+subnets = {
+  gateway = {
+    address_prefixes = ["10.20.0.0/24"]
+  }
+  web = {
+    address_prefixes = ["10.20.1.0/24"]
+  }
+}
+app_gateway_subnet_key  = "gateway"
+app_gateway_fqdn_prefix = "agw-arbit-stage"
+app_gateway_backend_fqdns = []
 
+app_service_plan_sku    = "P1v3"
+app_service_fqdn_prefix = "app-arbit-stage"
+app_service_app_settings = {
+  "WEBSITE_RUN_FROM_PACKAGE" = "0"
+}
+app_service_connection_strings = {
+  PrimaryDatabase = {
+    type  = "SQLAzure"
+    value = "Server=tcp:sql-arbit-stage.database.windows.net,1433;Initial Catalog=halomd;User ID=sqladminstage;Password=P@ssw0rd123!Stage;Encrypt=True;"
+  }
+}
+
+dns_zone_name = "az.halomd.com"
 dns_a_records = {
   "api-stage" = {
     ttl     = 3600
-    records = ["10.1.0.10"]
+    records = ["10.20.1.10"]
   }
 }
-
 dns_cname_records = {
   "web-stage" = {
     ttl   = 3600
-    record = "app-halomdweb-stage.azurewebsites.net"
-  }
-  "func-external-stage" = {
-    ttl   = 3600
-    record = "func-external-stage.azurewebsites.net"
-  }
-  "func-cron-stage" = {
-    ttl   = 3600
-    record = "func-cron-stage.azurewebsites.net"
+    record = "app-arbit-stage.azurewebsites.net"
   }
 }
 
-enable_aks      = false
-enable_acr      = false
-enable_storage  = false
-enable_sql      = true
-kv_public_network_access = true
-
-acr_sku        = "Standard"
-aks_node_count = 2
-aks_vm_size    = "Standard_DS3_v2"
-web_plan_sku   = "P1v3"
-func_plan_sku  = "Y1"
-
-web_dotnet_version        = "8.0"
-function_external_runtime = "dotnet"
-function_cron_runtime     = "python"
-
-arbitration_plan_sku         = "P1v3"
-arbitration_runtime_stack    = "dotnet"
-arbitration_runtime_version  = "8.0"
-arbitration_connection_strings = {
-  ConnStr = {
-    type  = "SQLAzure"
-    value = "Server=tcp:stage-arbit-sql.database.windows.net,1433;Initial Catalog=stage-arbit-db;User ID=sqladmin;Password=P@ssw0rd123!;Encrypt=True;"
-  }
-  IDRConnStr = {
-    type  = "SQLAzure"
-    value = "Server=tcp:stage-idr-sql.database.windows.net,1433;Initial Catalog=stage-idr-db;User ID=sqladmin;Password=P@ssw0rd123!;Encrypt=True;"
-  }
-}
-arbitration_app_settings = {
-  "Storage__Connection" = "DefaultEndpointsProtocol=https;AccountName=stagearbitstorage;AccountKey=FakeKeyForStage==;EndpointSuffix=core.windows.net"
-  "Storage__Container"  = "arbitration-calculator"
-}
-
-sql_db_name               = "halomd"
-sql_sku_name              = "GP_S_Gen5_2"
-sql_auto_pause_minutes    = 60
-sql_max_size_gb           = 32
-sql_public_network_access = true
+sql_database_name        = "halomd"
+sql_sku_name             = "GP_S_Gen5_2"
+sql_max_size_gb          = 64
+sql_auto_pause_delay     = 60
+sql_min_capacity         = 1
+sql_max_capacity         = 6
+sql_admin_login          = "sqladminstage"
+sql_admin_password       = "P@ssw0rd123!Stage"
 sql_firewall_rules = [
   {
-    name             = "allow-any-sql"
-    start_ip_address = "0.0.0.0"
-    end_ip_address   = "255.255.255.255"
-  }
-]
-# sql_admin_login    = ""
-# sql_admin_password = ""
-
-sql_firewall_rules = [
-  {
-    name             = "allow-any-sql"
+    name             = "allow-all"
     start_ip_address = "0.0.0.0"
     end_ip_address   = "255.255.255.255"
   }
