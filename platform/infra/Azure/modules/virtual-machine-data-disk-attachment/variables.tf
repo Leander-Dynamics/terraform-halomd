@@ -1,11 +1,15 @@
 variable "disk_id" {
-  type = string
+  description = "The resource ID of the managed disk to attach."
+  type        = string
 }
 
 variable "vm_id" {
-  type = string
+  description = "The resource ID of the virtual machine to which the disk will be attached."
+  type        = string
 }
 
 variable "lun" {
-  type = number
+  description = "Logical Unit Number (LUN) for the data disk. Must be unique per VM."
+  type        = number
+  default     = 0
 }
