@@ -3,6 +3,9 @@ env_name     = "dev"
 location     = "eastus"
 
 # Secrets are injected at runtime via the pipeline / Key Vault.
+# Ensure `sql_admin_login` and `sql_admin_password` are supplied securely (for example,
+# via an untracked terraform.tfvars file, a variable group, or Key Vault) before
+# running `terraform plan` or `terraform apply`.
 
 tags = {
   project = "arbit"
@@ -101,9 +104,6 @@ sql_max_size_gb          = 75
 sql_min_capacity         = 0.5
 sql_max_capacity         = 4
 sql_public_network_access = true
-sql_admin_login          = ""
-sql_admin_password       = ""
-
 sql_firewall_rules = [
   {
     name             = "allow-all"
