@@ -1,10 +1,19 @@
-variable "name" {}
-variable "location" {}
-variable "resource_group_name" {}
+variable "name" {
+  type = string
+}
+
+variable "location" {
+  type = string
+}
+
+variable "resource_group_name" {
+  type = string
+}
 
 variable "disk_size_gb" {
-  default = ""
+  type = number
 }
+
 variable "storage_account_type" {
-  default = ""
+  type = string
 }
