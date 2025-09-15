@@ -9,11 +9,11 @@ variables:
 
 trigger:
   branches: { include: [ main ] }
-  paths: { include: [ 'platform/infra/**', '.ado/**' ] }
+  paths: { include: [ 'platform/infra/**', '.ado/**', 'azure-pipelines.yml' ] }
 
 pr:
   branches: { include: [ main, feature/*, hotfix/*, chore/* ] }
-  paths: { include: [ 'platform/infra/**', '.ado/**' ] }
+  paths: { include: [ 'platform/infra/**', '.ado/**', 'azure-pipelines.yml' ] }
 
 pool: { vmImage: 'ubuntu-latest' }
 
