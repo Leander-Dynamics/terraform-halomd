@@ -1,9 +1,11 @@
 variable "disk_id" {
-  default = ""
+  type = string
 }
+
 variable "vm_id" {
-  default = ""
+  type = string
 }
+
 variable "lun" {
-  default = ""
+  type = number
 }
