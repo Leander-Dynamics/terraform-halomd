@@ -1,6 +1,9 @@
 
 **/.terraform.lock.hcl
 
+# Build artifacts
+**/bin/
+**/obj/
 
 # Local configuration files containing secrets
 Arbitration/MPArbitration/appsettings.json
