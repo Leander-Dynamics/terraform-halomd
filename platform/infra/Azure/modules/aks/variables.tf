@@ -12,7 +12,6 @@ variable "location" {
 
 variable "dns_prefix" {
   type    = string
-  default = ""
 }
 
 variable "node_count" {
