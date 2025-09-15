@@ -8,9 +8,9 @@
     <SpaProxyServerUrl>https://localhost:44473</SpaProxyServerUrl>
     <SpaProxyLaunchCommand>npm start</SpaProxyLaunchCommand>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RunAnalyzersDuringBuild>False</RunAnalyzersDuringBuild>
-    <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
-    <EnableNETAnalyzers>False</EnableNETAnalyzers>
+    <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringLiveAnalysis>true</RunAnalyzersDuringLiveAnalysis>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <Configurations>Debug;Release;Stage</Configurations>
     <UserSecretsId>597763ab-a669-44af-a67c-c91cd32193f0</UserSecretsId>
 	<EnableSourceControlManagerQueries>true</EnableSourceControlManagerQueries>
