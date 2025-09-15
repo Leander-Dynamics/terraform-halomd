@@ -334,14 +334,12 @@ variable "sql_firewall_rules" {
 variable "sql_admin_login" {
   description = "Administrator login for the SQL server."
   type        = string
-  default     = ""
 }
 
 variable "sql_admin_password" {
   description = "Administrator password for the SQL server."
   type        = string
   sensitive   = true
-  default     = ""
 }
 
 # -------------------------

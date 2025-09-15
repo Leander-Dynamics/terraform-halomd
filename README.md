@@ -155,7 +155,7 @@ arbit-consolidated-infra-ado/
 | Service connections | Parameters in plan/apply templates | Rename to match your ADO service connections. |
 | Feature toggles | `platform/infra/envs/<env>/terraform.tfvars` | Toggle modules (Storage, SQL, AKS/ACR, Key Vault access). |
 | Backend coordinates | `platform/infra/envs/<env>/backend.tfvars` | Update RG/Storage/Container names per environment. |
-| SQL secrets (optional) | ADO variable groups | Pass via `extraVarFlags` (e.g., `-var "sql_admin_login=..."`). |
+| SQL admin credentials | ADO variable groups / Key Vault / secure `terraform.tfvars` | Required when `enable_sql = true`; provide before running plan/apply. |
 
 ### Manual runs and re-runs
 
