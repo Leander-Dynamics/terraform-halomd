@@ -117,7 +117,7 @@ module "dns_zone" {
 
 module "app_insights" {
   source                       = "../../Azure/modules/app-insights"
-  resource_group_name          = module.resource_group.name
+  resource_group_name          = coalesce(var.app_insights_resource_group_name, module.resource_group.name)
   location                     = var.location
   log_analytics_workspace_name = local.log_name
   application_insights_name    = local.appi_name
