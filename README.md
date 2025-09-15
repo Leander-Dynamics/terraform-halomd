@@ -4,20 +4,12 @@
 ARBIT centralizes cloud infrastructure for dev, stage, and prod along with the automation that deploys it. This repository provides:
 =======
 This repository contains:
-- **Terraform modules** under `platform/infra/Azure/modules`.
-- **Per-environment Terraform roots** under `platform/infra/envs/{dev,stage,prod}` with independent backends.
+- **Terraform modules** under `platform/infra/Azure/modules` (reusable `resource-group`, `network`, `app-service`, `sql`, and `dns` building blocks).
+- **Per-environment Terraform roots** under `platform/infra/envs/{dev,stage,prod}` with isolated state backends and opinionated defaults.
 - **Azure DevOps CI/CD** under `.ado/` (reusable templates consumed by the multi-stage pipeline).
 - **Bootstrap scripts** for Terraform state.
 - **Docs** for setup, naming, and migration.
 - **Angular client developers**: see [`Arbitration/MPArbitration/ClientApp/README.md`](Arbitration/MPArbitration/ClientApp/README.md) for project-specific guidance.
-
-
-- **Terraform modules** under `platform/infra/Azure/modules` for reusable building blocks (resource groups, Key Vault, App Service, Functions, Storage, SQL, and optional AKS/ACR).
-- **Per-environment Terraform roots** under `platform/infra/envs/{dev,stage,prod}` with independent remote state backends.
-- **Azure DevOps (ADO) multi-stage pipeline** definitions under `azure-pipelines.yml` and `.ado/templates/*`.
-- **Bootstrap scripts and documentation** that explain setup, networking posture, and ongoing operations.
-
-> **Posture:** AKS/ACR modules exist but are **disabled by default**. Optional **Storage** and **SQL** modules are off by default, and Key Vault public network access is **toggleable per environment**.
 
 ---
 
@@ -80,11 +72,25 @@ arbit-consolidated-infra-ado/
 ├── platform/
 │   └── infra/
 │       ├── Azure/
-│       │   └── modules/               # Terraform modules (RG, KV, App Service, Functions, Storage, SQL, etc.)
+│       │   └── modules/
+│       │       ├── app-service/       # Linux App Service + diagnostics
+│       │       ├── dns/               # Public DNS zone records
+│       │       ├── network/           # Virtual network + subnets
+│       │       ├── resource-group/    # Resource group wrapper
+│       │       └── sql/               # Azure SQL server + database
 │       └── envs/
-│           ├── dev/                   # Terraform root with dedicated backend & tfvars
-│           ├── stage/                 # Same structure as dev
-│           └── prod/                  # Same structure as dev
+│           ├── dev/
+│           │   ├── backend.tf         # Remote state backend (azurerm)
+│           │   ├── backend.tfvars     # Backend coordinates
+│           │   ├── main.tf            # Root module wiring shared modules
+│           │   ├── providers.tf       # Provider configuration
+│           │   ├── terraform.tfvars   # Environment-specific inputs
+│           │   ├── variables.tf       # Input variable declarations
+│           │   └── versions.tf        # Terraform CLI version constraint
+│           ├── stage/
+│           │   └── ...                # Mirrors dev structure
+│           └── prod/
+│               └── ...                # Mirrors dev structure
 ├── scripts/
 │   ├── azure-bootstrap-tfstate.ps1    # Bootstrap Terraform state resources (PowerShell)
 │   └── azure-bootstrap-tfstate.sh     # Bootstrap Terraform state resources (Bash)
@@ -102,6 +108,22 @@ arbit-consolidated-infra-ado/
 │   └── what-changed-and-why.md        # Rationale for the current structure
 └── README.md                          # This document
 ```
+
+### Terraform layout
+
+- `platform/infra/Azure/modules/`
+  - `resource-group/` — thin wrapper around `azurerm_resource_group` used by every environment.
+  - `network/` — creates a virtual network and set of subnets.
+  - `dns/` — manages a DNS zone plus A and CNAME records.
+  - `app-service/` — provisions a Linux App Service plan + web app with optional diagnostics.
+  - `sql/` — provisions an Azure SQL server, database, and firewall rules.
+- `platform/infra/envs/<env>/`
+  - `backend.tf`/`backend.tfvars` keep state separate per environment.
+  - `main.tf` wires the reusable modules together for that environment.
+  - `variables.tf` declares the inputs shared by every environment.
+  - `terraform.tfvars` contains that environment's concrete values.
+  - `providers.tf` and `versions.tf` pin the provider + Terraform version.
+  - `principal.auto.tfvars.sample` (optional) documents how to supply pipeline principals.
 
 ---
 

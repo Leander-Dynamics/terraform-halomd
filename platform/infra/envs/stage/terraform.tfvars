@@ -1,99 +1,66 @@
-project_name = "arbit"
-location     = "eastus"
-env_name = "stage"
+project_name    = "arbit"
+env_name        = "stage"
+location        = "eastus"
 subscription_id = "930755b1-ef22-4721-a31a-1b6fbecf7da6"
 tenant_id       = "70750cc4-6f21-4c27-bb0e-8b7e66bcb2dd"
 
 tags = {
   project = "arbit"
-  env     = "stage"
   owner   = "platform"
 }
 
-app_gateway_subnet_id = "/subscriptions/930755b1-ef22-4721-a31a-1b6fbecf7da6/resourceGroups/rg-arbit-stage/providers/Microsoft.Network/virtualNetworks/vnet-arbit-stage/subnets/appgw"
+network_enabled       = true
+network_address_space = ["10.20.0.0/16"]
+network_subnets = {
+  web = {
+    address_prefixes = ["10.20.1.0/24"]
+  }
+  data = {
+    address_prefixes = ["10.20.2.0/24"]
+  }
+}
 
-app_gateway_backend_hostnames = [
-  "app-halomdweb-stage.azurewebsites.net",
-  "app-arbit-arb-stage.azurewebsites.net",
-]
-
+dns_enabled   = true
 dns_zone_name = "az.halomd.com"
-
 dns_a_records = {
   "api-stage" = {
     ttl     = 3600
-    records = ["10.1.0.10"]
+    records = ["10.20.1.10"]
   }
 }
-
 dns_cname_records = {
   "web-stage" = {
     ttl   = 3600
-    record = "app-halomdweb-stage.azurewebsites.net"
-  }
-  "func-external-stage" = {
-    ttl   = 3600
-    record = "func-external-stage.azurewebsites.net"
-  }
-  "func-cron-stage" = {
-    ttl   = 3600
-    record = "func-cron-stage.azurewebsites.net"
+    record = "web-arbit-stage.azurewebsites.net"
   }
 }
 
-enable_aks      = false
-enable_acr      = false
-enable_storage  = false
-enable_sql      = true
-kv_public_network_access = true
-
-acr_sku        = "Standard"
-aks_node_count = 2
-aks_vm_size    = "Standard_DS3_v2"
-web_plan_sku   = "P1v3"
-func_plan_sku  = "Y1"
-
-web_dotnet_version        = "8.0"
-function_external_runtime = "dotnet"
-function_cron_runtime     = "python"
-
-arbitration_plan_sku         = "P1v3"
-arbitration_runtime_stack    = "dotnet"
-arbitration_runtime_version  = "8.0"
-arbitration_connection_strings = {
-  ConnStr = {
+app_service_enabled                       = true
+app_service_plan_sku                      = "S1"
+app_service_dotnet_version                = "8.0"
+app_service_app_settings                  = {
+  "ASPNETCORE_ENVIRONMENT" = "Staging"
+}
+app_service_connection_strings = {
+  DefaultConnection = {
     type  = "SQLAzure"
-    value = "Server=tcp:stage-arbit-sql.database.windows.net,1433;Initial Catalog=stage-arbit-db;User ID=sqladmin;Password=P@ssw0rd123!;Encrypt=True;"
-  }
-  IDRConnStr = {
-    type  = "SQLAzure"
-    value = "Server=tcp:stage-idr-sql.database.windows.net,1433;Initial Catalog=stage-idr-db;User ID=sqladmin;Password=P@ssw0rd123!;Encrypt=True;"
+    value = "Server=tcp:sql-arbit-stage.database.windows.net,1433;Initial Catalog=arbit-stage;User ID=sqladmin;Password=P@ssw0rd1234!;Encrypt=True;"
   }
 }
-arbitration_app_settings = {
-  "Storage__Connection" = "DefaultEndpointsProtocol=https;AccountName=stagearbitstorage;AccountKey=FakeKeyForStage==;EndpointSuffix=core.windows.net"
-  "Storage__Container"  = "arbitration-calculator"
-}
+app_service_app_insights_connection_string = "InstrumentationKey=11111111-1111-1111-1111-111111111111;IngestionEndpoint=https://eastus-0.in.applicationinsights.azure.com/"
+app_service_log_analytics_workspace_id     = "/subscriptions/930755b1-ef22-4721-a31a-1b6fbecf7da6/resourceGroups/rg-monitor/providers/Microsoft.OperationalInsights/workspaces/log-arbit-stage"
 
-sql_db_name               = "halomd"
-sql_sku_name              = "GP_S_Gen5_2"
-sql_auto_pause_minutes    = 60
-sql_max_size_gb           = 75
-sql_public_network_access = true
+sql_enabled                         = true
+sql_admin_login                     = "sqladmin"
+sql_admin_password                  = "P@ssw0rd1234!"
+sql_public_network_access_enabled   = false
+sql_sku_name                        = "GP_S_Gen5_2"
+sql_auto_pause_delay_in_minutes     = 120
+sql_max_size_gb                     = 150
 sql_firewall_rules = [
   {
-    name             = "allow-any-sql"
+    name             = "allow-azure"
     start_ip_address = "0.0.0.0"
-    end_ip_address   = "255.255.255.255"
-  }
-]
-# sql_admin_login    = ""
-# sql_admin_password = ""
-
-sql_firewall_rules = [
-  {
-    name             = "allow-any-sql"
-    start_ip_address = "0.0.0.0"
-    end_ip_address   = "255.255.255.255"
+    end_ip_address   = "0.0.0.0"
   }
 ]
