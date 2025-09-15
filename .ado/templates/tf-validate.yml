@@ -4,9 +4,14 @@ parameters:
   - name: tfVersion
     type: string
     default: '1.7.5'
+  - name: dependsOn
+    type: string
+    default: ''
 
 jobs:
 - job: validate_${{ parameters.envName }}
+  ${{ if ne(parameters.dependsOn, '') }}:
+    dependsOn: ${{ parameters.dependsOn }}
   displayName: "Terraform fmt & validate (${{ parameters.envName }})"
   steps:
   - checkout: self
