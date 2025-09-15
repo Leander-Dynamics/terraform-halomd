@@ -313,3 +313,39 @@ variable "sql_admin_password" {
   sensitive   = true
   default     = ""
 }
+
+# -------------------------
+# Arbitration
+# -------------------------
+variable "arbitration_plan_sku" {
+  description = "SKU for the arbitration App Service plan."
+  type        = string
+  default     = null
+}
+
+variable "arbitration_runtime_stack" {
+  description = "Runtime stack used by the arbitration App Service."
+  type        = string
+  default     = null
+}
+
+variable "arbitration_runtime_version" {
+  description = "Runtime version for the arbitration App Service."
+  type        = string
+  default     = null
+}
+
+variable "arbitration_connection_strings" {
+  description = "Connection strings applied to the arbitration App Service."
+  type = map(object({
+    type  = string
+    value = string
+  }))
+  default = {}
+}
+
+variable "arbitration_app_settings" {
+  description = "App settings applied to the arbitration App Service."
+  type        = map(string)
+  default     = {}
+}
