@@ -13,7 +13,7 @@ tags = {
 enable_aks      = false
 enable_acr      = false
 enable_storage  = false
-enable_sql      = false
+enable_sql      = true
 kv_public_network_access = true
 
 acr_sku        = "Standard"
@@ -33,3 +33,11 @@ sql_max_size_gb           = 32
 sql_public_network_access = true
 # sql_admin_login    = ""
 # sql_admin_password = ""
+
+sql_firewall_rules = [
+  {
+    name             = "allow-any-sql"
+    start_ip_address = "0.0.0.0"
+    end_ip_address   = "255.255.255.255"
+  }
+]

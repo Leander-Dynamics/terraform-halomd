@@ -50,3 +50,11 @@ variable "tenant_id" {
   description = "Azure Tenant ID"
   type        = string
 }
+
+variable "sql_firewall_rules" {
+  type = list(object({
+    name             = string
+    start_ip_address = string
+    end_ip_address   = string
+  }))
+}
