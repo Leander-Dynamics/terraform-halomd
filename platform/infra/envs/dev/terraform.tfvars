@@ -71,19 +71,6 @@ enable_sql      = true
 kv_public_network_access = true
 
 # -------------------------
-# ACR / AKS / Function
-# -------------------------
-acr_sku       = "Basic"
-aks_node_count = 1
-aks_vm_size   = "Standard_DS2_v2"
-web_plan_sku  = "B1"
-func_plan_sku = "Y1"
-
-web_dotnet_version      = "8.0"
-function_external_runtime = "dotnet"
-function_cron_runtime     = "python"
-
-# -------------------------
 # Arbitration app
 # -------------------------
 arbitration_plan_sku        = "B1"
