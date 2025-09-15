@@ -89,7 +89,6 @@ sql_db_name              = "halomd"
 sql_sku_name             = "GP_S_Gen5_4"
 sql_max_size_gb          = 128
 sql_auto_pause_delay     = 60
-sql_auto_pause_minutes   = 60
 sql_min_capacity         = 2
 sql_max_capacity         = 8
 sql_public_network_access = true

@@ -115,7 +115,6 @@ arbitration_app_settings = {
 sql_database_name        = "halomd"
 sql_db_name              = "halomd"
 sql_sku_name             = "GP_S_Gen5_2"
-sql_auto_pause_minutes   = 60
 sql_auto_pause_delay     = 60
 sql_max_size_gb          = 75
 sql_min_capacity         = 0.5
