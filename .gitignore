@@ -1,11 +1,4 @@
-.DS_Store
-.vscode/
-.idea/
-**/bin/
-**/obj/
-**/__pycache__/
-**/.pytest_cache/
-**/.terraform/
+
 **/.terraform.lock.hcl
 
 
