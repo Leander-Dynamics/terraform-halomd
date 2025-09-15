@@ -1,6 +1,6 @@
 project_name = "arbit"
 location     = "eastus"
-env          = "prod"
+env_name = "prod"
 
 tags = {
   project = "arbit"
