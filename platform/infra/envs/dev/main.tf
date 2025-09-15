@@ -11,6 +11,7 @@ locals {
   func_cron_name     = "func-cron-${var.project_name}-${var.env_name}"
   func_external_name = "func-ext-${var.project_name}-${var.env_name}"
   web_name           = "web-${var.project_name}-${var.env_name}"
+  app_gateway_name  = "agw-${var.project_name}-${var.env_name}"
   arbitration_plan_name = "asp-${var.project_name}-${var.env_name}-arb"
   arbitration_app_name  = "web-${var.project_name}-${var.env_name}-arb"
   storage_data_name = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
@@ -32,6 +33,16 @@ module "dns_zone" {
   tags                = var.tags
   a_records           = var.dns_a_records
   cname_records       = var.dns_cname_records
+}
+
+module "app_gateway" {
+  source              = "../../Azure/modules/app-gateway"
+  name                = local.app_gateway_name
+  resource_group_name = module.rg.name
+  location            = var.location
+  subnet_id           = var.app_gateway_subnet_id
+  backend_fqdns       = var.app_gateway_backend_hostnames
+  tags                = var.tags
 }
 
 module "acr" {
@@ -170,4 +181,12 @@ output "app_insights_instrumentation_key" {
 
 output "log_analytics_workspace_id" {
   value = module.app_insights.log_analytics_workspace_id
+}
+
+output "app_gateway_id" {
+  value = module.app_gateway.id
+}
+
+output "app_gateway_public_ip_address" {
+  value = module.app_gateway.public_ip_address
 }

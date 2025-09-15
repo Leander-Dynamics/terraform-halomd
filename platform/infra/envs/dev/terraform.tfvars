@@ -13,6 +13,13 @@ tags = {
   owner = "platform"
 }
 
+app_gateway_subnet_id = "/subscriptions/930755b1-ef22-4721-a31a-1b6fbecf7da6/resourceGroups/rg-arbit-dev/providers/Microsoft.Network/virtualNetworks/vnet-arbit-dev/subnets/appgw"
+
+app_gateway_backend_hostnames = [
+  "web-arbit-dev.azurewebsites.net",
+  "web-arbit-dev-arb.azurewebsites.net",
+]
+
 dns_zone_name = "az.halomd.com"
 
 dns_a_records = {

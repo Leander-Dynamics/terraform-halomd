@@ -42,6 +42,16 @@ variable "tags" {
   default     = {}
 }
 
+variable "app_gateway_subnet_id" {
+  description = "Subnet resource ID for the application gateway."
+  type        = string
+}
+
+variable "app_gateway_backend_hostnames" {
+  description = "List of backend hostnames for the application gateway."
+  type        = list(string)
+}
+
 variable "dns_zone_name" {
   description = "Public DNS zone name to manage."
   type        = string
