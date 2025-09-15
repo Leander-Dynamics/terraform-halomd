@@ -89,7 +89,6 @@ variable "app_gateway_subnet_key" {
 variable "app_gateway_subnet_id" {
   description = "Subnet resource ID for the Application Gateway."
   type        = string
-  default     = ""
 }
 
 # -------------------------
