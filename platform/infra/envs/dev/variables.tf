@@ -112,6 +112,45 @@ variable "web_dotnet_version" {
   default     = "8.0"
 }
 
+variable "arbitration_plan_sku" {
+  type        = string
+  description = "App Service plan SKU for arbitration app"
+  default     = "B1"
+}
+
+variable "arbitration_runtime_stack" {
+  type        = string
+  description = "Runtime stack for the arbitration web app"
+  default     = "dotnet"
+}
+
+variable "arbitration_runtime_version" {
+  type        = string
+  description = "Runtime version for the arbitration web app"
+  default     = "8.0"
+}
+
+variable "arbitration_connection_strings" {
+  description = "Connection strings to configure on the arbitration app"
+  type = map(object({
+    type  = string
+    value = string
+  }))
+  default = {}
+}
+
+variable "arbitration_app_settings" {
+  description = "Additional app settings for the arbitration app"
+  type        = map(string)
+  default     = {}
+}
+
+variable "arbitration_run_from_package" {
+  description = "Whether the arbitration app should run from package"
+  type        = bool
+  default     = true
+}
+
 variable "function_external_runtime" {
   type        = string
   description = "Runtime for external function app"
