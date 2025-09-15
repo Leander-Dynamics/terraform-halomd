@@ -14,6 +14,30 @@ tags = {
   owner = "platform"
 }
 
+dns_zone_name = "az.halomd.com"
+
+dns_a_records = {
+  "api-dev" = {
+    ttl     = 3600
+    records = ["10.0.0.10"]
+  }
+}
+
+dns_cname_records = {
+  "web-dev" = {
+    ttl   = 3600
+    record = "web-arbit-dev.azurewebsites.net"
+  }
+  "func-ext-dev" = {
+    ttl   = 3600
+    record = "func-ext-arbit-dev.azurewebsites.net"
+  }
+  "func-cron-dev" = {
+    ttl   = 3600
+    record = "func-cron-arbit-dev.azurewebsites.net"
+  }
+}
+
 enable_aks = false
 enable_acr = false
 enable_storage = false

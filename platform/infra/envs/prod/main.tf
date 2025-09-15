@@ -28,6 +28,15 @@ module "rg" {
   tags     = var.tags
 }
 
+module "dns_zone" {
+  source              = "../../Azure/modules/dns-zone"
+  zone_name           = var.dns_zone_name
+  resource_group_name = module.rg.name
+  tags                = var.tags
+  a_records           = var.dns_a_records
+  cname_records       = var.dns_cname_records
+}
+
 module "logs" {
   source              = "../../Azure/modules/logs-insights"
   resource_group_name = module.rg.name

@@ -46,6 +46,30 @@ variable "tags" {
   default     = {}
 }
 
+variable "dns_zone_name" {
+  description = "Public DNS zone name to manage."
+  type        = string
+  default     = "az.halomd.com"
+}
+
+variable "dns_a_records" {
+  description = "DNS A records to create (keyed by record name)."
+  type = map(object({
+    ttl     = number
+    records = list(string)
+  }))
+  default = {}
+}
+
+variable "dns_cname_records" {
+  description = "DNS CNAME records to create (keyed by record name)."
+  type = map(object({
+    ttl   = number
+    record = string
+  }))
+  default = {}
+}
+
 variable "enable_aks" {
   type        = bool
   description = "Enable AKS deployment"
