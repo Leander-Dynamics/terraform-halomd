@@ -1,19 +1,22 @@
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Console;
 using Microsoft.Identity.Web;
 using MPArbitration.Model;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Text.Json;
-using System.Security.Principal;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Logging.Console;
 using Microsoft.OpenApi.Models;
 using MPArbitration.Utility;
+using System.Linq;
 using System.Reflection;
+using System.Security.Principal;
+using System.Text.Json;
 
 internal class Program
 {
@@ -23,6 +26,16 @@ internal class Program
         // The following line enables Application Insights telemetry collection.
         builder.Services.AddApplicationInsightsTelemetry();
         var configuration = builder.Configuration;
+        var corsAllowedOrigins = GetConfiguredValues(configuration, "Cors:AllowedOrigins");
+        var corsAllowedMethods = GetConfiguredValues(configuration, "Cors:AllowedMethods");
+        var corsAllowedHeaders = GetConfiguredValues(configuration, "Cors:AllowedHeaders");
+        builder.Services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
+            {
+                ConfigureCorsPolicy(policy, corsAllowedOrigins, corsAllowedMethods, corsAllowedHeaders);
+            });
+        });
         // increase file upload size to handle the benchmark files
         // https://bartwullems.blogspot.com/2022/01/aspnet-core-configure-file-upload-size.html
         // https://stackoverflow.com/questions/38698350/increase-upload-file-size-in-asp-net-core
@@ -172,7 +185,7 @@ internal class Program
             app.UseHsts();
         }
         app.MapSwagger().RequireAuthorization();
-        app.UseCors();
+        app.UseCors(/*policy name if not default*/);
         app.UseHttpsRedirection();
         app.UseStaticFiles();
         app.UseRouting();
@@ -193,5 +206,59 @@ internal class Program
         app.MapFallbackToFile("index.html");
         
         app.Run();
+    }
+
+    private static void ConfigureCorsPolicy(CorsPolicyBuilder policyBuilder, string[] allowedOrigins, string[] allowedMethods, string[] allowedHeaders)
+    {
+        if (allowedOrigins.Length == 0 || allowedOrigins.Any(origin => string.Equals(origin, "*", StringComparison.Ordinal)))
+        {
+            policyBuilder.AllowAnyOrigin();
+        }
+        else
+        {
+            policyBuilder.WithOrigins(allowedOrigins);
+        }
+
+        if (allowedMethods.Length == 0 || allowedMethods.Any(method => string.Equals(method, "*", StringComparison.Ordinal)))
+        {
+            policyBuilder.AllowAnyMethod();
+        }
+        else
+        {
+            policyBuilder.WithMethods(allowedMethods);
+        }
+
+        if (allowedHeaders.Length == 0 || allowedHeaders.Any(header => string.Equals(header, "*", StringComparison.Ordinal)))
+        {
+            policyBuilder.AllowAnyHeader();
+        }
+        else
+        {
+            policyBuilder.WithHeaders(allowedHeaders);
+        }
+    }
+
+    private static string[] GetConfiguredValues(IConfiguration configuration, string key)
+    {
+        var section = configuration.GetSection(key);
+        var values = section.Get<string[]>() ?? Array.Empty<string>();
+
+        if (values.Length > 0)
+        {
+            values = values
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .ToArray();
+        }
+
+        if (values.Length == 0 && !string.IsNullOrWhiteSpace(section.Value))
+        {
+            values = section.Value
+                .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(value => value.Trim())
+                .ToArray();
+        }
+
+        return values;
     }
 }
