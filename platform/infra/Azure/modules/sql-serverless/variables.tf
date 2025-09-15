@@ -1,81 +1,115 @@
 variable "server_name" {
-  type = string
+  description = "Name of the SQL Server."
+  type        = string
 }
 
-variable "db_name" {
-  type    = string
-  default = "halomd"
+variable "database_name" {
+  description = "Name of the SQL Database."
+  type        = string
+  default     = "halomd"
 }
 
 variable "resource_group_name" {
-  type = string
+  description = "Resource group hosting the SQL Server."
+  type        = string
 }
 
 variable "location" {
-  type = string
+  description = "Azure region where the SQL Server is deployed."
+  type        = string
 }
 
-variable "admin_login" {
-  type    = string
-  default = ""
+variable "administrator_login" {
+  description = "Administrator login for the SQL Server."
+  type        = string
+  default     = ""
 }
 
-variable "admin_password" {
-  type      = string
-  default   = ""
-  sensitive = true
+variable "administrator_password" {
+  description = "Administrator password for the SQL Server."
+  type        = string
+  sensitive   = true
+  default     = ""
 }
 
 variable "public_network_access_enabled" {
-  type    = bool
-  default = true
+  description = "Whether public network access is allowed."
+  type        = bool
+  default     = true
 }
 
 variable "minimum_tls_version" {
-  type    = string
-  default = "1.2"
+  description = "Minimum TLS version allowed."
+  type        = string
+  default     = "1.2"
 }
 
 variable "sku_name" {
-  type    = string
-  default = "GP_S_Gen5_2"
-}
-
-variable "min_capacity" {
-  type    = number
-  default = 0.5
-}
-
-variable "auto_pause_delay_in_minutes" {
-  type    = number
-  default = 60
+  description = "SKU for the serverless database (e.g., GP_S_Gen5_2)."
+  type        = string
+  default     = "GP_S_Gen5_2"
 }
 
 variable "max_size_gb" {
-  type    = number
-  default = 75
+  description = "Maximum database size in GB."
+  type        = number
+  default     = 75
+}
+
+variable "auto_pause_delay_in_minutes" {
+  description = "Auto-pause delay (in minutes) for the serverless database."
+  type        = number
+  default     = 60
+}
+
+variable "min_capacity" {
+  description = "Minimum vCore capacity."
+  type        = number
+  default     = 0.5
+}
+
+variable "max_capacity" {
+  description = "Maximum vCore capacity."
+  type        = number
+  default     = 4
+}
+
+variable "read_scale" {
+  description = "Enable read scale-out."
+  type        = bool
+  default     = false
 }
 
 variable "zone_redundant" {
-  type    = bool
-  default = false
+  description = "Enable zone redundancy for the database."
+  type        = bool
+  default     = false
+}
+
+variable "collation" {
+  description = "Database collation."
+  type        = string
+  default     = "SQL_Latin1_General_CP1_CI_AS"
 }
 
 variable "backup_storage_redundancy" {
-  type    = string
-  default = "Local"
-}
-
-variable "tags" {
-  type    = map(string)
-  default = {}
+  description = "Specifies the backup storage redundancy for the database. Possible values: Local, Zone, Geo."
+  type        = string
+  default     = "Local"
 }
 
 variable "firewall_rules" {
+  description = "List of firewall rules applied to the SQL Server."
   type = list(object({
     name             = string
     start_ip_address = string
     end_ip_address   = string
   }))
   default = []
+}
+
+variable "tags" {
+  description = "Tags to apply to SQL resources."
+  type        = map(string)
+  default     = {}
 }

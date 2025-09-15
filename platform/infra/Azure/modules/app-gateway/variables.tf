@@ -3,18 +3,23 @@ variable "name" {
   type        = string
 }
 
-variable "location" {
-  description = "Azure location for the Application Gateway."
-  type        = string
-}
-
 variable "resource_group_name" {
   description = "Resource group in which to deploy the Application Gateway."
   type        = string
 }
 
+variable "location" {
+  description = "Azure location for the Application Gateway."
+  type        = string
+}
+
 variable "subnet_id" {
   description = "Resource ID of the subnet where the Application Gateway will be placed."
+  type        = string
+}
+
+variable "fqdn_prefix" {
+  description = "Domain name label used for the public IP."
   type        = string
 }
 
@@ -28,10 +33,10 @@ variable "backend_fqdns" {
   }
 }
 
-variable "tags" {
-  description = "Tags to apply to all resources created by the module."
-  type        = map(string)
-  default     = {}
+variable "backend_port" {
+  description = "Port used to communicate with backend targets."
+  type        = number
+  default     = 443
 }
 
 variable "frontend_port" {
@@ -51,6 +56,12 @@ variable "frontend_protocol" {
   }
 }
 
+variable "listener_protocol" {
+  description = "Protocol for the default listener (legacy compatibility)."
+  type        = string
+  default     = "Http"
+}
+
 variable "ssl_certificate" {
   description = "Optional SSL certificate settings when using an HTTPS frontend listener."
   type = object({
@@ -61,10 +72,13 @@ variable "ssl_certificate" {
   default = null
 }
 
-variable "backend_port" {
-  description = "Port used to communicate with backend targets."
-  type        = number
-  default     = 443
+variable "trusted_client_certificates" {
+  description = "Optional trusted client certificates for mutual TLS."
+  type = list(object({
+    name = string
+    data = string
+  }))
+  default = []
 }
 
 variable "request_timeout" {
@@ -97,6 +111,12 @@ variable "health_probe_unhealthy_threshold" {
   default     = 3
 }
 
+variable "pick_host_name_from_backend_address" {
+  description = "Whether to use the backend address as the host header."
+  type        = bool
+  default     = true
+}
+
 variable "sku_name" {
   description = "SKU name for the Application Gateway."
   type        = string
@@ -121,3 +141,8 @@ variable "enable_http2" {
   default     = true
 }
 
+variable "tags" {
+  description = "Tags to apply to all resources created by the module."
+  type        = map(string)
+  default     = {}
+}

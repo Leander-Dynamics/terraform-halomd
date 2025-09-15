@@ -1,65 +1,209 @@
-# variables.tf - Cleaned and safe structure
-
 variable "location" {
-  description = "Azure region"
+  description = "Azure region for resource deployment."
   type        = string
 }
 
 variable "env_name" {
-  description = "Environment name (dev, stage, prod)"
+  description = "Environment name (e.g. dev, stage, prod)."
   type        = string
 }
 
 variable "project_name" {
-  description = "Project prefix (e.g. arbit)"
+  description = "Project or application identifier used for naming."
   type        = string
 }
 
 variable "subscription_id" {
-  description = "Azure Subscription ID"
+  description = "Azure subscription ID."
   type        = string
 }
 
 variable "tenant_id" {
-  description = "Azure Tenant ID"
+  description = "Azure tenant ID."
   type        = string
-}
-
-variable "app_insights_name" {
-  type        = string
-  description = "App Insights name"
-}
-
-variable "app_insights_resource_group_name" {
-  type        = string
-  description = "Optional resource group name for monitoring resources"
-  default     = null
 }
 
 variable "tags" {
+  description = "Common tags applied to all resources."
   type        = map(string)
-  description = "Tags to apply to resources"
   default     = {}
 }
 
-variable "app_gateway_subnet_id" {
-  description = "Subnet resource ID for the application gateway."
-  type        = string
-}
-
-variable "app_gateway_backend_hostnames" {
-  description = "List of backend hostnames for the application gateway."
+# -------------------------
+# Networking
+# -------------------------
+variable "vnet_address_space" {
+  description = "Address space assigned to the virtual network."
   type        = list(string)
 }
 
+variable "vnet_dns_servers" {
+  description = "Optional custom DNS servers applied to the virtual network."
+  type        = list(string)
+  default     = []
+}
+
+variable "subnets" {
+  description = "Map of subnet definitions keyed by subnet name."
+  type = map(object({
+    address_prefixes  = list(string)
+    service_endpoints = optional(list(string), [])
+    delegations = optional(list(object({
+      name = string
+      service_delegation = object({
+        name    = string
+        actions = list(string)
+      })
+    })), [])
+  }))
+}
+
+variable "app_gateway_subnet_key" {
+  description = "Key of the subnet used for the Application Gateway."
+  type        = string
+}
+
+variable "app_gateway_subnet_id" {
+  description = "Subnet resource ID for the Application Gateway."
+  type        = string
+}
+
+# -------------------------
+# Application Gateway
+# -------------------------
+variable "app_gateway_fqdn_prefix" {
+  description = "Domain name label for the Application Gateway public IP."
+  type        = string
+}
+
+variable "app_gateway_backend_fqdns" {
+  description = "Additional backend FQDNs joined to the App Gateway pool."
+  type        = list(string)
+  default     = []
+}
+
+variable "app_gateway_backend_hostnames" {
+  description = "List of backend hostnames for the Application Gateway."
+  type        = list(string)
+}
+
+variable "app_gateway_backend_port" {
+  description = "Backend port used by the Application Gateway."
+  type        = number
+  default     = 80
+}
+
+variable "app_gateway_backend_protocol" {
+  description = "Backend protocol used by the Application Gateway."
+  type        = string
+  default     = "Http"
+}
+
+variable "app_gateway_frontend_port" {
+  description = "Frontend port exposed by the Application Gateway."
+  type        = number
+  default     = 80
+}
+
+variable "app_gateway_listener_protocol" {
+  description = "Protocol for the default listener."
+  type        = string
+  default     = "Http"
+}
+
+variable "app_gateway_sku_name" {
+  description = "Application Gateway SKU name."
+  type        = string
+  default     = "Standard_v2"
+}
+
+variable "app_gateway_sku_tier" {
+  description = "Application Gateway SKU tier."
+  type        = string
+  default     = "Standard_v2"
+}
+
+variable "app_gateway_capacity" {
+  description = "Application Gateway capacity units."
+  type        = number
+  default     = 1
+}
+
+variable "app_gateway_enable_http2" {
+  description = "Enable HTTP/2 on the Application Gateway listener."
+  type        = bool
+  default     = true
+}
+
+variable "app_gateway_backend_request_timeout" {
+  description = "Request timeout for backend HTTP settings."
+  type        = number
+  default     = 30
+}
+
+variable "app_gateway_pick_host_name" {
+  description = "Use backend address host names for the host header."
+  type        = bool
+  default     = true
+}
+
+# -------------------------
+# App Service
+# -------------------------
+variable "app_service_plan_sku" {
+  description = "SKU used for the App Service plan."
+  type        = string
+}
+
+variable "app_service_plan_os_type" {
+  description = "Operating system for the App Service plan."
+  type        = string
+  default     = "Windows"
+}
+
+variable "app_service_fqdn_prefix" {
+  description = "Name of the App Service (also the default FQDN prefix)."
+  type        = string
+}
+
+variable "app_service_https_only" {
+  description = "Force HTTPS traffic only."
+  type        = bool
+  default     = true
+}
+
+variable "app_service_always_on" {
+  description = "Keep the App Service always on."
+  type        = bool
+  default     = true
+}
+
+variable "app_service_app_settings" {
+  description = "Application settings applied to the App Service."
+  type        = map(string)
+  default     = {}
+}
+
+variable "app_service_connection_strings" {
+  description = "Connection strings applied to the App Service."
+  type = map(object({
+    type  = string
+    value = string
+  }))
+  default = {}
+}
+
+# -------------------------
+# DNS
+# -------------------------
 variable "dns_zone_name" {
-  description = "Public DNS zone name to manage."
+  description = "DNS zone managed within the environment."
   type        = string
   default     = "az.halomd.com"
 }
 
 variable "dns_a_records" {
-  description = "DNS A records to create (keyed by record name)."
+  description = "DNS A records managed by Terraform."
   type = map(object({
     ttl     = number
     records = list(string)
@@ -68,7 +212,7 @@ variable "dns_a_records" {
 }
 
 variable "dns_cname_records" {
-  description = "DNS CNAME records to create (keyed by record name)."
+  description = "DNS CNAME records managed by Terraform."
   type = map(object({
     ttl   = number
     record = string
@@ -76,178 +220,91 @@ variable "dns_cname_records" {
   default = {}
 }
 
-variable "enable_aks" {
-  type        = bool
-  description = "Enable AKS deployment"
-  default     = false
-}
-
-variable "enable_acr" {
-  type        = bool
-  description = "Enable ACR deployment"
-  default     = false
-}
-
-variable "enable_storage" {
-  type        = bool
-  description = "Enable Storage Account deployment"
-  default     = false
-}
-
-variable "enable_sql" {
-  type        = bool
-  description = "Enable SQL deployment"
-  default     = false
-}
-
-variable "kv_public_network_access" {
-  type        = bool
-  description = "Allow public network access to Key Vault"
-  default     = true
-}
-
-variable "acr_sku" {
+# -------------------------
+# SQL
+# -------------------------
+variable "sql_database_name" {
+  description = "Optional SQL database name override."
   type        = string
-  description = "SKU for Azure Container Registry"
-  default     = "Basic"
-}
-
-variable "aks_node_count" {
-  type        = number
-  description = "Number of nodes for AKS"
-  default     = 1
-}
-
-variable "aks_vm_size" {
-  type        = string
-  description = "VM size for AKS nodes"
-  default     = "Standard_DS2_v2"
-}
-
-variable "web_plan_sku" {
-  type        = string
-  description = "App Service plan SKU"
-  default     = "B1"
-}
-
-variable "func_plan_sku" {
-  type        = string
-  description = "Function App plan SKU"
-  default     = "Y1"
-}
-
-variable "web_dotnet_version" {
-  type        = string
-  description = ".NET version for Web App"
-  default     = "8.0"
-}
-
-variable "arbitration_plan_sku" {
-  type        = string
-  description = "App Service plan SKU for arbitration app"
-  default     = "B1"
-}
-
-variable "arbitration_runtime_stack" {
-  type        = string
-  description = "Runtime stack for the arbitration web app"
-  default     = "dotnet"
-}
-
-variable "arbitration_runtime_version" {
-  type        = string
-  description = "Runtime version for the arbitration web app"
-  default     = "8.0"
-}
-
-variable "arbitration_connection_strings" {
-  description = "Connection strings to configure on the arbitration app"
-  type = map(object({
-    type  = string
-    value = string
-  }))
-  default = {}
-}
-
-variable "arbitration_app_settings" {
-  description = "Additional app settings for the arbitration app"
-  type        = map(string)
-  default     = {}
-}
-
-variable "arbitration_run_from_package" {
-  description = "Whether the arbitration app should run from package"
-  type        = bool
-  default     = true
-}
-
-variable "function_external_runtime" {
-  type        = string
-  description = "Runtime for external function app"
-  default     = "dotnet"
-}
-
-variable "function_cron_runtime" {
-  type        = string
-  description = "Runtime for cron function app"
-  default     = "python"
-}
-
-variable "sql_db_name" {
-  type        = string
-  description = "SQL database name"
-  default     = "halomd"
+  default     = ""
 }
 
 variable "sql_sku_name" {
+  description = "SKU for the serverless SQL database."
   type        = string
-  description = "SQL database SKU"
-  default     = "GP_S_Gen5_2"
-}
-
-variable "sql_auto_pause_minutes" {
-  type        = number
-  description = "Auto pause delay in minutes"
-  default     = 60
 }
 
 variable "sql_max_size_gb" {
+  description = "Maximum size of the SQL database in GB."
   type        = number
-  description = "Maximum size of the SQL database in GB"
   default     = 75
 }
 
-variable "sql_public_network_access" {
+variable "sql_auto_pause_delay" {
+  description = "Auto pause delay for the SQL database."
+  type        = number
+  default     = 60
+}
+
+variable "sql_min_capacity" {
+  description = "Minimum vCore capacity for the SQL database."
+  type        = number
+  default     = 0.5
+}
+
+variable "sql_max_capacity" {
+  description = "Maximum vCore capacity for the SQL database."
+  type        = number
+  default     = 4
+}
+
+variable "sql_read_scale" {
+  description = "Enable read scale-out on the SQL database."
   type        = bool
-  description = "Allow public network access to SQL"
+  default     = false
+}
+
+variable "sql_zone_redundant" {
+  description = "Enable zone redundancy on the SQL database."
+  type        = bool
+  default     = false
+}
+
+variable "sql_collation" {
+  description = "Collation applied to the SQL database."
+  type        = string
+  default     = "SQL_Latin1_General_CP1_CI_AS"
+}
+
+variable "sql_minimum_tls_version" {
+  description = "Minimum TLS version enforced on the SQL server."
+  type        = string
+  default     = "1.2"
+}
+
+variable "sql_public_network_access" {
+  description = "Allow public network access to the SQL server."
+  type        = bool
   default     = true
 }
 
 variable "sql_firewall_rules" {
+  description = "Firewall rules applied to the SQL server."
   type = list(object({
     name             = string
     start_ip_address = string
     end_ip_address   = string
   }))
+  default = []
 }
 
 variable "sql_admin_login" {
+  description = "Administrator login for the SQL server."
   type        = string
-  description = "SQL administrator login"
-  default     = ""
 }
 
 variable "sql_admin_password" {
+  description = "Administrator password for the SQL server."
   type        = string
-  description = "SQL administrator password"
-  default     = ""
   sensitive   = true
-}
-
-variable "sql_firewall_rules" {
-  type = list(object({
-    name             = string
-    start_ip_address = string
-    end_ip_address   = string
-  }))
 }

@@ -1,6 +1,6 @@
-project_name = "arbit"
-location     = "eastus"
-env_name = "prod"
+project_name    = "arbit"
+env_name        = "prod"
+location        = "eastus2"
 subscription_id = "930755b1-ef22-4721-a31a-1b6fbecf7da6"
 tenant_id       = "70750cc4-6f21-4c27-bb0e-8b7e66bcb2dd"
 
@@ -10,89 +10,97 @@ tags = {
   owner   = "platform"
 }
 
+# -------------------------
+# Networking
+# -------------------------
+vnet_address_space = ["10.30.0.0/16"]
+subnets = {
+  gateway = {
+    address_prefixes = ["10.30.0.0/24"]
+  }
+  web = {
+    address_prefixes = ["10.30.1.0/24"]
+  }
+}
+
+# For module using subnet keys
+app_gateway_subnet_key  = "gateway"
+
+# For module using direct subnet id
 app_gateway_subnet_id = "/subscriptions/930755b1-ef22-4721-a31a-1b6fbecf7da6/resourceGroups/rg-arbit-prod/providers/Microsoft.Network/virtualNetworks/vnet-arbit-prod/subnets/appgw"
 
+app_gateway_fqdn_prefix    = "agw-arbit-prod"
+app_gateway_backend_fqdns  = []
 app_gateway_backend_hostnames = [
   "app-halomdweb-prod.azurewebsites.net",
   "app-arbit-arb-prod.azurewebsites.net",
 ]
 
+# -------------------------
+# DNS
+# -------------------------
 dns_zone_name = "az.halomd.com"
 
 dns_a_records = {
   "api-prod" = {
     ttl     = 3600
-    records = ["10.2.0.10"]
+    records = ["10.30.1.10"]
   }
 }
 
 dns_cname_records = {
   "web-prod" = {
-    ttl   = 3600
-    record = "app-halomdweb-prod.azurewebsites.net"
-  }
-  "func-external-prod" = {
-    ttl   = 3600
-    record = "func-external-prod.azurewebsites.net"
-  }
-  "func-cron-prod" = {
-    ttl   = 3600
-    record = "func-cron-prod.azurewebsites.net"
+    ttl    = 3600
+    record = "app-arbit-prod.azurewebsites.net"
   }
 }
 
-enable_aks      = false
-enable_acr      = false
-enable_storage  = false
-enable_sql      = true
-kv_public_network_access = true
-
-acr_sku        = "Premium"
-aks_node_count = 3
-aks_vm_size    = "Standard_DS3_v2"
-web_plan_sku   = "P1v3"
-func_plan_sku  = "Y1"
-
-web_dotnet_version        = "8.0"
-function_external_runtime = "dotnet"
-function_cron_runtime     = "python"
-
-arbitration_plan_sku         = "P1v3"
-arbitration_runtime_stack    = "dotnet"
-arbitration_runtime_version  = "8.0"
-arbitration_connection_strings = {
-  ConnStr = {
+# -------------------------
+# App Service
+# -------------------------
+app_service_plan_sku    = "P2v3"
+app_service_fqdn_prefix = "app-arbit-prod"
+app_service_app_settings = {
+  "WEBSITE_RUN_FROM_PACKAGE" = "0"
+}
+app_service_connection_strings = {
+  PrimaryDatabase = {
     type  = "SQLAzure"
-    value = "Server=tcp:prod-arbit-sql.database.windows.net,1433;Initial Catalog=prod-arbit-db;User ID=sqladmin;Password=P@ssw0rd123!;Encrypt=True;"
-  }
-  IDRConnStr = {
-    type  = "SQLAzure"
-    value = "Server=tcp:prod-idr-sql.database.windows.net,1433;Initial Catalog=prod-idr-db;User ID=sqladmin;Password=P@ssw0rd123!;Encrypt=True;"
+    value = "Server=tcp:sql-arbit-prod.database.windows.net,1433;Initial Catalog=halomd;User ID=sqladminprod;Password=P@ssw0rd123!Prod;Encrypt=True;"
   }
 }
+
+# -------------------------
+# Arbitration App
+# -------------------------
 arbitration_app_settings = {
   "Storage__Connection" = "DefaultEndpointsProtocol=https;AccountName=prodarbitstorage;AccountKey=FakeKeyForProd==;EndpointSuffix=core.windows.net"
   "Storage__Container"  = "arbitration-calculator"
 }
 
-sql_db_name               = "halomd"
-sql_sku_name              = "GP_S_Gen5_2"
-sql_auto_pause_minutes    = 60
-sql_max_size_gb           = 75
-sql_public_network_access = true
-sql_firewall_rules = [
-  {
-    name             = "allow-any-sql"
-    start_ip_address = "0.0.0.0"
-    end_ip_address   = "255.255.255.255"
-  }
-]
-# sql_admin_login    = ""
-# sql_admin_password = ""
+# -------------------------
+# SQL Database
+# -------------------------
+# Support both sql_database_name and sql_db_name for different modules
+sql_database_name        = "halomd"
+sql_db_name              = "halomd"
 
+# Extended config
+sql_sku_name             = "GP_S_Gen5_4"
+sql_max_size_gb          = 128
+sql_auto_pause_delay     = 60
+sql_auto_pause_minutes   = 60
+sql_min_capacity         = 2
+sql_max_capacity         = 8
+sql_public_network_access = true
+
+sql_admin_login    = "sqladminprod"
+sql_admin_password = "P@ssw0rd123!Prod"
+
+# Firewall rules
 sql_firewall_rules = [
   {
-    name             = "allow-any-sql"
+    name             = "allow-all"
     start_ip_address = "0.0.0.0"
     end_ip_address   = "255.255.255.255"
   }
