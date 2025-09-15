@@ -3,7 +3,8 @@ variable "name" {
 }
 
 variable "storage_account_name" {
-  type = string
+  description = "Name of the existing storage account that hosts the container."
+  type        = string
 }
 
 variable "access_type" {
