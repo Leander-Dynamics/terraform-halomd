@@ -10,6 +10,30 @@ tags = {
   owner   = "platform"
 }
 
+dns_zone_name = "az.halomd.com"
+
+dns_a_records = {
+  "api-prod" = {
+    ttl     = 3600
+    records = ["10.2.0.10"]
+  }
+}
+
+dns_cname_records = {
+  "web-prod" = {
+    ttl   = 3600
+    record = "app-halomdweb-prod.azurewebsites.net"
+  }
+  "func-external-prod" = {
+    ttl   = 3600
+    record = "func-external-prod.azurewebsites.net"
+  }
+  "func-cron-prod" = {
+    ttl   = 3600
+    record = "func-cron-prod.azurewebsites.net"
+  }
+}
+
 enable_aks      = false
 enable_acr      = false
 enable_storage  = false
