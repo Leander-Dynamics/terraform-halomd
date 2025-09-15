@@ -17,11 +17,14 @@ COPY . .
 WORKDIR "/src/."
 
 ARG configuration=Release
+RUN npm ci --prefix ClientApp && npm run build --prefix ClientApp
 RUN dotnet build "MPArbitration.csproj" -c $configuration -o /app/build
 
 FROM build AS publish
 ARG configuration=Release
 RUN dotnet publish "MPArbitration.csproj" -c $configuration -o /app/publish /p:UseAppHost=false
+RUN mkdir -p /app/publish/ClientApp/dist \
+    && cp -r ClientApp/dist/. /app/publish/ClientApp/dist
 
 FROM base AS final
 WORKDIR /app
