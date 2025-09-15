@@ -5,6 +5,7 @@ resource "azurerm_storage_account" "sa" {
   account_tier             = var.account_tier
   account_replication_type = var.replication_type
   account_kind             = "StorageV2"
+  # Toggle anonymous blob access based on module input.
   allow_blob_public_access = var.allow_blob_public_access
   is_hns_enabled           = var.enable_hns
   min_tls_version          = var.min_tls_version
