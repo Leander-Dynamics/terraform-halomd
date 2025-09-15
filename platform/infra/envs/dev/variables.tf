@@ -233,6 +233,12 @@ variable "app_insights_resource_group_name" {
   default     = null
 }
 
+variable "app_insights_name" {
+  description = "Optional name override for the Application Insights resource."
+  type        = string
+  default     = ""
+}
+
 # -------------------------
 # DNS
 # -------------------------
