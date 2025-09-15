@@ -1,0 +1,8 @@
+{
+"SpaProxyServer": {
+"ServerUrl": "https://localhost:44473",
+"LaunchCommand": "npm start",
+"WorkingDirectory": "/home/runner/work/terraform-halomd/terraform-halomd/Arbitration/MPArbitration/ClientApp/",
+"MaxTimeoutInSeconds": "120"
+}
+}

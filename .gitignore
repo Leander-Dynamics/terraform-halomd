@@ -2,3 +2,11 @@
 **/.terraform.lock.hcl
 
 
+# Local configuration files containing secrets
+Arbitration/MPArbitration/appsettings.json
+Arbitration/MPNotify/App.config
+Arbitration/MPExternalDisputeAPI/appsettings.json
+Arbitration/MPArbitration/docker-compose.yml
+platform/infra/envs/dev/terraform.tfvars
+platform/infra/envs/stage/terraform.tfvars
+platform/infra/envs/prod/terraform.tfvars

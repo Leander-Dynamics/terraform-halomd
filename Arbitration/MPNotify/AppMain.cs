@@ -104,6 +104,32 @@ namespace MPNotify
         private static readonly string Resource = ConfigurationManager.AppSettings["resource"] ?? ""; // more Arbit Azure stuff
         private static readonly string TenantId = ConfigurationManager.AppSettings["tenant_id"] ?? "";  // more Arbit Azure stuff
 
+        private static string GetArbitrationDbConnectionString()
+        {
+            var configured = ConfigurationManager.AppSettings["ArbitrationDbConnectionString"];
+            if (!string.IsNullOrWhiteSpace(configured))
+            {
+                return configured;
+            }
+
+            var connectionString = ConfigurationManager.ConnectionStrings["ArbitrationDb"]?.ConnectionString;
+            if (!string.IsNullOrWhiteSpace(connectionString))
+            {
+                return connectionString;
+            }
+
+            var envValue = Environment.GetEnvironmentVariable("ARBITRATION_DB_CONNECTION_STRING");
+            if (!string.IsNullOrWhiteSpace(envValue))
+            {
+                return envValue;
+            }
+
+            throw new InvalidOperationException(
+                "The arbitration database connection string is not configured. " +
+                "Set the 'ArbitrationDbConnectionString' appSetting, the 'ArbitrationDb' connection string, " +
+                "or the 'ARBITRATION_DB_CONNECTION_STRING' environment variable.");
+        }
+
         string _assetEmailTemplate = "";
         private async Task<string> GetAssetEmailTemplate()
         {
@@ -1470,8 +1496,7 @@ namespace MPNotify
             //sgClient.UrlPath = "messages"; // https://api.sendgrid.com/v3/messages
 
             // connect
-            //var ConnStr = "Server=tcp:pe-arbitration-sql.database.windows.net,1433;Initial Catalog=pe-arbitrationCalc-db;Persist Security Info=False;User ID=arbitration-calculator-appuser;Password=&r4Bi$9Rx!#9RdnKldZSMJ!TEL;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30";
-            var ConnStr = "Server=tcp:de-arbitrationpoc-sql.database.windows.net,1433;Initial Catalog=de-arbitrationPOCCalc-db;Persist Security Info=False;User ID=arbitration-calculator-appuser;Password=6wD0AD^zsU8X*92yzf12MHm0Pc;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30";
+            var ConnStr = GetArbitrationDbConnectionString();
             var contextOptions = new DbContextOptionsBuilder<ArbitrationDbContext>()
                 .UseSqlServer(ConnStr)
                 .Options;

@@ -1,0 +1,2449 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MPArbitration</name>
+    </assembly>
+    <members>
+        <member name="M:MPArbitration.Controllers.ArbitrationController.GetCalculatorVariables(System.Nullable{System.DateTime})">
+            <summary>
+            Returns a set of variables as of a certain date
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.ArbitrationController.UpdateCalculatorVariables(MPArbitration.Model.CalculatorVariable)">
+            <summary>
+            Add a new set of vars for a service line
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.ArbitrationController.GetHealthItemsAsync(System.String,System.String)">
+            <summary>
+            Provides a download of individual items according to healt metrics
+            </summary>
+            <param name="r">Which report (metric) to generate</param>
+            <param name="c">Optional Customer filter</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.ArbitrationController.GetSystemMetrics(System.String)">
+            <summary>
+            Generates system health statistics
+            </summary>
+            <param name="c">Optionally filter by Customer name</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.ArbitrationController.ByAuthorityCaseId(System.String,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="authority">The authority brokering the settlement, e.g. TX</param>
+            <param name="id">The authority's case id number</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.ArbitrationController.GetUploadLogs(System.String)">
+            <summary>
+            Gets log files from Azure blob storage for the past 14 days
+            </summary>
+            <param name="authority"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.ArbitrationController.ImportDataAsync(Microsoft.AspNetCore.Http.IFormFile,System.String)">
+            <summary>
+            Not yet in use. Attempt to handle EHR upload using CSV library.
+            </summary>
+            <param name="file"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.ArbitratorsController.GetArbitratorsAsync(System.Boolean,System.Nullable{MPArbitration.Model.ArbitratorType},System.Boolean)">
+            <summary>
+            Fetch all Arbitrator records
+            </summary>
+            <param name="f">Include Fees</param>
+            <param name="t">Limit by ArbitratorType</param>
+            <param name="a">ActiveOnly. True excludes inactive records.</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.AuthoritiesController.RecalculateAuthorityTrackingAsync(System.String,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="key">Authority lookup key</param>
+            <param name="aa">ActiveOnly. Only update records in an "active" state. Default is True.</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.AuthoritiesController.DeleteTrackingAsync(System.Int32,System.Int32)">
+            <summary>
+            Does a soft delete so we can see who screwed the pooch.
+            </summary>
+            <param name="id"></param>
+            <param name="ndx"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.AuthoritiesController.GetFilesAsync(System.Int32,System.String)">
+            <summary>
+            Get all attachments / files for an Authority
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.AuthoritiesController.GetFilesByKeyAsync(System.String,System.String)">
+            <summary>
+            Get all attachments / files for an Authority using the Authority key 
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="T:MPArbitration.Controllers.BatchingController">
+            <summary>
+            This class applies batching rules for the given Authority anytime it returns data.
+            This is a quick way to start capturing (prototyping) rules that will eventually make it into
+            a Factory pattern or other more scalable middle tier framework.
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.GetDisputeAsync(System.Int32)">
+            <summary>
+            Returns a list of Customers with active ArbitrationCase records that are at the appropriate Authority status
+            </summary>
+            <param name="a">Authority Id</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.GetDisputeByCaseIdAsync(System.String)">
+            <summary>
+            Returns a list of Customers with active ArbitrationCase records that are at the appropriate Authority status
+            </summary>
+            <param name="a">Authority Id</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.GetAllAssignedItemsAsync(System.Int32,System.Int32,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="aid">Authority Id</param>
+            <param name="rid">Role Id</param>
+            <param name="at">(Optional) Assign To</param>
+            <returns>Instance of AuthorityDispute with the requested role assignment.</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.AutoAssignUserToDisputeRoleAsync(System.Int32,MPArbitration.Model.WorkQueueName,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="AuthorityId">Authority Id</param>
+            <param name="RoleId">Role Id</param>
+            <param name="at">(Optional) Assign To</param>
+            <returns>Instance of AuthorityDispute with the requested role assignment.</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.GetCustomersAsync(System.Int32)">
+            <summary>
+            Returns a list of Customers with active ArbitrationCase records that are at the appropriate Authority status
+            </summary>
+            <param name="a">Authority Id</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.GetClaimsAsync(System.Int32,System.Int32,System.Int32,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="a">Authority Id</param>
+            <param name="c">Customer Id</param>
+            <param name="e">Entity Id</param>
+            <param name="pv">ProviderNPI</param>
+            <returns>IEnumerable[Payor]</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.GetEntitiesAsync(System.Int32,System.Int32)">
+            <summary>
+            Returns a list of Customers with active ArbitrationCase records that are at the appropriate Authority status
+            </summary>
+            <param name="a">Authority Id</param>
+            <param name="c">Customer Id</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.GetPayorsAsync(System.Int32,System.Int32,System.Int32,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="a">Authority Id</param>
+            <param name="c">Customer Id</param>
+            <param name="e">Entity Id</param>
+            <param name="pv">ProviderNPI</param>
+            <returns>IEnumerable[Payor]</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.GetProvidersAsync(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Returns a list of Providers derived from active ArbitrationCase records that are at the appropriate Authority Status.
+            </summary>
+            <param name="a">Authority Id</param>
+            <param name="c">Customer Id</param>
+            <param name="e">Entity Id</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.SearchAsync(MPArbitration.Model.ArbitrationCase,System.Boolean,System.Boolean)">
+            <summary>
+            This method replaces the old, slow Search method.
+            </summary>
+            <param name="criteria"></param>
+            <param name="inactive"></param>
+            <param name="closed"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.DeleteAttachmentAsync(System.Int32,System.Int32,System.String,System.String)">
+            <summary>
+            Delete the BLOB and the db entry
+            </summary>
+            <param name="aaid">AuthorityAttachmentId</param>
+            <param name="did">Dispute Id</param>
+            <param name="dt">Document Type</param>
+            <param name="name">Document Name</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.GetActiveDisputeIdsForASetOfClaimNumbersAsync(System.Collections.Generic.IEnumerable{System.Int32},System.String)">
+            <summary>
+            Returns a list of AuthorityDisputes across all Authorities for a given set of EHR Claims. Active means the WorkflowStatus 
+            has not reached a terminal condition.
+            </summary>
+            <param name="EHRClaims">The ArbitrationCaseId(s) (EHR data) that are in dispute.</param>
+            <param name="CPTCode">The individual CPT in question or asterisk for all </param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.CheckArbitIdsForActiveCasesAsync(System.Collections.Generic.IEnumerable{System.Int32})">
+            <summary>
+            Checks a list of ArbitrationCase record numbers (aka EHR data) and determines which
+            one(s) have an AuthorityCaseId or NSACaseId plus a Workflow Status that is active.
+            </summary>
+            <param name="EHRClaims"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.GetAuthorityClaimsForBatchAsync(MPArbitration.Model.Authority,System.Int32[],MPArbitration.Model.AuthorityDisputeInit)">
+            <summary>
+            Authority-specific queries to return the list of claims and associated CPTs
+            </summary>
+            <param name="authority"></param>
+            <param name="ArbitIdNumbers"></param>
+            <param name="values"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BatchingController.GetGeoRegion(System.String)">
+            <summary>
+            Not implemented. Waiting for this data to become available and loaded into the data store.
+            </summary>
+            <param name="zip"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.BenchmarkController.Get(System.Int32,System.String,System.String,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="ds"></param>
+            <param name="p">Procedure Code</param>
+            <param name="g">GeoZip</param>
+            <param name="m26">Modifier 26</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.CasesController.GetArbitrationCase(System.Int32)">
+            <summary>
+            Fetch an ArbitrationCase by its PrimaryKey value.
+            </summary>
+            <param name="id">Integer PrimaryKey</param>
+            <returns>Single, matching ArbitrationCase</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.CasesController.GetArbitrationCaseByClaimId(System.String,System.Int32)">
+            <summary>
+            Fetch a shallow ArbitrationCase by the PayorClaimNumber.
+            This GET call is only used to verify that a Claim with a certain id exists, not to fetch the complete ArbitrationCase deep object.
+            </summary>
+            <param name="id">Integer PrimaryKey</param>
+            <returns>Single, matching ArbitrationCase</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.CasesController.CheckForAuthorityCase(System.String,System.String)">
+            <summary>
+            Returns True if there is any case without the IsDeleted flag in the system matching the given criteria. Not security trimmed.
+            </summary>
+            <param name="key">The Authority key</param>
+            <param name="id">The Authority's Case Id</param>
+            <returns>True or False</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.CasesController.GetArbitrationCaseIdByAuthority(System.String,System.String)">
+            <summary>
+            Fetch a shallow ArbitrationCase by the PayorClaimNumber.
+            This GET call is only used to verify that a case with a certain claim id exists, not to fetch the complete ArbitrationCase deep object.
+            </summary>
+            <param name="id">Integer PrimaryKey</param>
+            <returns>Single, matching ArbitrationCase</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.CasesController.GetCurrentCases(System.String)">
+            <summary>
+            CurrentCases refer to cases that haven't been Settled, Closed or marked Ineligible, as well as cases
+            without the IsDeleted flag set to true.
+            </summary>
+            <param name="u"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.CasesController.GetBriefDueSoon(System.Int32)">
+            <summary>
+            TODO: This needs updating to differentiate between NSA briefs and State briefs. 
+            It currently uses the single date field in the ArbitrationCase header but this doesn't work with "NSA cases".
+            Since current version of Entity Framework doesn't work with JSON, make this into a raw SQL call that 
+            uses a UNION of two queries involving both the NSATracking and CaseTracking values, mapping the
+            records back into ArbitrationCase objects.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.CasesController.SearchAsync(MPArbitration.Model.ArbitrationCase,System.Boolean,System.Boolean)">
+            <summary>
+            This method replaces the old, slow Search method.
+            </summary>
+            <param name="criteria"></param>
+            <param name="inactive"></param>
+            <param name="closed"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.CasesController.CreateCaseAsync(MPArbitration.Model.ArbitrationCase)">
+            <summary>
+            Create a new Case
+            </summary>
+            <param name="arbCase"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.CustomersController.GetEntityById(System.String)">
+            <summary>
+            This method assumes (per the Business spec) that an NPI is only ever associated with a single Customer.
+            NPINumber is a unique key in the Entities table.
+            </summary>
+            <param name="npi"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.CustomersController.GetEntitiesByName(System.String)">
+            <summary>
+            Find all Entities whose name contains the name parameter.
+            </summary>
+            <param name="npi"></param>
+            <returns></returns>
+        </member>
+        <member name="T:MPArbitration.Controllers.DisputeController">
+            <summary>
+            Controller to handle dispute actions
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.#ctor(Microsoft.Extensions.Logging.ILogger{MPArbitration.Controllers.DisputeController},MPArbitration.Model.ArbitrationDbContext,MPArbitration.Model.DisputeIdrDbContext,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Contstructor to handle initializations
+            </summary>
+            <param name="logger">Ilogger to inject DisputeController</param>
+            <param name="context">ArbitrationDbContext  instance</param>
+            <param name="idr_context">DisputeIdrDbContext instance</param>
+            <param name="configuration">IConfiguration instance</param>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getDisputeList(MPArbitration.Model.DisputeSearchInput,MPArbitration.Model.PaginationFilter)">
+            <summary>
+            Action to get dispute data's with search filter options
+            </summary>s
+            <param name="searchInput"> Search filter input</param>
+            <param name="paginationFilter"> Paging information</param>
+            <returns>List of dispute data's with paging informations</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getDisputeByDisputeNumber(System.String)">
+            <summary>
+            Action to get dispute data's by dispute number
+            </summary>s
+            <param name="disputeNumber"> Dispute number input</param>
+            <returns>Dispute detail object with data's </returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getDisputeMasterEntity">
+            <summary>
+            Action to get dispute entity master datas
+            </summary>
+            <returns>List of dispute entity master datas</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getDisputeMasterServiceLine">
+            <summary>
+            Action to get service line master datas
+            </summary>
+            <returns>List of service line master datas</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getDisputeMasterCertifiedEntity">
+            <summary>
+            Action to get dispute certified entity master datas
+            </summary>
+            <returns>List of dispute certified entity master datas</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getDisputeMasterDisputeStatus">
+            <summary>
+            Action to get dispute status master datas
+            </summary>
+            <returns>List of dispute status master datas</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getDisputeMasterCustomer">
+            <summary>
+            Action to get dispute customer master datas
+            </summary>
+            <returns>List of dispute customer master datas</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getDisputeMasterProviderNPI">
+            <summary>
+            Action to get dispute provider NPI  master datas
+            </summary>
+            <returns>List of dispute provider NPI master datas</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getDisputeArbitIds(System.String)">
+            <summary>
+            Action to get dispute arbitId's with search 
+            </summary>
+            <returns>List of all dispute ArbitId's if search condition met, 
+             If search input not given will returns top 500 latest ArbitId's
+            </returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getDisputeLogsById(System.Int32)">
+            <summary>
+            Action to get dispute log data's by id
+            </summary>s
+            <param name="id"> Id of dispute table(DisputMaster/DisputeCPT)</param>
+            <returns>List of dispute log data's </returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getBriefApprover">
+            <summary>
+            Action method to get all brief approver users from arbit appusers
+            </summary>
+            <returns> List of brief approver users</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.UpdateDisputeStatusByID(System.Int32,System.String,System.String)">
+            <summary>
+            Action to update dispute status by disputeId
+            </summary>
+            <param name="disputeId"> Dispute Id input</param>
+            <param name="disputeStatus"> Dispute status input</param>
+            <param name="briefApprover"> Brief Approver input</param>
+            <returns>Update success message</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.updateDispute(MPArbitration.Model.DisputeDetail)">
+            <summary>
+            Action to update dispute data's 
+            </summary>s
+            <param name="disputeDetail"> Dispute detail object input</param>
+            <returns>Update success message</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.deleteDisputeCPTbyId(System.Int32)">
+            <summary>
+            To delete a DisputeCPT data by id
+            </summary>
+            <param name="id"> DisputeCPT id</param>
+            <returns>Delete success message</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getDisputeListResponse(MPArbitration.Model.DisputeSearchInput,MPArbitration.Model.PaginationFilter)">
+            <summary>
+            Method to get dispute data's with search filter options
+            </summary>
+            <param name="searchInput"> Search filter input</param>
+            <param name="paginationFilter"> Paging information</param>
+            <returns>List of dispute data's with paging informations</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.getDisputeDetailsResponse(System.String)">
+            <summary>
+            Method to get dispute data's by disputeNumber
+            </summary>
+            <param name="disputeNumber"> DisputeNumber input</param>
+            <returns>Dispute object with data's </returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.DisputeController.updateDisputeDetail(MPArbitration.Model.DisputeDetail,System.Nullable{System.DateTime})">
+            <summary>
+            Method to update dispute data's
+            </summary>
+            <param name="disputeDetail"> disputeDetail input</param>
+            <returns>Success message if recors updated else respective error message</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.MasterDataController.GetMasterDataExceptionsAsync(System.Boolean)">
+            <summary>
+            Returns MasterDataException records
+            </summary>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:MPArbitration.Controllers.NotesController.CreateNoteAsync(System.Int32,MPArbitration.Model.Note)" -->
+        <!-- Badly formed XML comment ignored for member "M:MPArbitration.Controllers.NotesController.CreateAuthorityDisputeNoteAsync(MPArbitration.Model.AuthorityDisputeNote)" -->
+        <member name="M:MPArbitration.Controllers.NotificationsController.UpdateNotificationAsync(MPArbitration.Model.Notification)">
+            <summary>
+            Only allows limited updating of the JSON data, not the other DB columns.
+            </summary>
+            <param name="obj"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.NotificationsController.MergeAllDuplicatesAsync">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.PayorsController.GetPayorFilesAsync(System.Int32,System.String)">
+            <summary>
+            Get all attachments / files for a Payor
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.SettlementsController.CreateMultipleCaseSettlementsAsync(MPArbitration.Model.CaseSettlement[])">
+            <summary>
+            
+            </summary>
+            <param name="settlement">CPTs belonging to multiple ArbitrationCase records will result in the creation of multiple settlements</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.TemplatesController.GetAllTemplatesAsync">
+            <summary>
+            Returns all templates but omits the HTML. Useful for supporting fast filtering and manipulation on the client side.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.TemplatesController.GetTemplateAsync(System.Int32)">
+            <summary>
+            Gets a Template record, including HTML
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:MPArbitration.Controllers.TemplatesController.CreateTemplateAsync(MPArbitration.Model.Template)" -->
+        <!-- Badly formed XML comment ignored for member "M:MPArbitration.Controllers.TemplatesController.UpdateTemplateAsync(System.Int32,MPArbitration.Model.Template)" -->
+        <member name="T:MPArbitration.Controllers.WorkflowController">
+            <summary>
+            Work flow controller
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.#ctor(Microsoft.Extensions.Logging.ILogger{MPArbitration.Controllers.WorkflowController},MPArbitration.Model.ArbitrationDbContext,MPArbitration.Model.DisputeIdrDbContext,Microsoft.Extensions.Configuration.IConfiguration,MPArbitration.Model.IImportDataSynchronizer,System.Security.Principal.IPrincipal)">
+            <summary>
+            Constructor
+            </summary>
+            <param name="logger"></param>
+            <param name="context"></param>
+            <param name="idr_context"></param>
+            <param name="configuration"></param>
+            <param name="synchronizer"></param>
+            <param name="principal"></param>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.GetArbitIdFromDisputeNumber(System.String)">
+            <summary>
+            Retrieves a list of arbitration cases based on the given Dispute Number.
+            </summary>
+            <param name="disputeNumber"> Dispute Number (string, required) param: The Dispute Number of the arbitration cases to retrieve. 
+            Must start with "DISP-".</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.GetArbitIdFromAuthorityCaseID(System.String)">
+            <summary>
+            Retrieves a list of arbitration cases based on the given authority case ID.
+            </summary>
+            <param name="authorityCaseId">authorityCaseId (string, required) param: The authority case ID of the arbitration cases to retrieve.</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.GetArbitIdFromPayorClaimNumber(System.String)">
+            <summary>
+            Retrieves a list of arbitration cases based on the given payor claim number.
+            </summary>
+            <param name="payorClaimNumber"> Payor Claim Number (string, required) param: The payor claim number of the arbitration cases to retrieve.</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.UpdateAuthorityCase(MPArbitration.Model.UpdateAuthorityCasePayLoad)">
+            <summary>
+            Update the arbitration case based on the given authority case ID.
+            </summary>
+            <param name="authorityCasePayLoad"> Update authority case payLoad</param>
+            <returns> Updated arbitration case object</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.updateByPayorClaimNumber(MPArbitration.Model.UpdateByPayorClaimNumberPayload)">
+            <summary>
+            Update the Arbitration case based on the given Payor Claim Number.
+            </summary>
+            <param name="payorClaimNumberPayload"> Update Payor Claim Number payLoad</param>
+            <returns> Updated arbitration case object </returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.updateByDisputeNumber(MPArbitration.Model.UpdateByDisputeNumberPayload)">
+            <summary>
+            Update the arbitration case and disputes based on the given Dispute Number.
+            </summary>
+            <param name="disputeNumberPayload"> Update Dispute Number payLoad</param>
+            <returns>Updated arbitration case object</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.UploadDocument(Microsoft.AspNetCore.Http.IFormFile,MPArbitration.Model.UploadDocumentInput)">
+            <summary>
+            To upload document
+            </summary>
+            <response code="200">Success</response>
+            <response code="400">Bad Request</response>
+            <response code="500">Internal Server error</response>
+            <returns>  Returns action status</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.GetStateResponse(System.String)">
+            <summary>
+            Get State Response
+            </summary>
+            <param name="authorityCaseId"> AuthorityCaseId input</param>
+            <returns> List of WorkflowState</returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.GetPayorClaimNumberResponse(System.String)">
+            <summary>
+            Get Payor Claim Number Response
+            </summary>
+            <param name="payorClaimNumber"> Payor Claim Number</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.GetNSAResponse(System.String)">
+            <summary>
+            Get NSA Response
+            </summary>
+            <param name="disputeNumber"></param>
+            <returns></returns>
+            <exception cref="T:System.Exception"></exception>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.GetNegotiationDate(System.String)">
+            <summary>
+            Get negotiation date from nsaTracjking json
+            </summary>
+            <param name="nsaTracking"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Controllers.WorkflowController.FirstResponseDateOnly(System.Nullable{System.DateTime})">
+            <summary>
+            first response convert to dateonly from datetime
+            </summary>
+            <param name="firstRespononseDt"></param>
+            <returns></returns>
+        </member>
+        <member name="T:MPArbitration.Model.APIResponse">
+            <summary>
+            Entity to define the API response structure
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.APIResponse.statusCode">
+            <summary>
+            Status code of the respnse 
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.APIResponse.message">
+            <summary>
+            Respnse message
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.APIResponse.data">
+            <summary>
+            Response data's
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.StatusMessage">
+            <summary>
+            Entity to define response messages
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.StatusMessage.Success">
+            <summary>
+            Success
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.StatusMessage.NotSuccess">
+            <summary>
+            Not success
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.StatusMessage.InvalidRequest">
+            <summary>
+            InvalidRequest
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.AppHealthDetail">
+            <summary>
+            A general "view model" class that is used to pass a narrow set of properties back to the Arbit UI client app 
+            and the MPNotify daemon app (the code path that builds PDFs based on SendGrid activity).
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.AppHealthDetail.CreatedOn">
+            MPower field e.g. MPowerHealth, etc 
+        </member>
+        <member name="P:MPArbitration.Model.AppHealthDetail.DOB">
+            MPower field e.g. MPowerHealth, etc 
+        </member>
+        <member name="P:MPArbitration.Model.AppHealthDetail.NotificationJSON">
+            MPower field - sometimes known as FirstResponseDate_Post 
+        </member>
+        <member name="P:MPArbitration.Model.AppHealthDetail.ProviderNPI">
+            Doctor's name 
+        </member>
+        <member name="P:MPArbitration.Model.AppHealthDetail.ReceivedFromCustomer">
+            Doctor's NPI license number 
+        </member>
+        <member name="P:MPArbitration.Model.AppHealthDetail.DeliveryStatus">
+            MPower field - short form of Service e.g. IOM 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.AuthorityCaseId">
+            e.g. TX. The width of this is set to 40 in the ThirteenthMigration 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.CalculatedPayorFinalOfferAmount">
+            Override the zip used to calculate a benchmark 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.EHRNumber">
+            not editable in UI *
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.DOB">
+            MPower field e.g. MPowerHealth, etc 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.DisputedAmount">
+            TDI DaysOpen 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.Entity">
+            TDI DisputedAmount 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.EntityNPI">
+            MPower field - provider entity name
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ExpectedArbFee">
+            TDI EstimatedDisputedAmount 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.FirstResponsePayment">
+            MPower field - sometimes known as FirstResponseDate_Post 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.IneligibilityAction">
+            TDI History 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.InformalTeleconferenceDate">
+            TDI IneligibleReasons 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.IsDeleted">
+            TDI InformalTeleconferenceDate 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.IsUnread">
+            MPower field - allows soft delete and history tracking to continue 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.LocationGeoZip">
+            MPower field - back-end process updates applied flag 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.MethodOfPayment">
+            MPower field - full zip code of service location 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.NSAAuthority">
+            TDI MethodOfPayment 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.NSAIneligibilityAction">
+            NSA Portal submission ID(s) aka IDR Number(s) 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.NSARequestDiscount">
+            TDI IneligibleReasons 
+        </member>
+        <member name="F:MPArbitration.Model.ArbitrationCase._NSATracking">
+            NSA Portal submission status - 'Not Submitted' until IDR number is received 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.NSAWorkflowStatus">
+            The last saved version of any NSA date tracking info 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.OriginalBilledAmount">
+            Internal NSA process tracking  
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.PatientName">
+            TDI OriginalBilledAmount 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.PatientShareAmount">
+            TDI PatientName 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.PaymentMadeDate">
+            TDI PatientShareAmount 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.PaymentReferenceNumber">
+            TDI PaymentMadeDate 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.Payor">
+            TDI PaymentReferenceNumber 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.PayorNegotiator">
+            MPower field - see foreign keys up above 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.PayorGroupName">
+            TDI PayorFinalOfferAmount *
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.PlanType">
+            TDI PlanPaidAmount 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.PolicyNumber">
+            MPower PlanType 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.PolicyType">
+            MPower PolicyNumber 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ProjectedProfitFromFormalArb">
+            TDI PolicyType 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ProviderName">
+            MPower field - calculated 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ProviderNegotiator">
+            Doctor's name 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ProviderFinalOfferAmount">
+            Doctor's NPI license number 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ProviderFinalOfferAdjustedAmount">
+            TDI ProviderFinalOfferAmount 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ProviderFinalOfferCalculatedAmount">
+            MPower field - manual override value 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ProviderFinalOfferNotToExceed">
+            MPower field - calculated offer amount 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ProviderPaidDate">
+            MPower field - calculated 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ProviderType">
+            TDI ProviderPaidDate 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ReasonableAmount">
+            TDI ProviderType 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ReceivedFromCustomer">
+            MPower field - calculated 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.RequestType">
+            TDI RequestDate 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ResolutionDeadlineDate">
+            TDI RequestType 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.Service">
+            TDI ResolutionDeadlineDate 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ServiceLine">
+            TDI ServiceDate 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.ServiceLocationCode">
+            MPower field - short form of Service e.g. IOM 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.Status">
+            aka PlaceOfServiceCode - Found in table PlaceOfServiceCodes 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.SubmittedBy">
+            aka AuthorityWorkflowStatus - Local (State) Work flow control 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.TotalPaidAmount">
+            TDI Submitted By 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.TotalChargedAmount">
+            MPower field - calculated 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.UpdatedBy">
+            MPower field - calculated 
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.WasDisputeSettledOutsideOfArbitration">
+            TDI post-case question
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.WasDisputeSettledWithTeleconference">
+            TDI post-case question
+        </member>
+        <member name="P:MPArbitration.Model.ArbitrationCase.NegotiationNoticeDeadline">
+            TDI post-case question
+        </member>
+        <member name="T:MPArbitration.Model.AuthorityDisputeFeeCSV">
+            <summary>
+            Class used for importing CSV records using alternate foreign key values
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.AuthorityDisputeFeeCSV.ArbitratorEntityName">
+            <summary>
+            If relevant, the text name of the Arbitration Entity that owns this Fee depending on the value of FeeRecipient.
+            Without this property, fees imports would require a lot of duplicate logic.
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.AuthorityDisputeFeeCSV.AuthorityKey">
+            <summary>
+            Combine with AuthorityCaseId to reference the targeted AuthorityDispute without using a database Id.
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.AuthorityDisputeFeeCSV.AuthorityCaseId">
+            <summary>
+            Combine with AuthorityId to reference the targeted AuthorityDispute without using a database Id.
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.AuthorityDisputeFeeCSV.FeeName">
+            <summary>
+            Alternate primary key for locating the base fee
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.AuthorityDisputeFee">
+            <summary>
+            Storage for Arbitrator and Authority fee instances
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.AuthorityFee">
+            <summary>
+            A configured fee for an Authority. All configured fees are copied into each new dispute.
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.AuthorityJson">
+            <summary>
+            Convenience class for using JsonSerializer.Deserialize.
+            Does NOT persist any values back into the parent's JSON field.
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.CaseArchive.AuthorityStatus">
+            e.g. TDI RequestID 
+        </member>
+        <member name="P:MPArbitration.Model.CaseArchive.AuthorityWorkflowStatus">
+            e.g. TDI Status 
+        </member>
+        <member name="T:MPArbitration.Model.CaseFile">
+            <summary>
+            ViewModel class for transmitting blob store information back to the client
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.CaseSettlementDetail">
+            <summary>
+            Used to record received or disbursed payments against a CaseSettlement.
+            NOTE: These should directly map to EOBs issued by a Payor, not "future expected payments".
+            The CaseSettlement is used to track expected awards or liabilities as the result of 
+            formal or informal negotiations. 
+            TODO: Once existing data is refactord and split, the "move to CaseSettlement" properties should be deleted.
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.CaseSettlementCPT.PerUnitAwardAmount">
+            MPower field - allows soft delete and history tracking to continue 
+        </member>
+        <member name="P:MPArbitration.Model.ClaimCPT.isDeleted">
+            MPower field - allows soft delete and history tracking to continue 
+        </member>
+        <member name="T:MPArbitration.Model.DisputeCPT">
+            <summary>
+            Entity to handle dispute CPT level activities
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeCPT.Id">
+            <summary>
+            Used to hold Id
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeCPT.ArbitId">
+            <summary>
+            Used to hold Arbit Id
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeCPT.DisputeNumber">
+            <summary>
+            Used to hold Dispute number
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeCPT.CPTCode">
+            <summary>
+            Used to hold CPT code
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeCPT.BenchmarkAmount">
+            <summary>
+            Used to hold benchmark amount
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeCPT.ProviderOfferAmount">
+            <summary>
+            Used to hold provider offer amount
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeCPT.PayorOfferAmount">
+            <summary>
+            Used to hold payor offer amount
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeCPT.PrevailingParty">
+            <summary>
+            Used to hold prevailing party
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeCPT.AwardAmount">
+            <summary>
+            Used to hold award amount
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "P:MPArbitration.Model.DisputeCPT.PayorClaimNumber" -->
+        <member name="M:MPArbitration.Model.DisputeCPT.#ctor(System.Int32,System.Int32,System.String)">
+            <summary>
+            Constructor with params
+            </summary>
+            <param name="id">CPT Id</param>
+            <param name="arbitId"> Arbit Id</param>
+            <param name="disputeNumber"> Dispute number</param>
+        </member>
+        <member name="T:MPArbitration.Model.DisputeDetail">
+            <summary>
+            Entity to handle DisputeDetail
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeDetail.DisputeCPTs">
+            <summary>
+            To hold initiation date
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.DisputeIdrDbContext">
+            <summary>
+            Entity to handle DisputeIdrDbContext
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeIdrDbContext.DisputeMaster">
+            <summary>
+            DBSet to hold DisputeMaster table data's
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeIdrDbContext.DisputeCPT">
+            <summary>
+            DBSet to hold DisputeCPT table data's
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeIdrDbContext.REF_DisputeMasterCertifiedEntity">
+            <summary>
+            DBSet to hold REF_DisputeMasterCertifiedEntity table data's
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeIdrDbContext.REF_DisputeMasterDisputeStatus">
+            <summary>
+            DBSet to hold REF_DisputeMasterDisputeStatus table data's
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeIdrDbContext.REF_DisputeMasterCustomer">
+            <summary>
+            DBSet to hold REF_DisputeMasterCustomer table data's
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeIdrDbContext.REF_DisputeMasterEntity">
+            <summary>
+            DBSet to hold REF_DisputeMasterEntity table data's
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeIdrDbContext.REF_DisputeMasterServiceLine">
+            <summary>
+            DBSet to hold REF_DisputeMasterServiceLine table data's
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeIdrDbContext.XLog_ChangeLog">
+            <summary>
+            DBSet to hold DisputeLog data's
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.DisputeIdrDbContext.#ctor(Microsoft.EntityFrameworkCore.DbContextOptions{MPArbitration.Model.DisputeIdrDbContext})">
+            <summary>
+            Construction to initialize objects
+            </summary>
+            <param name="options"></param>
+        </member>
+        <member name="M:MPArbitration.Model.DisputeIdrDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <summary>
+            On model creating handler to set additional properties
+            </summary>
+            <param name="modelBuilder">ModelBuilder object</param>
+        </member>
+        <member name="T:MPArbitration.Model.DisputeList">
+            <summary>
+            Model to hold dispute API response data's
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeList.Id">
+            <summary>
+            Used to hold DisbuteId
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeList.DisputeNumber">
+            <summary>
+            To hold dispute number
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeList.Customer">
+            <summary>
+            To hold customer name
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeList.DisputeStatus">
+            <summary>
+            Used to get initiation date input
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeList.Entity">
+            <summary>
+            To hold Entity name
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeList.CertifiedEntity">
+            <summary>
+            Used to get certified entity input
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeList.NumberOfCPTs">
+            <summary>
+            Used to hold cpt's count
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeList.FeeAmountAdmin">
+            <summary>
+            Used to hold fee amount
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeList.FeeAmountEntity">
+            <summary>
+            Used to hold fee amount entity
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeList.FeeAmountTotal">
+            <summary>
+            Used to hold fee amount total
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeList.BriefApprover">
+            <summary>
+            Used to hold brief approver
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.DisputeLog">
+            <summary>
+            Entity to handle Dispute log 
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeLog.ChangeLogID">
+            <summary>
+            Used to hold ChangeLogID
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeLog.TransactionID">
+            <summary>
+            Used to hold TransactionID
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeLog.TableName">
+            <summary>
+            Used to hold Entity name where the activity done
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeLog.Activity">
+            <summary>
+            Used to hold Activity type
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeLog.PreviousValue">
+            <summary>
+            Used to hold PreviousValue
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeLog.NewValue">
+            <summary>
+            Used to hold NewValue
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeLog.CreatedBy">
+            <summary>
+            Used to hold CreatedBy
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeLog.CreatedDate">
+            <summary>
+            Used to hold CreatedOn
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.DisputeMaster">
+            <summary>
+            Entity to handle dispute master data's
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.Id">
+            <summary>
+            Used to hold DisbuteId
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.ArbitId">
+            <summary>
+            Used to hold arbitID
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.DisputeNumber">
+            <summary>
+            Used to hold dispute numer
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.DisputeStatus">
+            <summary>
+            Used to hold initiation date input
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.DisputeWorkFlowStatus">
+            <summary>
+            Used to hold dispute workflow
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.Customer">
+            <summary>
+            Used to hold customer
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.Entity">
+            <summary>
+            Used to hold entity
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.EntityNPI">
+            <summary>
+            Used to hold entity APi
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.Payor">
+            <summary>
+            Used to hold payor
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.BriefDueDate">
+            <summary>
+            Used to hold brief due date
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.BriefSubmissionLink">
+            <summary>
+            Used to hold BriefSubmissionLink
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.BriefApprover">
+            <summary>
+            Used to hold brief approver
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.BriefAssignedDate">
+            <summary>
+            Used to hold brief assignedDate date
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.SubmissionDate">
+            <summary>
+            Used to hold submission date
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.CertifiedEntity">
+            <summary>
+            Used to hold certified entity
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.IDRESelectionDate">
+            <summary>
+            Used to hold IDR selection date
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.FormalReceivedDate">
+            <summary>
+            Used to hold FormalReceivedDate date
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.FeeRequestDate">
+            <summary>
+            Used to hold fee request date
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.FeeDueDate">
+            <summary>
+            Used to hold fee due date
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.FeeAmountAdmin">
+            <summary>
+            Used to hold fee amount
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.FeeAmountEntity">
+            <summary>
+            Used to hold fee amount entity
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.FeeAmountTotal">
+            <summary>
+            Used to hold fee amount total
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.FeeInvoiceLink">
+            <summary>
+            Used to hold fee invoice link
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.FeePaidDate">
+            <summary>
+            Used to hold fee paid date
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.AwardDate">
+            <summary>
+            Used to hold award date
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.FeePaidAmount">
+            <summary>
+            Used to hold fee paid amount
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.CreatedBy">
+            <summary>
+            Used to hold CreatedBy
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.CreatedOn">
+            <summary>
+            Used to hold CreatedOn
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.UpdatedBy">
+            <summary>
+            Used to hold UpdatedBy
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.UpdatedOn">
+            <summary>
+            Used to hold updated on 
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.Comments">
+            <summary>
+            Used to hold Comments
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMaster.ServiceLine">
+            <summary>
+            Used to hold ServiceLine
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.DisputeMaster.#ctor">
+            <summary>
+            Default constructor
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.DisputeMaster.#ctor(System.Int32,System.String)">
+            <summary>
+            Constructor with parameters
+            </summary>
+            <param name="arbitId"> Used to get Arbit Id</param>
+            <param name="disputeNumber"> Used to get Dispute number</param>
+        </member>
+        <member name="T:MPArbitration.Model.DisputeMasterCertifiedEntity">
+            <summary>
+            Entity to handle certified entity master data
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMasterCertifiedEntity.CertifiedEntity">
+            <summary>
+            Used to hold certified entity
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.DisputeMasterCustomer">
+            <summary>
+            Entity to handle dispute customer master data's
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMasterCustomer.Customer">
+            <summary>
+            Used to hold customer
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.DisputeMasterDisputeStatus">
+            <summary>
+            Entity to handle dispute status master data's
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMasterDisputeStatus.DisputeStatus">
+            <summary>
+            Used to hold dispute status
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.DisputeMasterEntity">
+            <summary>
+            Entity to hadle entity master data's
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMasterEntity.Entity">
+            <summary>
+            Used to hold entity
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.DisputeMasterServiceLine">
+            <summary>
+            Entity to hold service line master
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeMasterServiceLine.ServiceLine">
+            <summary>
+            Used to hold service line
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.DisputeSearchInput">
+            <summary>
+            Entity used for dispute custom search filter 
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeSearchInput.DisputeNumber">
+            <summary>
+            Used to get dispute number input
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeSearchInput.Customer">
+            <summary>
+            Used to get customer input
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeSearchInput.DisputeStatus">
+            <summary>
+            Used to get dispute status input
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeSearchInput.Entity">
+            <summary>
+            Used to get entity input
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeSearchInput.CertifiedEntity">
+            <summary>
+            Used to get certified entity input
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeSearchInput.BriefDueDateFrom">
+            <summary>
+            Used to get BriefDueDate from  date
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeSearchInput.BriefDueDateTo">
+            <summary>
+            Used to get BriefDueDate to  date
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeSearchInput.BriefApprover">
+            <summary>
+            Used to get BriefDueDate to  date
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeSearchInput.EntityNPI">
+            <summary>
+            Used to get provider NPI
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.DisputeSearchInput.ArbitID">
+            <summary>
+            Used to get arbitID
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.Entity">
+            <summary>
+            Per design by the business (MPower), an Entity can only ever belong to a single Customer.
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.Extensions">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.GetNumbers(System.String)">
+            <summary>
+            .
+            </summary>
+            <param name="text"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.ApplyToEach``1(``0[],System.Func{``0,``0})">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="array"></param>
+            <param name="mutator"></param>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.StringJoin(System.Collections.Generic.IEnumerable{System.String},System.String)">
+            <summary>
+            
+            </summary>
+            <param name="values"></param>
+            <param name="separator"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.IsValidJSONString(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="JSONString"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.IsNumeric(System.Type)">
+            <summary>
+            
+            </summary>
+            <param name="type"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.AddWorkDays(System.DateTime,System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="date"></param>
+            <param name="workingDays"></param>
+            <returns></returns>
+            <exception cref="T:System.Exception"></exception>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.EnsureHolidays(MPArbitration.Model.ArbitrationDbContext)">
+            <summary>
+            
+            </summary>
+            <param name="context"></param>
+            <returns></returns>
+        </member>
+        <member name="F:MPArbitration.Model.Extensions.holidays">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.IsHoliday(System.DateTime)">
+            <summary>
+            
+            </summary>
+            <param name="date"></param>
+            <returns></returns>
+        </member>
+        <member name="T:MPArbitration.Model.Extensions.ContextForQuery`1">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.Query``1(System.String,System.String,System.Object[])">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="connectionString"></param>
+            <param name="query"></param>
+            <param name="parameters"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.TruncateStringsBasedOnMaxLength``1(Microsoft.EntityFrameworkCore.DbContext,``0,Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="context"></param>
+            <param name="entityObject"></param>
+            <param name="logger"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.AddCondition``1(System.Linq.IQueryable{``0},System.Func{System.Boolean},System.Linq.Expressions.Expression{System.Func{``0,System.Boolean}})">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="queryable"></param>
+            <param name="predicate"></param>
+            <param name="filter"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.SanitizeToDigitsOnly(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.Truncate(System.String,System.Int32,Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            
+            </summary>
+            <param name="s"></param>
+            <param name="length"></param>
+            <param name="logger"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.Clone``1(``0)">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="source"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.BuildObject``1(System.IServiceProvider,System.Object[])">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="serviceProvider"></param>
+            <param name="parameters"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Extensions.AddBusinessDays(System.DateTime,System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="current"></param>
+            <param name="days"></param>
+            <returns></returns>
+        </member>
+        <member name="T:MPArbitration.Model.ImportDataSynchronizer">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.ImportDataSynchronizer.Authorities">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.ImportDataSynchronizer.CalculatorVariables">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.ImportDataSynchronizer.Customers">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.ImportDataSynchronizer.Payors">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.ImportDataSynchronizer.ProcedureCodes">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.#ctor(Microsoft.Extensions.Logging.ILogger{MPArbitration.Model.ImportDataSynchronizer},Microsoft.Extensions.Configuration.IConfiguration,System.Security.Principal.IPrincipal)">
+            <summary>
+            
+            </summary>
+            <param name="logger"></param>
+            <param name="configuration"></param>
+            <param name="principal"></param>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.Finalize">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.ImportIDRDisputeDetailsAsync(System.Collections.Generic.IEnumerable{MPArbitration.Model.DisputeCPT},MPArbitration.Model.AppUser,MPArbitration.Model.JobQueueItem)">
+            <summary>
+            
+            </summary>
+            <param name="records"></param>
+            <param name="currentUser"></param>
+            <param name="currentJob"></param>
+            <exception cref="T:System.Exception"></exception>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.ArchiveCaseAsync(MPArbitration.Model.ArbitrationCase,MPArbitration.Model.AppUser,MPArbitration.Model.Authority,System.Boolean,System.Boolean)">
+            <summary>
+            Creates a new ArchiveCases record and resets the AuthorityCaseId and AuthorityStatus and AuthorityWorkflowStatus fields.
+            </summary>
+            <param name="originalCase"></param>
+            <param name="user"></param>
+            <param name="au"></param>
+            <param name="resetOriginal"></param>
+            <param name="saveInstantly"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.ArchiveIfNecessaryAsync(MPArbitration.Model.IAuthorityCase,MPArbitration.Model.ArbitrationCase,MPArbitration.Model.AppUser)">
+            <summary>
+            
+            </summary>
+            <param name="newArbCase"></param>
+            <param name="ArbitCaseInDB"></param>
+            <param name="runAs"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.BatchQueueNotificationsAsync(System.Collections.Generic.IEnumerable{MPArbitration.Model.Notification},MPArbitration.Model.AppUser,System.String)">
+            <summary>
+            Validates and save many Notifications into the queue all at once.
+            </summary>
+            <param name="Notifications"></param>
+            <param name="RunAs"></param>
+            <param name="FullUserName"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.FindArbitrationCase(MPArbitration.Model.IEHRKey,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>
+            Find an ArbitrationCase record using the encounter composite key of PatientName + ServiceDate + ProviderNPI.
+            </summary>
+            <param name="criteria"></param>
+            <param name="skipDOBCheck">When false, the patient's DOB is required to be present in the criteria. Note that if a record is found and the DOB is in the criteria is will always be used as a sanity check.</param>
+            <param name="skipPCNCheck">When false, a message is returned indicating that the PayorClaimNumber in the criteria conflicts with different set of "encounter" criteria</param>
+            <param name="skipCustomerCheck">When false, Customer is excluded from the search criteria</param>
+            <param name="returnValue">The ArbitrationCase record if found</param>
+            <param name="message">Empty if the criteria points to one and only one record.</param>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.SaveUploadLog(System.String,System.String,System.DateTime,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="docType"></param>
+            <param name="authority"></param>
+            <param name="uploadDate"></param>
+            <param name="log"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.SyncArbitrators(MPArbitration.Model.TDIRequestDetails,MPArbitration.Model.ArbitrationCase)">
+            <summary>
+            
+            </summary>
+            <param name="TDIRequestDetail"></param>
+            <param name="arb"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.SyncTDIsToCases(System.Int32,System.Collections.Generic.List{MPArbitration.Model.TDIRequestDetails},MPArbitration.Model.JobQueueItem)">
+            <summary>
+            This method should eventually be replaced by SyncAuthorityImportToCases which will be flexible enough to handle all authority configurations.
+            </summary>
+            <param name="authorityId"></param>
+            <param name="TDIRecords"></param>
+            <param name="job"></param>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.ValidateArbitrationCase(MPArbitration.Model.ArbitrationCase,System.Boolean,MPArbitration.Model.Authority,MPArbitration.Model.Authority,System.Boolean,MPArbitration.Model.AppUser,System.Boolean)">
+            <summary>
+            
+            </summary>
+            <param name="caseRecord"></param>
+            <param name="skipDOBCheck"></param>
+            <param name="nsaAuthority"></param>
+            <param name="stateAuthority"></param>
+            <param name="isUpdate"></param>
+            <param name="caller"></param>
+            <param name="calledByImport"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.EnsureCalculatorVariables">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.EnsureCustomers">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.EnsurePayors(System.Boolean)">
+            <summary>
+            Grabs Payors (without JSON!)
+            </summary>
+            <param name="ExcludeJSON"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.EnsureProcedureCodes">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.CopySourceValueToTargetValue(System.Object,System.Reflection.PropertyInfo,System.String,System.Text.StringBuilder)">
+            <summary>
+            
+            </summary>
+            <param name="targetObject"></param>
+            <param name="targetProp"></param>
+            <param name="value"></param>
+            <param name="log"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.CreateArbitrationCase(MPArbitration.Model.ArbitrationCase,System.Boolean,MPArbitration.Model.AppUser,System.DateTime,MPArbitration.Model.Authority,MPArbitration.Model.CaseLog,MPArbitration.Model.Authority,System.Boolean)">
+            <summary>
+            Creates a new ArbitrationCase record only (does not create any child records such as ClaimCPT codes).
+            Used by the bulk import processes.
+            </summary>
+            <param name="caseRecord"></param>
+            <param name="runAs"></param>
+            <param name="batchUploadDate"></param>
+            <param name="nsa"></param>
+            <param name="changeLog"></param>
+            <param name="au">Local authority object with Tracking schema loaded</param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.FindAndUpdateEHRHeader(MPArbitration.Model.ArbitrationCase,System.Collections.Generic.List{MPArbitration.Model.ImportFieldConfig},System.Int32,System.DateTime,System.Text.StringBuilder,System.Boolean,System.Boolean,MPArbitration.Model.AppUser,MPArbitration.Model.Authority)">
+            <summary>
+            Uses the configs list to decide what data to copy from caseRecord (which usually contains the values copied from the 
+            CSV import file) to either a new ArbitrationCase record or the original record located in the database.
+            </summary>
+            <param name="caseRecord"></param>
+            <param name="configs"></param>
+            <param name="rowCount"></param>
+            <param name="batchUploadDate"></param>
+            <param name="log"></param>
+            <param name="isDryRun"></param>
+            <param name="createCaseIfMissing"></param>
+            <param name="runAs"></param>
+            <param name="nsa"></param>
+            <returns></returns>
+            <exception cref="T:System.ArgumentException"></exception>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.ProcessAuthorityChanges(MPArbitration.Model.ArbitrationCase,System.String,System.Boolean,Microsoft.Extensions.Logging.ILogger{MPArbitration.Model.ImportDataSynchronizer},System.Collections.Generic.IEnumerable{MPArbitration.Model.AuthorityStatusMapping},System.Text.StringBuilder)">
+            <summary>
+            Check for any status changes and apply business rules
+            </summary>
+            <param name="target"></param>
+            <param name="previousStatus"></param>
+            <param name="_logger"></param>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.SyncObjectData(System.Object,System.Object,System.Collections.Generic.IEnumerable{MPArbitration.Model.ImportFieldConfig})">
+            <summary>
+            Uses a list of ImportFieldConfig objects as a rule set when copying property values (with matching names and data types) from source to target.
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.ImportDataSynchronizer.EnsureAuthorities">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="F:MPArbitration.Model.ImportFieldAction.NeverWithEmpty">
+            <summary>
+            never overwrite the target field with an empty value - prevent bulk erasure using a bad import file
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.ImportFieldConfig">
+            <summary>
+            defaiult model validation is disable for this. because of exception. But model validation is done in the action method
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.ImportFieldConfig.CanBeEmpty">
+            <summary>
+            when evaluating an imported row, this field (even if required to be present) can have an empty value
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.ImportFieldConfig.Description">
+            <summary>
+            use this to describe or link to any business rules affected by altering the settings
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.ImportFieldConfig.IsRequired">
+            <summary>
+            a column of this name must be in the import
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.ImportFieldConfig.IsTracking">
+            <summary>
+            this column's targetFieldname is found in the Tracking record
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.ImportFieldConfig.TargetAuthorityKey">
+            <summary>
+            for future use - will allow for granular targeting of authority-only custom fields
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.ImportUtils.AddMasterDataException(Microsoft.Extensions.Logging.ILogger{MPArbitration.Model.ImportDataSynchronizer},MPArbitration.Model.MasterDataExceptionType,System.String,System.String,MPArbitration.Model.ArbitrationDbContext)">
+            <summary>
+            If an unresolved MasteDataExcption matching the parameters is not found, this
+            method adds a new object to the EF context and persists it.
+            </summary>
+            <param name="mdeType"></param>
+            <param name="data"></param>
+            <param name="message"></param>
+            <param name="user"></param>
+            <returns>Returns the newly added exception or the existing unresolved one.</returns>
+        </member>
+        <member name="T:MPArbitration.Model.INotificationDocument">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.INotificationDocument.ArbitrationCaseId">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.INotificationDocument.HTML">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.INotificationDocument.JSON">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.INotificationDocument.Name">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.INotificationDocument.NotificationType">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.FeeRecipient">
+            <summary>
+            Useful for determining where to send the fee payment or request a refund
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.MPBaseController">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.MPBaseController.#ctor(MPArbitration.Model.ArbitrationDbContext,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            
+            </summary>
+            <param name="context"></param>
+            <param name="configuration"></param>
+        </member>
+        <member name="P:MPArbitration.Model.AuthorityDisputeNoteCSV.AuthorityKey">
+            <summary>
+            Combine with AuthorityCaseId to reference the targeted AuthorityDispute without using a database Id.
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.AuthorityDisputeNoteCSV.AuthorityCaseId">
+            <summary>
+            Combine with AuthorityId to reference the targeted AuthorityDispute without using a database Id.
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.OfferHistory.OfferType">
+            Email, Fax, Phone, Text, Other 
+        </member>
+        <member name="P:MPArbitration.Model.OfferHistory.Notes">
+            The type of offer such as Payor, Provider or even something like PayorInformal 
+        </member>
+        <member name="T:MPArbitration.Model.PaginationFilter">
+            <summary>
+            Paging filter input 
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.PaginationFilter.PageNumber">
+            <summary>
+            Page number of the current page 
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.PaginationFilter.PageSize">
+            <summary>
+            Page size(i.e. Number of records to be retrieved
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.PagedResponse`1">
+            <summary>
+            Paged response to be return as API get
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="M:MPArbitration.Model.PagedResponse`1.#ctor(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+             Paged response to hold defualt paged data's 
+            </summary>
+            <param name="data"> input data's</param>
+        </member>
+        <member name="M:MPArbitration.Model.PagedResponse`1.#ctor(System.Collections.Generic.IEnumerable{`0},MPArbitration.Model.Paging)">
+            <summary>
+            Paged response to hold paged data's 
+            </summary>
+            <param name="data"> input data's</param>
+            <param name="paging"> Paging informations</param>
+        </member>
+        <member name="P:MPArbitration.Model.PagedResponse`1.Disputes">
+            <summary>
+            Disputes as IEnumerable
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.PagedResponse`1.PagerInfo">
+            <summary>
+            To hold pager information
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.Paging">
+            <summary>
+            Entity to handle pager information
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.Paging.PageNumber">
+            <summary>
+            Page number
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.Paging.PageSize">
+            <summary>
+            Page size
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.Paging.NextPage">
+            <summary>
+            Next page number if available
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.Paging.PreviousPage">
+            <summary>
+            Previous page number
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.Paging.TotalRecords">
+            <summary>
+            Total number of records
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.UpdateAuthorityCasePayLoad">
+            <summary>
+            Entity used to set the payload information for AuthorityCase update from workflow
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateAuthorityCasePayLoad.AuthorityCaseId">
+            <summary>
+            Used to set AuthorityCaseId from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateAuthorityCasePayLoad.InformalTeleconferenceDate">
+            <summary>
+            Used to set InformalTeleconferenceDate from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateAuthorityCasePayLoad.ArbitrationBriefDueDate">
+            <summary>
+            Used to set ArbitrationBriefDueDate from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateAuthorityCasePayLoad.AuthorityStatus">
+            <summary>
+            Used to set AuthorityStatus from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateAuthorityCasePayLoad.NSAWorkflowStatus">
+            <summary>
+            Used to set NSAWorkflowStatus from payload
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.UpdateByDisputeNumberPayload">
+            <summary>
+            Diapute update payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.DisputeNumber">
+            <summary>
+            Used to set disputeNumber from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.DisputeStatus">
+            <summary>
+            Used to set disputeStatus from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.FeeAmountAdmin">
+            <summary>
+            Used to set feeAmountAdmin from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.FeeAmountEntity">
+            <summary>
+            Used to set feeAmountEntity from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.FeeDueDate">
+            <summary>
+            Used to set feeDueDate from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.NSACaseId">
+            <summary>
+            Used to set NSACaseId from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.NSAStatus">
+            <summary>
+            Used to set NSAStatus from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.NSAWorkflowStatus">
+            <summary>
+            Used to set NSAWorkflowStatus from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.Notes">
+            <summary>
+            Used to set Notes from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.FormalReceivedDate">
+            <summary>
+            Used to set Formalreceiveddate from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.BriefDueDate">
+            <summary>
+            Used to set BriefDueDate from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.AssignmentDeadlineDate">
+            <summary>
+            Used to set AssignmentDeadlineDate from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByDisputeNumberPayload.ArbitratorAssignmentDate">
+            <summary>
+            Used to set ArbitratorAssignmentDate from payload
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.UpdateByPayorClaimNumberPayload">
+            <summary>
+            Entity to get payload information for UpdateByPayorClaimNumber
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByPayorClaimNumberPayload.PayorClaimNumber">
+            <summary>
+            Used to set PayorClaimNumber from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByPayorClaimNumberPayload.DisputeStatus">
+            <summary>
+            Used to set DisputeStatus from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByPayorClaimNumberPayload.AuthorityStatus">
+            <summary>
+            Used to set AuthorityStatus from payload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UpdateByPayorClaimNumberPayload.NSAWorkflowStatus">
+            <summary>
+            Used to set NSAWorkflowStatus from payload
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Model.UploadDocumentInput">
+            <summary>
+            Entity to handle document details for file upload
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UploadDocumentInput.DocumentType">
+            <summary>
+            Used to hold Document Type
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UploadDocumentInput.AuthorityCaseId">
+            <summary>
+            Used to hold Authority Case Id
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.UploadDocumentInput.PayorClaimNumber">
+            <summary>
+            Used to hold Payor Claim Number
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.FixStateArbitrationCaseDates(MPArbitration.Model.ArbitrationCase)">
+            <summary>
+            Makes date corrections under the assumption that values earlier than Central Standard Time are likely skewed toward UTC time.
+            This can result in date "drift" that shifts dates to the wrong day in the USA.
+            </summary>
+            <param name="claim"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.FixRawCaseSettlementDates(System.Collections.Generic.IEnumerable{MPArbitration.Model.CaseSettlement})">
+            <summary>
+            Makes date corrections under the assumption that values earlier than Central Standard Time are likely skewed toward UTC time.
+            This can result in date "drift" that shifts dates to the wrong day in the USA.
+            </summary>
+            <param name="Settlements"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.FixRawTDIDates(MPArbitration.Model.TDIRequestDetails)">
+            <summary>
+            Convert any Unspecified dates to Central Standard Time (Where Texas is located)
+            TODO: Could use Reflection to apply a particular time zone to ALL date properties of ANY object.
+            </summary>
+            <param name="tdi"></param>
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.ReplaceHtmlTokens(System.String,MPArbitration.Model.NotificationType,System.Text.Json.Nodes.JsonObject,MPArbitration.Model.CalculatorVariable,MPArbitration.Model.Authority,Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            Replaces all found tokens with matching values from a JsonObject
+            </summary>
+            <param name="html"></param>
+            <param name="docType"></param>
+            <param name="src"></param>
+            <param name="calcVars"></param>
+            <param name="auth"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.ConvertFromUtcToCST(System.Nullable{System.DateTime})">
+            <summary>
+            Converts a UTC or Unknown DateTime to CST
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.GetCalculatedValue(System.String,MPArbitration.Model.NotificationType,System.Text.Json.Nodes.JsonObject,MPArbitration.Model.CalculatorVariable,MPArbitration.Model.Authority,Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            Returns a property value for a given property name. 
+            Also matches some pre-defined global and calculated symbols. 
+            Used to fill out HTML templates with embedded tokens.
+            </summary>
+            <param name="propertyName"></param>
+            <param name="templateType"></param>
+            <param name="src">An object containing all the necessary properties to power this function.</param>
+            <param name="calcVars"></param>
+            <param name="auth"></param>
+            <returns>Returns a string representation of the value matching propertyName. NOTE: A series of underscore characters is returned for 
+            missing or otherwise incompatible values. This was done as a safeguard against sending out any false or misleading info
+            such as an invalid dollar amount or date that might jeopardize ongoing negotiations. Is this following some explicit
+            "coding standards"? Probably not. Is it a viable safeguard for the organization? Probably so.</returns>        
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.GetPayorByAliasAsync(MPArbitration.Model.ArbitrationDbContext,System.String,System.Boolean)">
+            <summary>
+            Fetches the top-level Parent payor given the name of any of its aliases.
+            </summary>
+            <param name="context"></param>
+            <param name="name"></param>
+            <param name="includeGroups"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.ReadGenericCSVRecord``1(Microsoft.AspNetCore.Http.IFormFile,System.String@)">
+            <summary>
+            
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="file"></param>
+            <param name="message"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.SetTrackingValue(System.Nullable{System.DateTime},System.Collections.Generic.List{MPArbitration.Model.AuthorityTrackingDetail},System.String,System.String,MPArbitration.Model.ArbitrationCase)">
+            <summary>
+            Sets the value of a tracking field stored in a custom tracking schema and then updates defined calculations.
+            </summary>
+            <param name="value"></param>
+            <param name="trackingDetails"></param>
+            <param name="trackingJson"></param>
+            <param name="trackingFieldName"></param>
+            <returns>JSON formatted string with the update value and calculated values</returns>
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.UpdateTrackingCalculations(System.Text.Json.Nodes.JsonNode,System.Collections.Generic.List{MPArbitration.Model.AuthorityTrackingDetail},System.Object)">
+            <summary>
+            Recalculates the Tracking values according to the configured rule set. Also updates any suspicious UTC or Unknown dates to be at least 6 AM.
+            This is to address any issues that may arise when an early-morning UTC date causes the calendar "day" value to be interpreted as the day prior in the USA.
+            </summary>
+            <param name="TrackingNode"></param>
+            <param name="TrackingDetailConfigList"></param>
+            <param name="TrackedRecord"></param>
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.CalculateAuthoritySettlement(MPArbitration.Model.Authority,MPArbitration.Model.CaseSettlement,MPArbitration.Model.ArbitrationCase)">
+            <summary>
+            Uses Authority-specific rules to update the Gross and Net settlement values if they are new or match previous values. 
+            Otherwise, a messages is returned.
+            </summary>
+            <param name="auth"></param>
+            <param name="settlement"></param>
+            <param name="arb"></param>
+            <returns>An empty string if the settlement values are new or unchanged from existing values, or a message detailing the conflict.</returns>
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.ValidateNotificationRequest(MPArbitration.Model.Notification,MPArbitration.Model.ArbitrationCase,System.Collections.Generic.IEnumerable{MPArbitration.Model.Notification},System.Collections.Generic.IEnumerable{MPArbitration.Model.Customer},System.Collections.Generic.List{MPArbitration.Model.Payor},System.Collections.Generic.IEnumerable{MPArbitration.Model.CalculatorVariable},System.Collections.Generic.IEnumerable{MPArbitration.Model.Authority})">
+            <summary>
+            Basic validation to ensure only one particular type of Notification can be queued up at a time. This should expand over time to be the single point of Notification validation, regardless of Notification type.
+            </summary>
+            <param name="Notification"></param>
+            <param name="ArbCase"></param>
+            <param name="PendingNotifications"></param>
+            <param name="Customers"></param>
+            <param name="Payors"></param>
+            <param name="CalculatorVariables"></param>
+            <param name="Authorities"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MPArbitration.Model.Utilities.ValidateTracking(MPArbitration.Model.ArbitrationCase,MPArbitration.Model.Authority,MPArbitration.Model.Authority,System.Boolean)">
+            <summary>
+            Validates the NSA and (State) Authority Tracking objects in one call, updating the NSATracking and TrackingDetails fields if necessary.
+            </summary>
+            <param name="arb">ArbitrationCase object</param>
+            <param name="auth">Local Authority object</param>
+            <param name="nsa">NSA Authority object</param>
+            <returns></returns>
+        </member>
+        <member name="T:MPArbitration.Model.WorkflowBase">
+            <summary>
+            Entity for WorkflowBase
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowBase.ArbitId">
+            <summary>
+            Used to hold ArbitId
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowBase.ArbitrationCase">
+            <summary>
+            Used to hold ArbitrationCase
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowBase.Payor">
+            <summary>
+            Used to hold Payor
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowBase.Customer">
+            <summary>
+            Used to hold Customer
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowBase.StateCode">
+            <summary>
+            Used to hold StateCode
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowBase.DateNegotiationSent">
+            <summary>
+            Used to hold DateNegotiationSent
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowBase.FirstResponseDate">
+            <summary>
+            Used to hold FirstResponseDate
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowBase.CertifiedEntityName">
+            <summary>
+            Used to hold the certified entity name
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowBase.CertifiedEntityId">
+            <summary>
+            Used to hold the certified entity id
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.WorkflowBase.#ctor(System.Int32,MPArbitration.Model.Payor,MPArbitration.Model.Customer,System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.String,System.Int32)">
+            <summary>
+            Constructor
+            </summary>
+            <param name="arbitId"></param>
+            <param name="payor"></param>
+            <param name="customer"></param>
+            <param name="stateCode"></param>
+            <param name="dateNegotiationSent"></param>
+            <param name="firstResponseDate"></param>
+            <param name="certifiedEntityName"></param>
+            <param name="certifiedEntityId"></param>
+        </member>
+        <member name="T:MPArbitration.Model.WorkflowState">
+            <summary>
+            Entity for WorkflowState
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowState.AuthorityDisputeID">
+            <summary>
+            Used to hold AuthorityDisputeID
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowState.IsDeleted">
+            <summary>
+            Used to hold IsDeleted
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowState.CaseSettlementId">
+            <summary>
+            Used to hold CaseSettlementId
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.WorkflowState.#ctor(System.Int32,MPArbitration.Model.Payor,MPArbitration.Model.Customer,System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.String,System.Boolean,System.Nullable{System.Int32},System.String,System.Int32)">
+            <summary>
+            Constructor
+            </summary>
+            <param name="arbitId"></param>
+            <param name="payor"></param>
+            <param name="customer"></param>
+            <param name="stateCode"></param>
+            <param name="dateNegotiationSent"></param>
+            <param name="firstResponseDate"></param>
+            <param name="authorityDisputeID"></param>
+            <param name="isDeleted"></param>
+            <param name="caseSettlementId"></param>
+            <param name="certifiedEntityName"></param>
+            <param name="certifiedEntityId"></param>
+        </member>
+        <member name="T:MPArbitration.Model.WorkflowNSA">
+            <summary>
+            Entity for WorkflowNSA
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowNSA.DisputeNumber">
+            <summary>
+            Used to hold DisputeNumber
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowNSA.NegotiationSentDate">
+            <summary>
+            Used to hold NegotiationSentDate
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.WorkflowNSA.#ctor(System.Int32,MPArbitration.Model.Payor,MPArbitration.Model.Customer,System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.String,System.String,System.Int32)">
+            <summary>
+            Constructor
+            </summary>
+            <param name="arbitId"></param>
+            <param name="payor"></param>
+            <param name="customer"></param>
+            <param name="stateCode"></param>
+            <param name="dateNegotiationSent"></param>
+            <param name="firstResponseDate"></param>
+            <param name="disputeNumber"></param>
+            <param name="certifiedEntityName"></param>
+            <param name="certifiedEntityId"></param>
+        </member>
+        <member name="T:MPArbitration.Model.WorkflowPayorClaim">
+            <summary>
+            Entity for WorkflowPayorClaim
+            </summary>
+        </member>
+        <member name="P:MPArbitration.Model.WorkflowPayorClaim.PayorClaimNumber">
+            <summary>
+            Used to hold PayorClaimNumber
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Model.WorkflowPayorClaim.#ctor(System.Int32,MPArbitration.Model.Payor,MPArbitration.Model.Customer,System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.String,System.String,System.Int32)">
+            <summary>
+            constructor
+            </summary>
+            <param name="arbitId"></param>
+            <param name="payor"></param>
+            <param name="customer"></param>
+            <param name="stateCode"></param>
+            <param name="dateNegotiationSent"></param>
+            <param name="firstResponseDate"></param>
+            <param name="payorClaimNumber"></param>
+            <param name="certifiedEntityName"></param>
+            <param name="certifiedEntityId"></param>
+        </member>
+        <member name="M:MPArbitration.Utility.ApiKeyAuthenticationHandler.HandleAuthenticateAsync">
+            <summary>
+             Handler for API key authendication
+            </summary>
+            <returns> valid token for successful validations else respective error message</returns>
+        </member>
+        <member name="T:MPArbitration.Utility.DataConstants">
+            <summary>
+            Used to manage all constants, Enums and other common static values 
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Utility.DataConstants.StatusCodes">
+            <summary>
+            Enum to maintain status codes
+            </summary>
+        </member>
+        <member name="F:MPArbitration.Utility.DataConstants.StatusCodes.Success">
+            <summary>
+            Success
+            </summary>
+        </member>
+        <member name="F:MPArbitration.Utility.DataConstants.StatusCodes.InvalidToken">
+            <summary>
+            InvalidToken
+            </summary>
+        </member>
+        <member name="F:MPArbitration.Utility.DataConstants.StatusCodes.BadRequest">
+            <summary>
+            BadRequest
+            </summary>
+        </member>
+        <member name="F:MPArbitration.Utility.DataConstants.StatusCodes.NotFound">
+            <summary>
+            Not found
+            </summary>
+        </member>
+        <member name="F:MPArbitration.Utility.DataConstants.StatusCodes.Unauthorized">
+            <summary>
+            Unauthorized
+            </summary>
+        </member>
+        <member name="T:MPArbitration.Utility.ExceptionHandlingMiddleware">
+            <summary>
+            Entity to handle exception middle ware
+            </summary>
+        </member>
+        <member name="M:MPArbitration.Utility.ExceptionHandlingMiddleware.#ctor(Microsoft.AspNetCore.Http.RequestDelegate,Microsoft.Extensions.Logging.ILogger{MPArbitration.Utility.ExceptionHandlingMiddleware})">
+            <summary>
+            Constructor to initialize objects
+            </summary>
+            <param name="next"> RequestDelegate object </param>
+            <param name="logger">ILogger object</param>
+        </member>
+        <member name="M:MPArbitration.Utility.ExceptionHandlingMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext)">
+            <summary>
+            Method to handle exceptions
+            </summary>
+            <param name="httpContext">HttpContext object</param>
+            <returns> Actual response if there is no exception else exception message with Status500InternalServerError </returns>
+        </member>
+    </members>
+</doc>
