@@ -1,0 +1,201 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <h4>Manage Benchmarks</h4>
+        <button type="button" 
+            [disabled]="!isAdmin||currentBenchmark?.id===0||benchmarkForm?.dirty"
+            (click)="addBenchmark()" class="btn btn-sm btn-success" title="Add a new Benchmark Source">
+            <i class="bi bi-plus"></i> Add Benchmark Source
+        </button>
+    </div>
+</div>
+
+<div class="row mt-2" *ngIf="!currentBenchmark || currentBenchmark.id>0">
+    <div class="col-auto">
+        <!-- Benchmark Source Selector -->
+        <div class="input-group input-group-sm">
+            <span class="input-group-text col-auto">Select a Benchmark Source</span>
+            <select class="form-select form-select-sm" 
+                [disabled]="currentBenchmark?.id===0"
+                name="currentBenchmark" (change)="benchmarkSelected()" 
+                [(ngModel)]="currentBenchmark"
+                aria-label="Select a Benchmark"
+                title="The name of this Benchmark source. Sources are assigned to Authorities and used by the Calculator to estimate reimbursement.">
+                <option [value]="null" selected disabled>Select...</option>
+                <option *ngFor="let s of allBenchmarks" [ngValue]="s">{{s.name}}</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<form id="ngForm" #benchmarkForm="ngForm" (ngSubmit)="onSubmit()" novalidate="novalidate">
+    <div class="row" *ngIf="currentBenchmark">
+        <div class="col-md-8">
+            <div class="card mt-4">
+                <div class="card-header justify-content-between d-flex">
+                    <h6>{{currentBenchmark.id===0 ? 'New Benchmark Source' : currentBenchmark.name}}</h6>
+                    <h6>({{currentItemCount | number:'.0'}} benchmarks)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Benchmark Name -->
+                        <div class="input-group input-group-sm mb-1">
+                            <span class="input-group-text col-5">* Benchmark Name</span>
+                            <input type="text" required 
+                                (focus)="selectAll($event)"
+                                class="form-control form-control-sm"
+                                [disabled]="!canEdit"
+                                id="name" 
+                                name="name" 
+                                [(ngModel)]="currentBenchmark.name"
+                                title="Enter the name of the Benchmark Dataset" 
+                                aria-label="Benchmark name">
+                        </div>
+                        <!-- Data Year -->
+                        <div class="input-group input-group-sm mb-1">
+                            <span class="input-group-text col-5">* Data Year</span>
+                            <input name="dataYear" 
+                                [(ngModel)]="currentBenchmark.dataYear" 
+                                class="form-control form-control-sm" 
+                                [disabled]="!canEdit"
+                                autocomplete="off" required
+                                aria-label="Data Year"  
+                                title="Fiscal year the data represents">
+                        </div>
+
+                        <!-- Unique Key -->
+                        <div class="input-group input-group-sm mb-1">
+                            <span class="input-group-text col-5">* Unique Key</span>
+                            <input type="text" autocomplete="off" required 
+                                [disabled]="currentBenchmark.id!==0"
+                                (focus)="selectAll($event)"
+                                class="form-control form-control-sm" 
+                                [(ngModel)]="currentBenchmark.key"
+                                title="Enter a unique key for this Benchmark source" 
+                                name="key" 
+                                aria-label="Unique Key" >
+                        </div>
+                        
+                        <!-- Value Fields -->
+                        <div class="input-group input-group-sm mb-1">
+                            <span class="input-group-text col-5">* Value Fields</span>
+                            <input type="text" autocomplete="off" required 
+                                (focus)="selectAll($event)"
+                                class="form-control form-control-sm" 
+                                [disabled]="!isAdmin"
+                                [(ngModel)]="currentBenchmark.valueFields"
+                                title="Enter a list of fields in the Benchmark source, separated by semi-colons" 
+                                name="valueFields" 
+                                aria-label="Value Fields" >
+                        </div>
+
+                        <!-- Vendor -->
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text col-5">Vendor</span>
+                            <input type="text" autocomplete="off" 
+                                (focus)="selectAll($event)"
+                                class="form-control form-control-sm" 
+                                [(ngModel)]="currentBenchmark.vendor"
+                                title="What is the source of this information (e.g. Fair Health)?" 
+                                name="vendor" 
+                                aria-label="Vendor" >
+                        </div>
+
+                        <!-- Is Active -->
+                        <div class="input-group mt-2">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" 
+                                    type="checkbox" 
+                                    [(ngModel)]="currentBenchmark.isActive" 
+                                    name="isActive" 
+                                    id="isActive"
+                                    aria-label="Is Benchmark Active"
+                                    title="Active Benchmarks will be used by the Calculator and available to the User">
+                                <label class="form-check-label" for="isActive">Is Active</label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col d-flex justify-content-between text-right">
+                            <button type="button" *ngIf="currentBenchmark.id>0 && !benchmarkForm.dirty"
+                                (click)="showUpload=!showUpload"
+                                class="btn btn-sm justify-self-start me-4" 
+                                [disabled]="!isAdmin"
+                                [ngClass]="{'btn-primary':!showUpload,'btn-outline-info':showUpload}"
+                                title="Cancel">
+                                <i class="bi bi-upload"></i> {{showUpload?'Cancel Upload':'Upload Benchmark Data'}}
+                            </button>
+                            <button type="button" *ngIf="currentBenchmark.id===0||benchmarkForm.dirty"
+                                [disabled]="currentBenchmark.id!==0 && !benchmarkForm.dirty" 
+                                (click)="cancelChanges()"
+                                class="btn btn-sm btn-secondary me-4" title="Cancel">
+                                <i class="bi bi-save"></i> Cancel
+                            </button>
+                            <button type="submit"
+                                [disabled]="!currentBenchmark.dataYear||
+                                    !currentBenchmark.key||
+                                    !currentBenchmark.name||
+                                    !currentBenchmark.valueFields||
+                                    currentBenchmark.key.length<3||
+                                    currentBenchmark.name.length<3||
+                                    currentBenchmark.name==='(new)'||
+                                    !benchmarkForm.dirty || !canEdit"
+                                class="btn btn-sm btn-success" title="Save Changes">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Upload Form -->
+            <div class="card mt-4" *ngIf="showUpload && !benchmarkForm.dirty && currentBenchmark.id>0">
+                <div class="card-header">
+                    <h6>Upload and Replace Benchmark Data</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-6 col-lg-4 col-xl-3">
+                            <h6 class="m-0">
+                                <label for="benchmarksFile" class="form-label">Select .csv file...</label>
+                            </h6>
+                            <input (change)="fileSelectionChanged()" 
+                                class="form-control-file" 
+                                type="file" 
+                                #benchmarksFile 
+                                id="benchmarksFile">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-footer">
+                    <div class="row pb-2">
+                        <div class="col text-right">
+                            <button type="button" 
+                                (click)="upload()"
+                                [disabled]="!fileSelected()"
+                                class="btn btn-sm btn-success me-4" 
+                                title="Begin Upload">
+                                <i class="bi bi-save"></i> Begin Upload
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+
+<!-- Modal -->
+<ng-template #loadResult let-modal>
+
+    <div class="modal-header text-light" [ngClass]="{'bg-success':!isError,'bg-danger':isError}">
+        <h5 class="modal-title">{{loadTitle}}</h5>
+        <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        {{loadMessage}}
+    </div>
+
+</ng-template>

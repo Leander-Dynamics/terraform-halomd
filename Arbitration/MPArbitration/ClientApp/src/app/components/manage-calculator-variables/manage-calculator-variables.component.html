@@ -1,0 +1,162 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <h5>Manage Formula Variables</h5>
+    </div>
+    <div class="card-body">
+        <div class="row justify-content-between mb-1">
+            <div class="col">
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm search-results">
+                        <thead>
+                            <tr>
+                                <th scope="col">Created On</th>
+                                <th scope="col" class="text-center">...</th>
+                                <th scope="col">Service Line
+                                    <!--<i class="bi bi-question-circle-fill"
+                                title="Inactive users cannot search or view cases."></i>
+                                -->
+                                </th>
+                                <th scope="col">Arbitration Fee</th>
+                                <th scope="col">Charges Cap Discount</th>
+                                <th scope="col">Offer Cap</th>
+                                <th scope="col">Offer Spread</th>
+                                <th scope="col">NSA Negotiation Discount</th>
+                                <th scope="col">NSA Base Offer Fieldname</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let u of allVariables;let i = index">
+                                <td>
+                                    {{u.createdOn | date:'medium'}}
+                                </td>
+                                <td class="text-center">
+                                    <button *ngIf="canEdit" type="button" (click)="addVars(u)" class="btn btn-sm btn-success"
+                                        title="Add a new version of the formula variables">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </td>
+                                <td>
+                                    {{u.serviceLine}}
+                                </td>
+                                <td>
+                                    {{u.arbitrationFee}}
+                                </td>
+                                <td>
+                                    {{u.chargesCapDiscount}}
+                                </td>
+                                <td>
+                                    {{u.offerCap}}
+                                </td>
+                                <td>
+                                    {{u.offerSpread}}
+                                </td>
+                                <td>
+                                    {{u.nsaOfferDiscount}}
+                                </td>
+                                <td>
+                                    {{u.nsaOfferBaseValueFieldname}}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Vars Modal -->
+<ng-template #addDialog let-modal>
+    <div class="modal-header text-light bg-success">
+        <h5 class="modal-title">Update Formla Variables</h5>
+        <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()"
+            aria-label="Cancel"></button>
+    </div>
+    <div class="modal-body">
+        <p><i>This will create a new copy of the variables. The latest version of the variables will always be used (for now).</i></p>
+        <!-- ...to be used on all cases not already locked into formal arbitration or closed.-->
+        <form #varsForm="ngForm" id="ngForm" novalidate="novalidate">
+            <div class="mb-3">
+                <label for="serviceLine" class="form-label">Service Line</label>
+                <input type="text" readonly class="form-control form-control-sm" 
+                    [(ngModel)]="serviceLine"
+                    (focus)="selectAll($event)" 
+                    name="serviceLine" id="serviceLine">
+            </div>
+            <div class="mb-3">
+                <label for="arbitrationFee" class="form-label">* Arbitration Fee</label>
+                <input type="number" required 
+                    class="form-control form-control-sm" min="0"
+                    (focus)="selectAll($event)" 
+                    title="Dollar amount to use when estimating the Arbitrator's fee" [(ngModel)]="arbitrationFee"
+                    name="arbitrationFee" id="arbitrationFee">
+            </div>
+            <div class="mb-3">
+                <label for="chargesCapDiscount" class="form-label">* Charges Cap Discount</label>
+                <input type="number" required 
+                    class="form-control form-control-sm" 
+                    (focus)="selectAll($event)" 
+                    min=".01" max="1"
+                    [(ngModel)]="chargesCapDiscount" 
+                    name="chargesCapDiscount" 
+                    id="chargesCapDiscount" 
+                    title="Charges Cap Discount percentage">
+            </div>
+            <div class="mb-3">
+                <label for="offerCap" class="form-label">* Offer Cap</label>
+                <input type="number" required 
+                    class="form-control form-control-sm" 
+                    (focus)="selectAll($event)" 
+                    min="0" [(ngModel)]="offerCap"
+                    name="offerCap" id="offerCap" 
+                    title="Maximum dollar amount to offer">
+            </div>
+            <div class="mb-3">
+                <label for="offerSpread" class="form-label">* Offer Spread</label>
+                <input type="number" 
+                    class="form-control form-control-sm" 
+                    (focus)="selectAll($event)" 
+                    min=".01" max="1" [(ngModel)]="offerSpread"
+                    required name="offerSpread" 
+                    id="offerSpread" 
+                    title="Offer Spread percentage">
+            </div>
+            <div class="mb-3">
+                <label for="nsaOfferDiscount" class="form-label">* NSA Negotiation Discount</label>
+                <input type="number" 
+                    class="form-control form-control-sm" 
+                    (focus)="selectAll($event)" 
+                    min=".01" max=".99" [(ngModel)]="nsaOfferDiscount"
+                    required name="nsaOfferDiscount" 
+                    id="nsaOfferDiscount" 
+                    title="NSA Negotiation Request Discount (percent of charges)">
+            </div>
+            <div class="mb-3">
+                <label for="nsaOfferBaseValueFieldname" class="form-label">* NSA Base Offer Fieldname</label>
+                <!--
+                <input type="text" 
+                    class="form-control form-control-sm" 
+                    (focus)="selectAll($event)" 
+                    [(ngModel)]="nsaOfferBaseValueFieldname"
+                    required name="nsaOfferBaseValueFieldname" 
+                    id="nsaOfferBaseValueFieldname" 
+                    title="NSA Negotiation Request starting value fieldname, e.g. fh80thPercentileExtendedCharges. Any discount will apply to this value.">
+                -->
+                <select class="form-select form-select-sm" 
+                    required name="nsaOfferBaseValueFieldname" 
+                    [(ngModel)]="nsaOfferBaseValueFieldname"
+                    id="nsaOfferBaseValueFieldname" 
+                    aria-label="NSA Offer Base Value Fieldname"
+                    title="NSA Negotiation Request starting value fieldname (on the ClaimCPT record). Any NSA Negotiation Discount will apply to this value.">
+                    <option value="fh50thPercentileExtendedCharges">fh50thPercentileExtendedCharges</option>
+                    <option value="fh80thPercentileExtendedCharges">fh80thPercentileExtendedCharges</option>
+              </select>
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modal.dismiss()" aria-label="Cancel">Cancel</button>
+        <button type="button" class="btn btn-success" [disabled]="!varsForm.valid || !hasNewValues()" (click)="modal.close()"
+            aria-label="Add Formula Variables">Add Formula Variables</button>
+    </div>
+</ng-template>

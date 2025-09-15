@@ -1,0 +1,80 @@
+<!-- Files and Documents -->
+<div class="row">
+    <div class="d-flex">
+        <button class="btn btn-sm btn-outline-primary position-relative" type="button"
+            (click)="collapseFiles.toggle()" [attr.aria-expanded]="!hideFiles" title="Toggle Files list">
+            <i *ngIf="hideFiles" class="bi bi-chevron-right"></i>
+            <i *ngIf="!hideFiles" class="bi bi-chevron-down"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{(allCaseFileVMs$ | async)?.length}}
+            </span>
+        </button>
+
+        <h5 class="ms-2 m-auto position-relative">{{title}}</h5>
+        <ng-container *ngIf="canEdit">
+            <div class="col-md-4 margin-left-auto">
+                <label *ngIf="!hideFiles" for="caseFile" class="form-label"><b>Select a file to upload</b></label>
+                <input *ngIf="!hideFiles" class="btn btn-sm btn-outline-success form-control form-control-sm"
+                    type="file" #caseFile id="caseFile" [disabled]="disableUpload"
+                    (change)="caseFileChanged($event)">
+            </div>
+
+            <div class="col-lg-auto ms-2">
+                <label *ngIf="!hideFiles" for="documentType" class="form-label"><b>Document Type</b></label>
+                <select *ngIf="!hideFiles" class="form-select form-select-sm" [(ngModel)]="documentType"
+                    aria-label="Document Type" title="The type of document you are adding to this case">
+                    <option disabled selected [ngValue]="null">Select...</option>
+                    <option *ngFor="let n of allDocTypes" [ngValue]="n.id">{{n.key}}</option>
+                </select>
+            </div>
+
+            <div class="col-lg-auto ms-4 d-flex align-items-end">
+                <button *ngIf="!hideFiles" type="button"
+                    [disabled]="documentType===null || !caseFile?.nativeElement.files.length"
+                    class="btn btn-sm btn-success" (click)="addFile()">
+                    <i class="bi bi-plus"></i> Add File
+                </button>
+            </div>
+        </ng-container>
+    </div>
+
+    <hr class="mt-2 mb-1" />
+
+    <div #collapseFiles="ngbCollapse" [(ngbCollapse)]="hideFiles">
+        <div class="row">
+            <div class="col table-responsive mb-0">
+                <table class="table table-sm font-small table-no-wrap table-normal-head bb-0">
+                    <thead>
+                        <tr>
+                            <th *ngIf="isAdmin">...</th>
+                            <th>Filename</th>
+                            <td>Document Type</td>
+                            <td>Uploaded By</td>
+                            <td>Created On</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let f of allCaseFileVMs$ | async">
+                            <td *ngIf="isAdmin">
+                                <button type="button" class="btn btn-sm btn-danger" (click)="deleteFile(f)"
+                                    title="Delete this resource file from the Payor.">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                            <td class="td-tight">
+                                <button type="button" class="btn btn-sm btn-link btn-modal"
+                                    (click)="viewFile(f)" [title]="'View '+f.DocumentType">
+                                    {{f.blobName}}
+                                </button>
+                            </td>
+                            <td class="td-tight">{{f.DocumentType}}</td>
+                            <td class="td-tight">{{f.UpdatedBy}}</td>
+                            <td class="td-tight">{{f.createdOn | date:'shortDate'}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+

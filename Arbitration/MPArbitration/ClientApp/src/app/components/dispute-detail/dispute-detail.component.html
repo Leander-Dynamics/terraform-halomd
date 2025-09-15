@@ -1,0 +1,1106 @@
+<div class="card bg-mintcream">
+  <div class="card-header">
+    <div class="row justify-content-between align-items-center">
+      <div class="col-auto">
+        <h4>
+          Dispute Details Tracking
+          <!-- <button
+            type="button"
+            class="btn btn-sm btn-outline-success"
+            (click)="showHelp = !showHelp"
+            title="Click to view details about how the criteria works"
+          >
+            <i class="bi bi-question-lg"></i>
+          </button> -->
+        </h4>
+      </div>
+      <!-- <div class="col">
+        <i *ngIf="showHelp">
+          Updating Disputes: Once a dispute is active, use this page to set the
+          Arbitrator (aka Certified Entity), manage Fees and as a resource for
+          creating Briefs.
+        </i>
+      </div> -->
+      <div
+        class="col-auto p-1 text-center"
+        [ngClass]="{ 'bg-dirty': disputeForm.form.dirty }"
+      >
+        <button
+          *ngIf="disputeForm.form.dirty"
+          type="button"
+          class="btn btn-sm btn-secondary me-2"
+          (click)="undoChanges()"
+          title="Cancel and undo changes"
+        >
+          <i class="bi bi-arrow-counterclockwise"></i> Cancel Changes
+        </button>
+        <button
+          form="ngForm"
+          type="submit"
+          disabled
+          style="display: none"
+          aria-hidden="true"
+          onclick="return false;"
+        ></button>
+        <button
+          type="submit"
+          form="ngForm"
+          class="btn btn-success"
+          [disabled]="!disputeForm.form.valid || !disputeForm.form.dirty"
+          title="Save Changes"
+        >
+          <i class="bi bi-save"></i> Save Changes
+        </button>
+        <p *ngIf="disputeForm.form.dirty" class="mb-0 pb-0">
+          You have unsaved changes!
+        </p>
+        <p *ngIf="!disputeForm.form.dirty" class="mb-0 pb-0">&nbsp;</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- Dispute Header -->
+    <div class="row align-items-center mb-2">
+      <h5 class="col">Dispute Details</h5>
+    </div>
+    <div class="row">
+      <div class="col-12">
+        <form
+          #disputeForm="ngForm"
+          id="ngForm"
+          (ngSubmit)="onSubmit()"
+          novalidate="novalidate"
+        >
+          <fieldset>
+            <!-- Header fields -->
+            <div class="row">
+              <!-- Left Column -->
+              <div class="col">
+                <!-- Dispute Number -->
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Dispute Number</span>
+                  <span class="input-group-text col bg-disabled">{{
+                    displayDispute.disputeNumber
+                  }}</span>
+                </div>
+
+                <!-- Dispute Status -->
+                <div class="input-group input-group-sm mt-1">
+                  <div class="input-group-text col-5">Dispute Status
+                  </div>
+                  <ng-select
+                    name="disputeStatus"
+                    [(ngModel)]="displayDispute.disputeStatus"
+                    [virtualScroll]="true"              
+                    [clearable]="false"      
+                    style="width: 58.4%"
+                  >
+                    <ng-option [value]="''" disabled selected
+                      >Select...</ng-option
+                    >
+                    <ng-option *ngFor="let s of allDisputeStatuses" [value]="s">
+                      {{ s }}
+                    </ng-option>
+                  </ng-select>
+                </div>
+
+                <!-- Dispute Workflow Status -->
+                <!-- <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">
+                    Dispute Workflow Status
+                  </span>
+                  <span class="input-group-text col bg-disabled">{{
+                    displayDispute.disputeWorkFlowStatus
+                  }}</span>
+                </div> -->
+
+                <!-- Customer -->
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Customer</span>
+                  <ng-select
+                    name="customer"
+                    [(ngModel)]="displayDispute.customer"
+                    [virtualScroll]="true"
+                    [clearable]="false"      
+                    style="width: 58.4%"
+                  >
+                    <ng-option [value]="''" disabled selected
+                      >Select...</ng-option
+                    >
+                    <ng-option *ngFor="let s of allCustomers" [value]="s">
+                      {{ s }}
+                    </ng-option>
+                  </ng-select>
+                </div>
+
+                <!-- Comments -->
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Comments</span>
+                  <textarea
+                    class="form-control form-control-sm"
+                    name="comments"
+                    [readonly]="
+                      !!displayDispute.comments && !disputeForm.form.dirty
+                    "
+                    [(ngModel)]="displayDispute.comments"
+                    aria-label="Comments"
+                    rows="4"
+                    title="Comments"
+                  >
+                  </textarea>
+                </div>
+              </div>
+              <!-- Right Header Column -->
+              <div class="col">
+                <!-- Entity -->
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Entity</span>
+                  <ng-select
+                    name="entity"
+                    [(ngModel)]="displayDispute.entity"
+                    [virtualScroll]="true"
+                    style="width: 58.4%"
+                  >
+                    <ng-option [value]="''" disabled selected
+                      >Select...</ng-option
+                    >
+                    <ng-option *ngFor="let s of allEntities" [value]="s">
+                      {{ s }}
+                    </ng-option>
+                  </ng-select>
+                </div>
+
+                <!-- Entity NPI -->
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Entity NPI</span>
+                  <ng-select
+                    name="entityNPI"
+                    [(ngModel)]="displayDispute.entityNPI"
+                    style="width: 58.4%"
+                    [virtualScroll]="true"
+                  >
+                    <ng-option [value]="''" disabled selected
+                      >Select...</ng-option
+                    >
+                    <ng-option *ngFor="let s of allProvidersNPI" [value]="s">
+                      {{ s }}
+                    </ng-option>
+                  </ng-select>
+                </div>
+
+                <!-- Payor (prime) -->
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Payor</span>
+                  <ng-select
+                    name="payor"
+                    [(ngModel)]="displayDispute.payor"
+                    style="width: 58.4%"
+                    [virtualScroll]="true"
+                  >
+                    <ng-option [value]="''" disabled selected
+                      >Select...</ng-option
+                    >
+                    <ng-option *ngFor="let s of allPayors" [value]="s.name">
+                      {{ s.name }}
+                    </ng-option>
+                  </ng-select>
+                </div>
+
+                <!-- Certified Entity -->
+                <!-- (change)="certifiedEntityChange()" -->
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Certified Entity</span>
+                  <ng-select
+                    name="certifiedEntity"
+                    [(ngModel)]="displayDispute.certifiedEntity"
+                    style="width: 58.4%"
+                    [virtualScroll]="true"
+                  >
+                    <ng-option [value]="''" disabled selected
+                      >Select...</ng-option
+                    >
+                    <ng-option
+                      *ngFor="let s of allCertifiedEntities"
+                      [value]="s"
+                    >
+                      {{ s }}
+                    </ng-option>
+                  </ng-select>
+                </div>
+
+                <!-- Service Line -->
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Service Line</span>
+                  <ng-select
+                    name="serviceLine"
+                    [(ngModel)]="displayDispute.serviceLine"
+                    style="width: 58.4%"
+                    [virtualScroll]="true"
+                  >
+                    <ng-option [value]="''" disabled selected
+                      >Select...</ng-option
+                    >
+                    <ng-option *ngFor="let s of allServiceLines" [value]="s">
+                      {{ s }}
+                    </ng-option>
+                  </ng-select>
+                </div>
+              </div>
+            </div>
+
+            <hr />
+
+            <!-- Dispute CPT -->
+            <div class="row mt-3">
+              <div class="d-flex col">
+                <h5 class="mt-2">Dispute CPT</h5>
+                <div class="margin-left-auto col-auto justify-content-end">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-success ms-2"
+                    title="Add CPT"
+                    (click)="addCpt(displayDispute.disputeNumber)"
+                  >
+                    <i class="bi bi-plus"></i> Add Code
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <div class="card card-body">
+                  <div class="">
+                    <table
+                      class="table table-sm batch-search font-small table-no-wrap"
+                    >
+                      <thead class="dt-head-bold">
+                        <tr>
+                          <th style="width: 2%">&nbsp;</th>
+                          <th style="width: 10%">Arbit Id</th>
+                          <th style="width: 10%">
+                            CPT
+                            <i
+                              id="help-dispute-cpt"
+                              class="bi bi-exclamation-triangle-fill font-medium text-danger"
+                              title="Don't Edit!"
+                            ></i>
+                          </th>
+                          <th style="width: 5%">Benchmark Amount</th>
+                          <th style="width: 5%">Provider Offer Amount</th>
+                          <th style="width: 5%">Award Amount</th>
+                          <th style="width: 5%">Payor Offer Amount</th>
+                          <th style="width: 5%">Payor Claim Number</th>
+                          <th style="width: 15%">Prevailing Party</th>
+                        </tr>
+                      </thead>
+                      <tbody *ngIf="displayDispute.disputeCPTs.length > 0">
+                        <tr
+                          *ngFor="
+                            let m of displayDispute.disputeCPTs;
+                            let i = index
+                          "
+                        >
+                          <td>
+                            <div>
+                              <button
+                                [disabled]="disableDeleteCPTFromDispute()"
+                                (click)="
+                                  deleteCPTFromDispute(
+                                    i,
+                                    displayDispute,
+                                    m?.id,
+                                    m?.cptCode,
+                                    m?.arbitId
+                                  )
+                                "
+                                id="btn_delete_cpt_{{ i }}"
+                                type="button"
+                                class="btn btn-sm btn-danger btn-modal mb-1"
+                                title="Delete DisputeCPT"
+                              >
+                                <i class="bi bi-trash"></i>
+                              </button>
+                            </div>
+                          </td>
+                          <td>
+                             <div class="input-group input-group-sm">
+                              <span class="form-control" *ngIf="!m?.isShowLink">
+                               <a
+                                [href]="'calculator/' + m?.arbitId"
+                                title="Open Arbit"
+                                target="_blank"
+                                >{{ m?.arbitId }}</a
+                              ></span>
+                               <input
+                                *ngIf="m?.isShowLink"
+                                class="form-control form-control-sm text-left arbit-focus"
+                                title="Arbit Id"
+                                type="text"
+                                name="arbitId_{{ i }}"
+                                [(ngModel)]="m.arbitId"
+                                (focus)="selectAll($event)"
+                                (keyup)="onArbitChanged($event)"
+                                min="1"
+                                maxlength="10"
+                                #arbitIdInput="ngModel"
+                              />
+
+                              <span
+                                *ngIf="!m?.isShowLink"
+                                class="input-group-text cursor-pointer"
+                                (click)="confirmArbitEdit(m.arbitId)"
+                              >
+                                <i class="bi bi-pencil-square"></i>
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            <div class="input-group input-group-sm">
+                              <input
+                                class="form-control form-control-sm text-left"
+                                title="CPTCode"
+                                type="text"
+                                autocomplete="off"
+                                id="cptCode_{{ i }}"
+                                name="cptCode_{{ i }}"
+                                [(ngModel)]="m.cptCode"                          
+                              />
+                            </div>
+                          </td>
+                          <td>
+                            <div class="input-group input-group-sm">
+                              <div class="input-group-text currency-addon">
+                                $
+                              </div>
+                              <input
+                                class="form-control form-control-sm currency-input"
+                                autocomplete="off"
+                                name="benchmarkAmount_{{ i }}"
+                                id="benchmarkAmount_{{ i }}"
+                                type="number"
+                                min="0"
+                                step=".01"
+                                [(ngModel)]="m.benchmarkAmount"
+                                pattern="^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$"
+                                (blur)="currencyBlur($event)"
+                                aria-label="Bench Mark Amount"
+                                title="Bench Mark Amount"
+                              />
+                            </div>
+                          </td>
+                          <td>
+                            <div class="input-group input-group-sm">
+                              <div class="input-group-text currency-addon">
+                                $
+                              </div>
+                              <input
+                                class="form-control form-control-sm currency-input"
+                                autocomplete="off"
+                                name="providerOfferAmount_{{ i }}"
+                                id="providerOfferAmount_{{ i }}"
+                                type="number"
+                                min="0"
+                                step=".01"
+                                [(ngModel)]="m.providerOfferAmount"
+                                pattern="^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$"
+                                (blur)="currencyBlur($event)"
+                                aria-label="Provider Offer Amount"
+                                title="Provider Offer Amount"
+                              />
+                            </div>
+                          </td>
+                          <td>
+                            <div class="input-group input-group-sm">
+                              <div class="input-group-text currency-addon">
+                                $
+                              </div>
+                              <input
+                                class="form-control form-control-sm currency-input"
+                                autocomplete="off"
+                                name="awardAmount_{{ i }}"
+                                id="awardAmount_{{ i }}"
+                                type="number"
+                                min="0"
+                                step=".01"
+                                [(ngModel)]="m.awardAmount"
+                                pattern="^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$"
+                                (blur)="currencyBlur($event)"
+                                aria-label="Award Amount"
+                                title="Award Amount"
+                              />
+                            </div>
+                          </td>
+                          <td>
+                            <div class="input-group input-group-sm">
+                              <div class="input-group-text currency-addon">
+                                $
+                              </div>
+                              <input
+                                class="form-control form-control-sm currency-input"
+                                autocomplete="off"
+                                name="payorOfferAmount_{{ i }}"
+                                id="payorOfferAmount_{{ i }}"
+                                type="number"
+                                min="0"
+                                step=".01"
+                                [(ngModel)]="m.payorOfferAmount"
+                                pattern="^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$"
+                                (blur)="currencyBlur($event)"
+
+                                aria-label="Payor Offer Amount"
+                                title="Payor Offer Amount"
+                              />
+                            </div>
+                          </td>
+                          <td>
+                            <div class="input-group input-group-sm">
+                              <input
+                                class="form-control form-control-sm text-left"
+                                title="Payor Claim Number"
+                                type="text"
+                                autocomplete="off"
+                                id="payorClaimNumber_{{ i }}"
+                                name="payorClaimNumber_{{ i }}"
+                                [(ngModel)]="m.payorClaimNumber"
+                                [readonly] ="true"
+                              />
+                            </div>
+                          </td>
+                          <td class="td-tight">
+                            <ng-select
+                              class="form-select-sm form-select-xs"
+                              name="prevailingParty_{{ i }}"
+                              [(ngModel)]="m.prevailingParty"
+                              [virtualScroll]="true"
+                            >
+                              <ng-option [value]="''" disabled selected
+                                >Select...</ng-option
+                              >
+                              <ng-option
+                                *ngFor="let s of prevailingPartySource"
+                                [value]="s"
+                              >
+                                {{ s }}
+                              </ng-option>
+                            </ng-select>
+                          </td>
+                        </tr>
+                      </tbody>
+                      <tbody *ngIf="displayDispute.disputeCPTs.length === 0">
+                        <tr class="mt-2">
+                          <td
+                            colspan="9"
+                            class="font-medium text-center"
+                            style="width: 100%"
+                          >
+                            No CPT Codes found.
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- End CPT Codes-->
+            <hr />
+
+            <!-- Dates and Deadlines -->
+            <div class="row mt-2 justify-content-between">
+              <h5 class="mb-2">Dates and Deadlines</h5>
+            </div>
+            <div class="row">
+              <div class="col-lg-6 justify-content-end">
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Submission Date</span>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="submissionDate"
+                    name="submissionDate"
+                    autocomplete="off"
+                    ngbDatepicker
+                    [(ngModel)]="displayDispute.SubmissionDate"
+                    aria-label="Submission Date"
+                    #submissiondate="ngbDatepicker"
+                  />
+
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    (click)="submissiondate.toggle()"
+                    title="Pick Submission Date"
+                  >
+                    <i class="bi bi-calendar"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="col-lg-6 justify-content-end">
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5"
+                    >IDRE Selection Date</span
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="idreSelectionDate"
+                    name="idreSelectionDate"
+                    autocomplete="off"
+                    ngbDatepicker
+                    [(ngModel)]="displayDispute.IDRESelectionDate"
+                    aria-label="IDRE Selection Date"
+                    #idredate="ngbDatepicker"
+                  />
+
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    (click)="idredate.toggle()"
+                    title="Pick IDRE Selection Date"
+                  >
+                    <i class="bi bi-calendar"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <hr />
+
+            <!-- Fee Datails-->
+            <div class="row mt-2 justify-content-between">
+              <h5 class="mb-2">Fee Details</h5>
+            </div>
+            <div class="row">
+              <div class="col-lg-6 justify-content-end">
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Fee Request Date</span>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="feeRequestDate"
+                    name="feeRequestDate"
+                    autocomplete="off"
+                    ngbDatepicker
+                    [(ngModel)]="displayDispute.FeeRequestDate"
+                    aria-label="Fee Request Date"
+                    #feereqdate="ngbDatepicker"
+                  />
+
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    (click)="feereqdate.toggle()"
+                    title="Pick Fee Request Date"
+                  >
+                    <i class="bi bi-calendar"></i>
+                  </button>
+                </div>
+
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Fee Due Date</span>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="feeDueDate"
+                    name="feeDueDate"
+                    autocomplete="off"
+                    ngbDatepicker
+                    [(ngModel)]="displayDispute.FeeDueDate"
+                    aria-label="Fee Due Date"
+                    #feeduedate="ngbDatepicker"
+                  />
+
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    (click)="feeduedate.toggle()"
+                    title="Pick Fee Due Date"
+                  >
+                    <i class="bi bi-calendar"></i>
+                  </button>
+                </div>
+
+                <div class="input-group input-group-sm mt-1">
+                  <div class="input-group-text col-5 justify-content-between">
+                    <span>Fee Invoice Link</span>
+                  </div>
+                  <span class="form-control" *ngIf="isInvoiceLink">
+                    <a
+                      [href]="displayDispute.feeInvoiceLink"
+                      title="Open Fee Invoice Link"
+                      target="_blank"
+                      >{{ displayDispute.feeInvoiceLink }}</a
+                    ></span
+                  >
+                  <textarea
+                    *ngIf="!isInvoiceLink"
+                    class="form-control form-control-sm"
+                    name="feeInvoiceLink"
+                    [(ngModel)]="displayDispute.feeInvoiceLink"
+                    aria-label="Fee Invoice Link"
+                    rows="3"
+                    title="Fee Invoice Link"
+                  >
+                  </textarea>
+                  <span
+                    *ngIf="isInvoiceLink"
+                    class="input-group-text cursor-pointer"
+                    (click)="confirmLinkEdit('invoiceLink')"
+                  >
+                    <i class="bi bi-pencil-square"></i>
+                  </span>
+                </div>
+
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Fee Paid Date</span>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="feePaidDate"
+                    name="feePaidDate"
+                    autocomplete="off"
+                    ngbDatepicker
+                    [(ngModel)]="displayDispute.FeePaidDate"
+                    aria-label="Fee Paid Date"
+                    #feepaiddate="ngbDatepicker"
+                  />
+
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    (click)="feepaiddate.toggle()"
+                    title="Pick Fee Paid Date"
+                  >
+                    <i class="bi bi-calendar"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-lg-6 justify-content-end">
+                <div class="input-group input-group-sm mt-1">
+                  <div class="input-group-text col-5 justify-content-between">
+                    <span>Fee Amount Admin</span>
+                  </div>
+                  <input
+                    class="form-control form-control-sm text-left"
+                    autocomplete="off"
+                    name="feeAmountAdmin"
+                    id="feeAmountAdmin"
+                    type="number"
+                    min="0"
+                    step=".01"
+                    [(ngModel)]="displayDispute.feeAmountAdmin"
+                    pattern="^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$"
+                    (blur)="currencyBlur($event)"
+                    aria-label="Fee Amount Admin"
+                    title="Fee Amount Admin"
+                  />
+                </div>
+
+                <div class="input-group input-group-sm mt-1">
+                  <div class="input-group-text col-5 justify-content-between">
+                    <span>Fee Amount Entity</span>
+                  </div>
+                  <input
+                    class="form-control form-control-sm text-left"
+                    autocomplete="off"
+                    name="feeAmountEntity"
+                    id="feeAmountEntity"
+                    type="number"
+                    min="0"
+                    step=".01"
+                    [(ngModel)]="displayDispute.feeAmountEntity"
+                    pattern="^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$"
+                    (blur)="currencyBlur($event)"
+                    aria-label="Fee Amount Entity"
+                    title="Fee Amount Entity"
+                  />
+                </div>
+
+                <div class="input-group input-group-sm mt-1">
+                  <div class="input-group-text col-5 justify-content-between">
+                    <span>Fee Amount Total</span>
+                  </div>
+                  <input
+                    class="form-control form-control-sm text-left"
+                    autocomplete="off"
+                    name="feeAmountTotal"
+                    id="feeAmountTotal"
+                    type="number"
+                    min="0"
+                    step=".01"
+                    [(ngModel)]="displayDispute.feeAmountTotal"
+                    pattern="^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$"
+                    (blur)="currencyBlur($event)"
+                    aria-label="Fee Amount Total"
+                    title="Fee Amount Total"
+                  />
+                </div>
+
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5"
+                    >Fee Paid Amount
+                    <i
+                      class="bi bi-question-circle-fill margin-left-auto"
+                      title="This amount should be equal to sum of Fee Amount Admin and Fee Amount Entity"
+                    ></i
+                  ></span>
+                  <input
+                    class="form-control form-control-sm text-left"
+                    [ngClass]="{
+                      'bg-danger':
+                        displayDispute.feePaidAmount !==
+                        displayDispute.feeAmountAdmin +
+                          displayDispute.feeAmountEntity,
+                      'text-white':
+                        displayDispute.feePaidAmount !==
+                        displayDispute.feeAmountAdmin +
+                          displayDispute.feeAmountEntity
+                    }"
+                    autocomplete="off"
+                    name="feePaidAmount"
+                    id="feePaidAmount"
+                    type="number"
+                    min="0"
+                    step=".01"
+                    [(ngModel)]="displayDispute.feePaidAmount"
+                    pattern="^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$"
+                    (blur)="currencyBlur($event)"
+                    aria-label="Fee Paid Amount"
+                    title="Fee Paid Amount"
+                  />
+                </div>
+              </div>
+            </div>
+            <hr />
+
+            <!-- Brief Details-->
+            <div class="row mt-2 justify-content-between">
+              <h5 class="mb-2">Brief Details</h5>
+            </div>
+            <div class="row">
+              <div class="col-lg-6 justify-content-end">
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5"
+                    >Brief Due / Formal Received Date</span
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="briefDueDate"
+                    name="briefDueDate"
+                    autocomplete="off"
+                    ngbDatepicker
+                    [(ngModel)]="displayDispute.BriefDueDate"
+                    aria-label="Brief Due / Formal Received Date"
+                    #briefduedate="ngbDatepicker"
+                  />
+
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    (click)="briefduedate.toggle()"
+                    title="Pick Brief Due / Formal Received Date"
+                  >
+                    <i class="bi bi-calendar"></i>
+                  </button>
+                </div>
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5"
+                    >Brief Submitted Date</span
+                  >
+                  <span class="input-group-text col bg-disabled">{{
+                    displayDispute.FormalReceivedDate | date : 'MM/dd/yyyy'
+                  }}</span>
+                </div>
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5"
+                    >Brief Assigned Date</span
+                  >
+                  <span class="input-group-text col bg-disabled">{{
+                    displayDispute.BriefAssignedDate | date : 'MM/dd/yyyy'
+                  }}</span>
+                </div>
+              </div>
+              <div class="col-lg-6 justify-content-end">
+                <div class="input-group input-group-sm mt-1">
+                  <div class="input-group-text col-5 justify-content-between">
+                    <span>Brief Submission Link</span>
+                  </div>
+                  <span class="form-control" *ngIf="isBriefSubLink">
+                    <a
+                      [href]="displayDispute.briefSubmissionLink"
+                      title="Open Brief Submission Link"
+                      target="_blank"
+                      >{{ displayDispute.briefSubmissionLink }}</a
+                    ></span
+                  >
+                  <textarea
+                    *ngIf="!isBriefSubLink"
+                    class="form-control form-control-sm"
+                    name="briefSubmissionLink"
+                    [(ngModel)]="displayDispute.briefSubmissionLink"
+                    aria-label="Brief Submission Link"
+                    rows="3"
+                    title="Brief Submission Link"
+                  >
+                  </textarea>
+                  <span
+                    *ngIf="isBriefSubLink"
+                    class="input-group-text cursor-pointer"
+                    (click)="confirmLinkEdit('briefLink')"
+                  >
+                    <i class="bi bi-pencil-square"></i>
+                  </span>
+                </div>
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Brief Approver</span>
+                  <ng-select
+                    name="briefApprover"
+                    [(ngModel)]="displayDispute.briefApprover"
+                    [virtualScroll]="true"
+                    style="width: 58.4%"
+                  >
+                    <ng-option [value]="''" disabled selected
+                      >Select...</ng-option
+                    >
+                    <ng-option
+                      *ngFor="let s of allBriefApprovers"
+                      [value]="s.id"
+                    >
+                      {{ s.email }}
+                    </ng-option>
+                  </ng-select>
+                </div>
+              </div>
+            </div>
+            <hr />
+
+            <!-- Award Details-->
+            <div class="row mt-2 justify-content-between">
+              <h5 class="mb-2">Award Details</h5>
+            </div>
+            <div class="row">
+              <div class="col-lg-6 justify-content-end">
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Award Date</span>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="awardDate"
+                    name="awardDate"
+                    autocomplete="off"
+                    ngbDatepicker
+                    [(ngModel)]="displayDispute.AwardDate"
+                    aria-label="Award Date"
+                    #awarddate="ngbDatepicker"
+                  />
+
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    (click)="awarddate.toggle()"
+                    title="Pick Award Date"
+                  >
+                    <i class="bi bi-calendar"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <hr />
+
+            <!-- Log section-->
+
+            <div class="row mt-2 justify-content-between">
+              <h5 class="mb-2">Log Section</h5>
+            </div>
+            <div class="row">
+              <div class="col-lg-6 justify-content-end">
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Created On</span>
+                  <span class="input-group-text col bg-disabled">{{
+                    displayDispute.createdOn | date : "medium"
+                  }}</span>
+                </div>
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Updated On</span>
+                  <span class="input-group-text col bg-disabled">{{
+                    displayDispute.updatedOn | date : "medium"
+                  }}</span>
+                </div>
+              </div>
+              <div class="col-lg-6 justify-content-end">
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Created By</span>
+                  <span class="input-group-text col bg-disabled">{{
+                    displayDispute.createdBy
+                  }}</span>
+                </div>
+                <div class="input-group input-group-sm mt-1">
+                  <span class="input-group-text col-5">Updated By</span>
+                  <span class="input-group-text col bg-disabled">{{
+                    displayDispute.updatedBy
+                  }}</span>
+                </div>
+              </div>
+            </div>
+
+            <hr />
+
+            <!-- Change Log (DisputeLog)-->
+            <div class="row" *ngIf="isManager || isNegotiator">
+              <div class="d-flex mb-2 align-items-center">
+                <h5 class="ms-2 m-auto">Change Log</h5>
+                <div class="col d-flex justify-content-end">
+                  <span
+                    *ngIf="isLogLoading"
+                    class="spinner-border"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                  <h6 *ngIf="isLogLoading">Loading...</h6>
+                  <!-- 
+                  *ngIf="!isLogLoading && !collapseLog.collapsed -->
+                  <button
+                    *ngIf="!isLogLoading"
+                    class="btn btn-sm btn-success text-white ms-2"
+                    type="button"
+                    (click)="refreshLog()"
+                    title="Load the Dispute Log entries"
+                  >
+                    <i class="bi bi-arrow-clockwise"></i>
+                    Refresh
+                  </button>
+                </div>
+              </div>
+
+              <div class="col">
+                <div class="card card-body font-small">
+                  <h6 *ngIf="!allLogs.length">
+                    Click Refresh to load any available log entries for this
+                    dispute...
+                  </h6>
+
+                  <div class="row mb-1" *ngIf="allLogs.length">
+                    <div class="col-sm-4 col-md-4 col-lg-4 col-xl-2"></div>
+                    <div class="col-sm-4 col-md-4 col-lg-4 col-xl-5">
+                      <b>Previous Value</b>
+                    </div>
+                    <div class="col-sm-4 col-md-4 col-lg-4 col-xl-5">
+                      <b>New Value</b>
+                    </div>
+                  </div>
+                  <hr *ngIf="allLogs.length" />
+                  <div
+                    *ngIf="allLogs.length"
+                    [ngStyle]="{
+                      'overflow-y': 'auto',
+                      height: '68vh',
+                      padding: '14px'
+                    }"
+                  >
+                    <div
+                      class="row mb-1"
+                      [ngClass]="{ 'mt-4': i > 0 }"
+                      *ngFor="let g of allLogs; let i = index"
+                    >
+                      <div class="col-sm-4 col-md-4 col-lg-4 col-xl-2">
+                        <b>{{ g.createdDate | date : "medium" }}</b>
+                        <br />
+                        {{ g.createdBy }}
+                        <br />
+                        {{ g.tableName }}
+                        <br />
+                        {{ g.activity }}
+                      </div>
+                      <div class="col-sm-4 col-md-4 col-lg-4 col-xl-5">
+                        {{ g.previousValue }}
+                      </div>
+                      <div class="col-sm-4 col-md-4 col-lg-4 col-xl-5">
+                        {{ g.newValue }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- End Change Log-->
+          </fieldset>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- End Card Body -->
+</div>
+<!-- End Card -->
+
+<!-- Dirty nav confirmation -->
+<!-- Modal -->
+<ng-template #confirmationNavigationDialog let-modal>
+  <div class="modal-header text-light bg-danger">
+    <h5 class="modal-title">{{ confirmationNavigationTitle }}</h5>
+    <button
+      type="button"
+      class="btn btn-close btn-close-white"
+      (click)="modal.dismiss()"
+      aria-label="Cancel"
+    ></button>
+  </div>
+  <div class="modal-body">
+    {{ confirmationNavigationMessage }}
+  </div>
+  <div class="modal-footer">
+    <button
+      type="button"
+      class="btn btn-danger"
+      (click)="modal.close()"
+      aria-label="Lose Changes"
+    >
+      Lose Changes
+    </button>
+    <button
+      type="button"
+      class="btn btn-success"
+      (click)="modal.dismiss()"
+      aria-label="Keep Editing"
+    >
+      Keep Editing
+    </button>
+  </div>
+</ng-template>
+
+<!-- Dirty save changes confirmation -->
+<!-- Modal -->
+<ng-template #confirmationDialog let-modal>
+  <div class="modal-header text-light bg-danger">
+    <h5 class="modal-title">{{ confirmationTitle }}</h5>
+    <button
+      type="button"
+      class="btn btn-close btn-close-white"
+      (click)="modal.dismiss()"
+      aria-label="Cancel"
+    ></button>
+  </div>
+  <div class="modal-body">
+    {{ confirmationMessage }}
+  </div>
+  <div class="modal-footer">
+    <button
+      type="button"
+      (click)="modal.close()"
+      class="btn btn-success"
+      aria-label="Yes"
+    >
+      Yes
+    </button>
+    <button
+      type="button"
+      class="btn btn-danger"
+      (click)="modal.dismiss()"
+      aria-label="No"
+    >
+      No
+    </button>
+  </div>
+</ng-template>

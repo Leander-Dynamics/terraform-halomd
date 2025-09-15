@@ -1,0 +1,27 @@
+.col-notes {
+    max-width:100px;
+    white-space: nowrap;
+    overflow:hidden;
+    text-overflow: ellipsis;
+}
+.vertical-align-middle {
+    vertical-align: middle;
+}
+.btn-group-xs,.btn-xs {
+    padding: .15rem .25rem;
+    font-size: .725rem;
+    border-radius: .1rem;
+}
+.table-sm>:not(caption)>*>* {
+    padding: .1rem .25rem;
+}
+
+.bg-certified-entity {
+    background-color: rgb(64,232,120);
+}
+.bg-facilitator {
+    background-color: rgb(108,222,255);
+}
+.bg-mediator {
+    background-color: rgb(254,204,104);
+}
