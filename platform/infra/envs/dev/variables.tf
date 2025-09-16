@@ -257,6 +257,115 @@ variable "storage_account_private_connection_resource_id" {
 }
 
 # -------------------------
+# App Services
+# -------------------------
+
+variable "app_service_plan_sku" {
+  description = "SKU for the App Service plan hosting the primary web application."
+  type        = string
+  default     = "B1"
+}
+
+variable "app_service_dotnet_version" {
+  description = ".NET runtime version for the primary web application."
+  type        = string
+  default     = "8.0"
+}
+
+variable "app_service_app_insights_connection_string" {
+  description = "Application Insights connection string injected into the primary web app."
+  type        = string
+
+  validation {
+    condition     = try(trimspace(var.app_service_app_insights_connection_string), "") != ""
+    error_message = "app_service_app_insights_connection_string must be provided when deploying the web app."
+  }
+}
+
+variable "app_service_log_analytics_workspace_id" {
+  description = "Optional Log Analytics workspace resource ID for App Service diagnostics."
+  type        = string
+  default     = null
+}
+
+variable "app_service_app_settings" {
+  description = "Additional application settings applied to the primary web app."
+  type        = map(string)
+  default     = {}
+}
+
+variable "app_service_connection_strings" {
+  description = "Connection strings exposed to the primary web application."
+  type = map(object({
+    type  = string
+    value = string
+  }))
+  default = {}
+}
+
+variable "enable_arbitration_app_service" {
+  description = "Toggle deployment of the arbitration App Service."
+  type        = bool
+  default     = false
+}
+
+variable "arbitration_app_plan_sku" {
+  description = "Optional SKU override for the arbitration App Service plan."
+  type        = string
+  default     = null
+}
+
+variable "arbitration_runtime_stack" {
+  description = "Runtime stack for the arbitration App Service."
+  type        = string
+  default     = "dotnet"
+}
+
+variable "arbitration_runtime_version" {
+  description = "Runtime version for the arbitration App Service."
+  type        = string
+  default     = "8.0"
+}
+
+variable "arbitration_app_insights_connection_string" {
+  description = "Optional Application Insights connection string for the arbitration app (defaults to the primary web app string)."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.arbitration_app_insights_connection_string == null || trimspace(var.arbitration_app_insights_connection_string) != ""
+    error_message = "arbitration_app_insights_connection_string cannot be blank; omit it to reuse the primary web app setting."
+  }
+}
+
+variable "arbitration_log_analytics_workspace_id" {
+  description = "Optional Log Analytics workspace resource ID dedicated to the arbitration app."
+  type        = string
+  default     = null
+}
+
+variable "arbitration_app_settings" {
+  description = "Application settings applied to the arbitration App Service."
+  type        = map(string)
+  default     = {}
+}
+
+variable "arbitration_connection_strings" {
+  description = "Connection strings exposed to the arbitration App Service."
+  type = map(object({
+    type  = string
+    value = string
+  }))
+  default = {}
+}
+
+variable "arbitration_run_from_package" {
+  description = "Flag controlling WEBSITE_RUN_FROM_PACKAGE for the arbitration App Service."
+  type        = bool
+  default     = true
+}
+
+# -------------------------
 # Networking
 # -------------------------
 variable "vnet_address_space" {
