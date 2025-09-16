@@ -158,6 +158,13 @@ module "kv" {
   tags                          = var.tags
 }
 
+resource "azurerm_role_assignment" "kv_cicd_secrets_user" {
+  count                = var.kv_cicd_principal_id == null || trimspace(var.kv_cicd_principal_id) == "" ? 0 : 1
+  scope                = module.kv.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = var.kv_cicd_principal_id
+}
+
 module "kv_private_endpoint" {
   count = var.enable_kv_private_endpoint && local.kv_private_endpoint_subnet_id != null && coalesce(var.kv_private_endpoint_resource_id, module.kv.id) != null ? 1 : 0
   source              = "../../Azure/modules/private-endpoint"
