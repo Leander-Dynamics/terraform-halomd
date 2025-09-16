@@ -517,13 +517,13 @@ variable "arbitration_log_analytics_workspace_id" {
 }
 
 variable "arbitration_app_settings" {
-  description = "Application settings applied to the arbitration App Service."
+  description = "Application settings applied to the arbitration App Service (expects Storage__Connection and Storage__Container entries)."
   type        = map(string)
   default     = {}
 }
 
 variable "arbitration_connection_strings" {
-  description = "Connection strings exposed to the arbitration App Service."
+  description = "Connection strings exposed to the arbitration App Service (expects ConnStr and IDRConnStr entries sourced from Key Vault)."
   type = map(object({
     type  = string
     value = string

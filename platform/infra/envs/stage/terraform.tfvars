@@ -102,6 +102,19 @@ arbitration_app_settings = {
   "Storage__Connection" = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-storage-connection)"
   "Storage__Container"  = "arbitration-calculator"
 }
+# Required keys:
+#   - ConnStr: primary arbitration database
+#   - IDRConnStr: IDR arbitration database
+arbitration_connection_strings = {
+  ConnStr = {
+    type  = "SQLAzure"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-primary-connection)"
+  }
+  IDRConnStr = {
+    type  = "SQLAzure"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-idr-connection)"
+  }
+}
 arbitration_app_insights_connection_string = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-appinsights-connection-string)"
 
 # -------------------------
