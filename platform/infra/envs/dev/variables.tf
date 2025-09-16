@@ -1,4 +1,37 @@
 # -------------------------
+# General
+# -------------------------
+variable "project_name" {
+  description = "Project or application identifier used for naming."
+  type        = string
+}
+
+variable "env_name" {
+  description = "Environment name (e.g. dev, stage, prod)."
+  type        = string
+}
+
+variable "location" {
+  description = "Azure region for resource deployment."
+  type        = string
+}
+
+variable "tags" {
+  description = "Common tags applied to all resources."
+  type        = map(string)
+  default     = {}
+}
+
+# -------------------------
+# Monitoring
+# -------------------------
+variable "app_insights_name" {
+  description = "Optional name override for the Application Insights resource."
+  type        = string
+  default     = ""
+}
+
+# -------------------------
 # Bastion
 # -------------------------
 variable "enable_bastion" {
@@ -8,7 +41,7 @@ variable "enable_bastion" {
 }
 
 variable "bastion_subnet_key" {
-  description = "Key referencing the AzureBastionSubnet entry in the `subnets` map."
+  description = "Key of the subnet reserved for the Bastion host."
   type        = string
   default     = null
 
@@ -138,21 +171,7 @@ variable "vpn_gateway_configuration" {
 }
 
 # -------------------------
-# IAM / RBAC
-# -------------------------
-variable "kv_cicd_principal_id" {
-  description = "Object ID of the CI/CD principal that requires Key Vault access."
-  type        = string
-  default     = null
-
-  validation {
-    condition     = var.kv_cicd_principal_id == null ? true : trimspace(var.kv_cicd_principal_id) != ""
-    error_message = "kv_cicd_principal_id cannot be empty when provided."
-  }
-}
-
-# -------------------------
-# Key Vault & Storage networking
+# Key Vault
 # -------------------------
 variable "kv_public_network_access" {
   description = "Allow public network access to the Key Vault."
@@ -195,6 +214,9 @@ variable "kv_private_endpoint_resource_id" {
   default     = null
 }
 
+# -------------------------
+# Storage
+# -------------------------
 variable "enable_storage_private_endpoint" {
   description = "Toggle creation of a private endpoint for the storage account."
   type        = bool
