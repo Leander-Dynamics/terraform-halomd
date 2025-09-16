@@ -22,6 +22,24 @@ variable "tags" {
   default     = {}
 }
 
+variable "kv_cicd_principal_id" {
+  description = "Optional object ID for the CI/CD principal that needs access to Key Vault secrets."
+  type        = string
+  default     = null
+}
+
+variable "subscription_id" {
+  description = "Optional Azure subscription ID override when the authenticated context differs from the desired target."
+  type        = string
+  default     = null
+}
+
+variable "tenant_id" {
+  description = "Optional Azure AD tenant ID override when the authenticated context differs from the desired target."
+  type        = string
+  default     = null
+}
+
 # -------------------------
 # Bastion
 # -------------------------

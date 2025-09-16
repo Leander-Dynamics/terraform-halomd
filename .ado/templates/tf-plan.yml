@@ -67,7 +67,6 @@ jobs:
         SECRET_LOGIN='${{ parameters.akvSecretSqlAdminLoginName }}'
         SECRET_PASS='${{ parameters.akvSecretSqlAdminPasswordName }}'
         AKV_VAR_FLAGS=""
-        SUB_TENANT_VAR_FLAGS=""
 
         if [[ "$USE_AKV" == "true" && -n "$KV_NAME" ]]; then
           if [[ "$DYN_IP" == "true" ]]; then
@@ -97,14 +96,14 @@ jobs:
 
         cd platform/infra/envs/${{ parameters.envName }}
         if [[ -n "${AZ_SUBSCRIPTION_ID:-}" ]]; then
-          SUB_TENANT_VAR_FLAGS="${SUB_TENANT_VAR_FLAGS} -var \"subscription_id=${AZ_SUBSCRIPTION_ID}\""
+          export TF_VAR_subscription_id="${AZ_SUBSCRIPTION_ID}"
         fi
         if [[ -n "${AZ_TENANT_ID:-}" ]]; then
-          SUB_TENANT_VAR_FLAGS="${SUB_TENANT_VAR_FLAGS} -var \"tenant_id=${AZ_TENANT_ID}\""
+          export TF_VAR_tenant_id="${AZ_TENANT_ID}"
         fi
 
         terraform init -reconfigure -backend-config=backend.tfvars -lock-timeout='${{ parameters.lockTimeout }}'
-        terraform plan -input=false -var-file=terraform.tfvars ${{ parameters.extraVarFlags }} ${SUB_TENANT_VAR_FLAGS} ${AKV_VAR_FLAGS} -out "$BUILD_SOURCESDIRECTORY/tfplan-${{ parameters.envName }}.tfplan"
+        terraform plan -input=false -var-file=terraform.tfvars ${{ parameters.extraVarFlags }} ${AKV_VAR_FLAGS} -out "$BUILD_SOURCESDIRECTORY/tfplan-${{ parameters.envName }}.tfplan"
   - task: PublishPipelineArtifact@1
     inputs:
       targetPath: '$(Build.SourcesDirectory)/tfplan-${{ parameters.envName }}.tfplan'
