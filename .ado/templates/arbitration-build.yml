@@ -1,0 +1,42 @@
+# Template: Build & package the Arbitration web application
+jobs:
+- job: build
+  displayName: Build arbitration web app
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - checkout: self
+  - task: UseDotNet@2
+    displayName: Install .NET SDK
+    inputs:
+      packageType: 'sdk'
+      version: $(dotnetVersion)
+  - task: NodeTool@0
+    displayName: Use Node.js
+    inputs:
+      versionSpec: $(nodeVersion)
+  - script: npm ci
+    workingDirectory: Arbitration/MPArbitration/ClientApp
+    displayName: Install npm dependencies
+  - script: npm run build
+    workingDirectory: Arbitration/MPArbitration/ClientApp
+    displayName: Build Angular client
+  - script: dotnet restore Arbitration/MPArbitration.sln
+    displayName: dotnet restore
+  - script: dotnet build Arbitration/MPArbitration.sln --configuration $(buildConfiguration) --no-restore
+    displayName: dotnet build
+  - script: dotnet test Arbitration/TestArbitApi/Tests.csproj --configuration $(buildConfiguration) --no-build
+    displayName: dotnet test
+  - script: dotnet publish Arbitration/MPArbitration/MPArbitration.csproj --configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)/publish
+    displayName: dotnet publish
+  - task: ArchiveFiles@2
+    displayName: Create deployment package
+    inputs:
+      rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/publish'
+      includeRootFolder: false
+      archiveType: zip
+      archiveFile: '$(Build.ArtifactStagingDirectory)/$(artifactName).zip'
+      replaceExistingArchive: true
+  - publish: '$(Build.ArtifactStagingDirectory)/$(artifactName).zip'
+    artifact: drop
+    displayName: Publish artifact

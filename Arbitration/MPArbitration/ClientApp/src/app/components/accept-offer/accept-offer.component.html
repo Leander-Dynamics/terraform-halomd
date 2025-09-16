@@ -1,0 +1,74 @@
+<div class="modal-header bg-info text-light">
+    <h4 class="modal-title">Accept An Offer</h4>
+    <button type="button" (click)="activeModal.dismiss('dismiss click')" class="btn-close" title="Close">
+    </button>
+</div>
+
+<div class="modal-body">
+    <form #offerForm="ngForm" id="ngForm" novalidate="novalidate">
+        <div class="row">
+            <div class="mb-3">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" 
+                        [attr.disabled]="!payorOffer?true:null"
+                        required
+                        [(ngModel)]="offerType" 
+                        name="acceptOffer"
+                        value="Payor"
+                        id="acceptOffer1"
+                        aria-label="Accept Payor Offer">
+                    <label class="form-check-label" for="acceptOffer1">Accept Payor Offer</label>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Payor Offer Amount</label>
+                <input type="text" (focus)="selectAll($event)" 
+                    readonly 
+                    class="form-control form-control-sm"
+                    [value]="payorOffer" 
+                    name="payorOffer" 
+                    aria-label="Payor Offer Amount">
+            </div>
+        </div>
+        <div class="row">
+            <div class="mb-3">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" 
+                        [attr.disabled]="!providerOffer?true:null"
+                        required
+                        [(ngModel)]="offerType" 
+                        name="acceptOffer"
+                        value="Provider"
+                        id="acceptOffer2" 
+                        aria-label="The Provider Offer was accepted by the Payor">
+                    <label class="form-check-label" for="acceptOffer2">Accept Provider Offer</label>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Provider Offer Amount</label>
+                <input type="text" (focus)="selectAll($event)" 
+                    readonly 
+                    class="form-control form-control-sm"
+                    [value]="providerOffer" 
+                    name="providerOffer" 
+                    aria-label="Provider Offer Amount">
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea class="form-control form-control-sm" [(ngModel)]="notes" name="notes" id="notes" rows="3">
+            </textarea>
+        </div>
+    </form>
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-sm btn-secondary"
+        (click)="activeModal.dismiss()" title="Cancel this dialog box">
+        <i class="bi  bi-arrow-counterclockwise"></i> Cancel
+    </button>
+    <button type="button" [disabled]="!offerForm.form.valid" class="btn btn-sm btn-success"
+        (click)="activeModal.close()" title="Add Offer">
+        <i class="bi bi-save"></i> Accept Offer
+    </button>
+</div>

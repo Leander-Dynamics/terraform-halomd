@@ -1,0 +1,21 @@
+div.multi-select {
+    max-height: 8rem;
+    overflow-x:hidden;
+    overflow-y:auto;
+    display: flex;
+    flex-direction: column;
+}
+div.multi-select div.form-check-inline {
+    white-space: nowrap;
+}
+.multi-select-container {
+    border:1px solid black;
+    box-shadow:3px 3px darkgray;
+    border-radius: 8px;
+}
+div.multi-select-container label.form-label {
+    font-weight: bold;;
+}
+.fs-7 {
+    font-size: .8rem!important;
+}

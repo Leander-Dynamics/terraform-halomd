@@ -1,0 +1,157 @@
+<div class="card">
+    <div class="card-header">
+        <div class="row mb-4">
+            <div class="col">
+                <h3>File Import Configuration</h3>
+                <h6>Manage how each imported row and column are integrated into existing Cases</h6>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-auto">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">Import Source</span>
+                    <select name="fileSource" 
+                        [(ngModel)]="fileSource" 
+                        class="form-select form-select-sm"
+                        (change)="sourceChange()"
+                        aria-label="File import source" title="Choose the import source to manage">
+                        <option disabled selected value="">Select...</option>
+                        <option value="RequestDetails">Authority Import</option>
+                        <option value="CaseSync">Authority Sync to Case</option>
+                        <option value="EHRDetail">EHR Detail</option>
+                        <option value="EHRHeader">EHR Header</option>
+                        <option value="TDIRequestDetails">TDI Import</option>
+                        <option value="TDICaseSync">TDI To Arb Case Sync</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-auto" *ngIf="fileSource==='RequestDetails'||fileSource==='CaseSync'">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">Authority</span>
+                    <select name="fileSource" 
+                        [(ngModel)]="authority" 
+                        class="form-select form-select-sm"
+                        (change)="sourceChange()"
+                        aria-label="File import source" 
+                        title="Choose the import source to manage">
+                        <option disabled selected value="">Select...</option>
+                        <option *ngFor="let a of allAuthorities" [ngValue]="a.key">{{a.name}}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-auto">
+                <span *ngIf="!!fileSource" class="ms-2 small align-self-center">({{recCount}} columns defined)</span>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive" *ngIf="fileSource">
+          <table class="table table-striped table-condensed">
+            <thead>
+                <tr>
+                    <th>...</th>
+                    <th>Active</th>
+                    <th>Is Boolean</th>
+                    <th>Is Date</th>
+                    <th>Is Numeric</th>
+                    <th>Required</th>
+                    <th>Allow Empty</th>
+                    <th>Source Fieldname</th>
+                    <th>Import Action</th>
+                    <th *ngIf="!fileSource.endsWith('Import')">Arbitration Fieldname</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let r of records$ | async;let i = index">
+                    <td>{{i+1}}</td>
+                    <td>
+                        <input class="form-check-input"
+                            title="Uncheck to deactivate this field from the import" 
+                            type="checkbox" value=""
+                            [disabled]="r.isRequired||!isAdmin"
+                            id="isActive{{i}}" (change)="recChanged(r)" 
+                            [(ngModel)]="r.isActive"
+                            [ngModelOptions]="{standalone:true}">
+                    </td>
+                    <td *ngIf="fileSource">
+                        <input class="form-check-input"
+                            title="Does the column contain only True or False?" 
+                            type="checkbox" value="" 
+                            [disabled]="!isAdmin"
+                            id="isBoolean{{i}}" (change)="recChanged(r,'bool')" 
+                            [(ngModel)]="r.isBoolean"
+                            [ngModelOptions]="{standalone:true}">
+                    </td>
+                    <td *ngIf="fileSource">
+                        <input class="form-check-input"
+                            title="Does the column contain only Date / DateTime values?" 
+                            type="checkbox" value="" 
+                            [disabled]="!isAdmin"
+                            id="isDate{{i}}" (change)="recChanged(r,'date')" 
+                            [(ngModel)]="r.isDate"
+                            [ngModelOptions]="{standalone:true}">
+                    </td>
+                    <td>
+                        <input class="form-check-input"
+                            title="Does the column contain only numerical values?" 
+                            type="checkbox" value="" 
+                            [disabled]="!isAdmin"
+                            id="isNumeric{{i}}" (change)="recChanged(r,'numeric')" 
+                            [(ngModel)]="r.isNumeric"
+                            [ngModelOptions]="{standalone:true}">
+                    </td>
+                    <td> <!--  && fileSource.startsWith('EHR') -->
+                        <input class="form-check-input"
+                            title="Check all columns that MUST be present on the upload file" 
+                            type="checkbox" value="" disabled
+                            id="isRequired{{i}}" (change)="recChanged(r)" 
+                            [(ngModel)]="r.isRequired"
+                            [ngModelOptions]="{standalone:true}">
+                    </td>
+                    <td>
+                        <input class="form-check-input"
+                            title="For Required columns, the value can sometimes be empty. (Does not apply to non-required columns.)" 
+                            type="checkbox" value="" disabled
+                            id="canBeEmpty{{i}}" (change)="recChanged(r)" [(ngModel)]="r.canBeEmpty"
+                            [ngModelOptions]="{standalone:true}">
+                    </td>
+                    <td>
+                        <input class="form-control form-control-sm" 
+                            title="{{r.sourceFieldname}}"
+                            type="text" autocomplete="off" 
+                            id="sourceFieldname{{i}}" readonly 
+                            (change)="recChanged(r)" 
+                            [(ngModel)]="r.sourceFieldname"
+                            [ngModelOptions]="{standalone:true}">
+                    </td>
+                    <td>
+                        <input *ngIf="!isAdmin" class="form-control form-control-sm" readonly [value]="ImportActions[r.action]" aria-label="Import Action">
+                        <select class="form-select form-select-sm" *ngIf="isAdmin"
+                            title="Import Action"
+                            type="text" autocomplete="off" 
+                            id="action{{i}}" 
+                            (change)="recChanged(r)" 
+                            [(ngModel)]="r.action"
+                            [ngModelOptions]="{standalone:true}">
+                            <option [ngValue]="0">Always</option>
+                            <option [ngValue]="1">Ignore</option>
+                            <option [ngValue]="2">Only When Empty</option>
+                            <option [ngValue]="3">Never With Empty</option>
+                        </select>
+                    </td>
+                    <td *ngIf="!fileSource.endsWith('Import')">
+                        <input class="form-control form-control-sm" 
+                        title="{{r.targetFieldname}}"
+                        type="text" autocomplete="off" 
+                        id="targetFieldname{{i}}" 
+                        readonly 
+                        (change)="recChanged(r)" 
+                        [(ngModel)]="r.targetFieldname"
+                        [ngModelOptions]="{standalone:true}">
+                    </td>
+                </tr>
+            </tbody>
+          </table>
+      </div>
+    </div>
+</div>

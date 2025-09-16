@@ -1,0 +1,7 @@
+td.overflow-ellipses {
+    max-width:12rem;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space: nowrap;
+}
+.scroll-y-300 { max-height: 300px; overflow-y: auto;}

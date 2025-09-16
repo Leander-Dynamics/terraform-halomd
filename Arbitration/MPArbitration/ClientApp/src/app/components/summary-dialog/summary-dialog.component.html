@@ -1,0 +1,74 @@
+<!-- This is ugly basic html so the copy and past function into Word or other destination will somewhat render correctly -->
+<div class="p-2" id="cardTop" #cardTop>
+    <h3>Case Summary</h3>
+    <table style="width:100%;font-weight: bold;border-color: transparent;border-width: 0px;border-collapse:collapse;font-size:small">
+        <tbody>
+            <tr>
+                <td>File Number</td>
+                <td>{{claim.authorityCaseId}}</td>
+            </tr>
+            <tr>
+                <td><b>Health Plan</b></td>
+                <td><b>{{claim.payor}}</b></td>
+            </tr>
+            <tr>
+                <td><b>Member               </b></td>
+                <td><b>{{claim.patientName}}</b></td>
+            </tr>
+            <tr>
+                <td><b>ID #                  </b></td>
+                <td><b>{{claim.policyNumber}}</b></td>
+            </tr>
+            <tr>
+                <td style="white-space:nowrap"><b>Rendering Provider Name</b></td>
+                <td><b>{{claim.providerName}} </b></td>
+            </tr>
+            <tr>
+                <td style="white-space:nowrap"><b>Rendering Provider Specialty</b></td>
+                <td><b>{{specialty}}      </b></td>
+            </tr>
+            <tr>
+                <td><b>Date of Service                         </b></td>
+                <td><b>{{claim.serviceDate | date:'shortDate'}}</b></td>
+            </tr>
+            <tr>
+                <td><b>CPTs Allowed</b></td>
+                <td><b>{{CPTs}}    </b></td>
+            </tr>
+            <tr>
+                <td><b>Total Billed Charges for CPTs Allowed  </b></td>
+                <td><b>{{claim.totalChargedAmount | currency}}</b></td>
+            </tr>
+            <tr>
+                <td><b>Member Cost Share                      </b></td>
+                <td><b>{{claim.patientShareAmount | currency}}</b></td>
+            </tr>
+            <tr>
+                <td><b>Initial Payment to Rendering Provider</b></td>
+                <td><b>{{claim.totalPaidAmount | currency}} </b></td>
+            </tr>
+            <tr>
+                <td><b>Applicable Geo Zip</b></td>
+                <td><b>{{geoZip}}        </b></td>
+            </tr>
+            <tr>
+                <td><b>Provider Email</b></td>
+                <td><b></b></td>
+            </tr>
+            <tr>
+                <td><b>Rendering Provider IDR Offer</b></td>
+                <td><b>{{providerOffer | currency}}</b></td>
+            </tr>
+            <tr>
+                <td><b>Health Plan Offer        </b></td>
+                <td><b>{{payorOffer | currency}}</b></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<br/>
+<div style="text-align: right">
+    <button type="button" class="btn btn-sm btn-success" (click)="copyToClipboard()">
+        <span class="small">Copy to Clipboard</span>
+    </button>
+</div>

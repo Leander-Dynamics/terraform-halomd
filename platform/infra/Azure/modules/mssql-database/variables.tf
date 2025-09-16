@@ -1,8 +1,17 @@
-variable "name" {}
+variable "name" {
+  type = string
+}
 
 variable "server_id" {
-  default = ""
+  type = string
 }
+
 variable "sku_name" {
-  default = ""
+  type = string
+}
+
+variable "tags" {
+  description = "Optional tags to apply to the SQL database."
+  type        = map(string)
+  default     = {}
 }

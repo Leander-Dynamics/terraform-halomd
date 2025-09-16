@@ -1,0 +1,751 @@
+<div class="card">
+  <div class="card-header d-flex">
+    <h5 class="col-auto"><b>Find Cases</b></h5>
+    <div class="col d-flex justify-content-center">
+      <button type="button" 
+        class="btn btn-sm btn-success ms-2" 
+        [disabled]="isLoading" 
+        [ngClass]="{'btn-info':activeSearchButton===ActiveSearchButton.CurrentCases}"
+        (click)="loadSearch(ActiveSearchButton.CurrentCases)"
+        title="Cases still active on either the NSA or Local workflow">Current Cases
+      </button>
+      <!--
+      <button type="button" 
+        class="btn btn-sm btn-success ms-2" 
+        [disabled]="isLoading" 
+        [ngClass]="{'btn-info':activeSearchButton===ActiveSearchButton.ArbitratorRejections}"
+        (click)="loadSearch(ActiveSearchButton.ArbitratorRejections)"
+        title="Open Cases that currently have more than 1 Arbitrator remaining.">Arbitrator Rejections
+      </button>
+      <button type="button" 
+        class="btn btn-sm btn-success ms-2" 
+        [ngClass]="{'bg-info':activeSearchButton===ActiveSearchButton.BriefNeeded}"
+        [disabled]="isLoading" 
+        (click)="loadSearch(ActiveSearchButton.BriefNeeded)"
+        title="Cases that need an Arbitration Brief in the next 7 work days">Brief Needed
+      </button>
+      -->
+      <button type="button" 
+        class="btn btn-sm btn-success ms-2" 
+        [disabled]="isLoading || !currentUser?.email" 
+        [ngClass]="{'btn-info':activeSearchButton===ActiveSearchButton.DueToAssignToday}"
+        (click)="loadSearch(ActiveSearchButton.DueToAssignToday)"
+        title="Cases that will go to formal arbitration in the next 48 hours">State Briefs Due 
+      </button>
+      <button type="button" 
+        class="btn btn-sm btn-success ms-2" 
+        [disabled]="isLoading || !currentUser?.email" 
+        [ngClass]="{'btn-info':activeSearchButton===ActiveSearchButton.DueToAssignTodayNSA}"
+        (click)="loadSearch(ActiveSearchButton.DueToAssignTodayNSA)"
+        title="Cases that will go to formal arbitration in the next 48 hours (NSA)">NSA Briefs Due
+      </button>
+      <button type="button" 
+        class="btn btn-sm btn-success ms-2" 
+        [disabled]="isLoading || !currentUser?.email" 
+        [ngClass]="{'btn-info':activeSearchButton===ActiveSearchButton.MyCurrentCases}"
+        (click)="loadSearch(ActiveSearchButton.MyCurrentCases)"
+        title="Quickly filter Cases assigned to you">My Current Cases
+      </button>
+
+      <!-- Custom Criteria - OffCanvas -->
+      <button type="button" 
+        class="btn btn-sm btn-warning ms-2" 
+        [disabled]="isLoading" 
+        (click)="showCustomSearch(searchContent)"
+        title="Find claim using custom criteria">Custom
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-2 flex-auto">
+  <div class="card-footer d-flex justify-content-between small p-1">
+    <div>
+      <span *ngIf="!isDisputeSearch"> ({{(records$ | async)!.length ?? 0}} matches)</span>
+      <span *ngIf="isDisputeSearch"> ({{(disputes$ | async)!.length ?? 0}} matches)</span>
+    </div>
+    <button type="button" 
+      class="btn btn-sm btn-success" 
+      [disabled]="isLoading || (records.length===0 && disputes.length===0)" 
+      (click)="downloadResults()"
+      title="Download the contents of the table to a CSV file">Download
+    </button>
+  </div>
+  <div class="card-body d-flex flex-column flex-auto">
+    <!-- Claim Search Results -->
+    <div *ngIf="!isDisputeSearch" class="table-responsive flex-auto">
+      <table datatable [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" class="table table-sm search-results">
+        <thead>
+          <tr>
+            <th scope="col">&nbsp;</th>
+            <th scope="col">&nbsp;</th>
+            <th scope="col" class="text-left">Patient Name</th>
+            <th scope="col" class="text-left">DOS</th>
+            <th scope="col" class="text-left">Provider NPI</th>
+            <th scope="col">Account</th>
+            <th scope="col">Brief Due</th>
+
+            <th scope="col">Auth</th>
+            <th scope="col">Auth Case Id</th>
+            <th scope="col">Authority Status</th>
+            <th scope="col">Authority WF Status</th>
+
+            <th scope="col">NSA Case Id</th>
+            <th scope="col">NSA Status</th>
+            <th scope="col">NSA WF Status</th>
+            
+            <th scope="col" style="min-width:8rem">Customer</th>
+            <th scope="col">EHR #</th>
+            <th scope="col">Asgmt Deadline</th>
+            <th scope="col" style="min-width:8rem">Assigned User</th>
+
+            
+            <th scope="col">Provider Offer</th>
+            <th scope="col">Payor Offer</th>
+
+            <th scope="col">FH 50th</th>
+            <th scope="col">FH 80%</th>
+
+            <th scope="col">Arbitration Fee</th>
+            <th scope="col">GeoZip</th>
+            <th scope="col">Total Charged Amt</th>
+            <!-- Old benchmarks
+              
+            -->
+            <!-- new benchmarks hopefully 
+            <th scope="col" *ngFor="let b of allBenchmarkTableLabels">
+              {{b}}
+            </th>
+            -->
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of records">
+            <td>
+              <span *ngIf="c.hasArbitratorWarning" class="text-danger" title="Warning: An Arbitrator on the watch list is still active">
+                <i class="bi bi-shield-slash-fill"></i>
+              </span>
+              <span *ngIf="!c.hasArbitratorWarning"><i class="bi bi-shield-slash"></i></span>
+              &nbsp;
+              <span *ngIf="c.isUnread" class="text-success"><i class="bi bi-star-fill"></i></span>
+              <span *ngIf="!c.isUnread"><i class="bi bi-star"></i></span>
+            </td>
+            <td>
+              <!-- <a *ngIf="isDeveloper" href class="text-danger me-1" (click)="mergeClaims(c)">Merge</a> -->
+              <a [routerLink]="['/','calculator',c.id]" class="">View</a>
+            </td>
+            <td class="text-left">{{c.patientName}}</td>
+            <td>{{c.serviceDate | date:'shortDate'}}</td>
+            <td>{{c.providerNPI}}</td> 
+            <td>{{c.authorityUserId}}</td> <!-- Account -->
+            <td>{{c.arbitrationBriefDueDate | date:'shortDate'}}</td>
+            <td>{{c.authority}}</td>
+            <td>
+              <a *ngIf="!!c.authorityCaseId" title="Authority Case Identifier" 
+                href="#" (delayed-hover)="showSummary(c)" [delay]="500">
+                {{c.authorityCaseId}}
+              </a>
+            </td>
+            <td>{{c.authorityStatus}}</td>
+            <td [ngClass]="{'bg-closed':c.status>7&&c.status<12,'bg-ineligible':c.status==CMSCaseStatus.Ineligible}">{{statuses[c.status].key}}</td>
+            <td>{{c.NSACaseId}}</td>
+            <td>{{c.NSAStatus}}</td>
+            <td [ngClass]="{'bg-closed':c.NSAWorkflowStatus>7&&c.NSAWorkflowStatus<12,'bg-ineligible':c.NSAWorkflowStatus==CMSCaseStatus.Ineligible}">{{statuses[c.NSAWorkflowStatus].key}}</td>
+            
+            <td>
+              <span *ngIf="!isManager">{{c.customer}}</span>
+              <select *ngIf="isManager" class="form-select form-select-sm form-select-xs" 
+                [(ngModel)]="c.customer"
+                aria-label="Customer" 
+                title="The Customer who owns this case" 
+                (change)="changeAssignedCustomer(c)">
+                <option disabled selected [ngValue]="''">Select...</option>
+                <option *ngFor="let s of allCustomers" [ngValue]="s.name">{{s.name}}</option>
+              </select>
+            </td>
+            <td>{{c.EHRNumber}}</td>
+            <td>{{c.assignmentDeadlineDate | date:'shortDate'}}</td>
+            <td>
+              <span *ngIf="!isManager&&!isNegotiator">{{c.assignedUser ? c.assignedUser : 'Unassigned'}}</span>
+              <select *ngIf="isManager||isNegotiator" class="form-select form-select-sm form-select-xs" [(ngModel)]="c.assignedUser"
+                aria-label="Assigned User" title="The user assigned to negotiate this case" (change)="changeAssignedUser(c)">
+                <option disabled selected [ngValue]="''">Unassigned</option>
+                <option *ngFor="let s of allUsers" [ngValue]="s.email.toLowerCase()">{{s.email}}</option>
+              </select>
+            </td>
+
+            
+            <td>{{c.providerFinalOfferAmount | number:'.2'}}</td>
+            <td>{{c.payorFinalOfferAmount | number:'.2'}}</td>
+            <td>{{c.fh50thPercentileExtendedCharges | number:'.2'}}</td>
+            <td>{{c.fh80thPercentileExtendedCharges | number:'.2'}}</td>
+            <td>{{c.arbitrationFeeAmount | number:'.2'}}</td>
+            <td>{{c.locationGeoZip}}</td>
+            <td>{{c.totalChargedAmount | number:'.2'}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Dispute Search Results -->
+    <div *ngIf="isDisputeSearch" class="table-responsive flex-auto">
+        <table datatable [dtOptions]="dtDisputeOptions" [dtTrigger]="dtDisputeTrigger" class="table table-sm search-results">
+          <thead>
+            <tr>
+              <!--
+              <th scope="col">&nbsp;</th>
+              <th scope="col">&nbsp;</th>
+              -->
+              <th scope="col">Authority</th>
+              <th scope="col">Dispute Number</th>
+              <th scope="col">Submitted On</th>
+              
+              <th scope="col">Authority Status</th>
+              <th scope="col">Work Queue</th>
+
+              <th scope="col" style="min-width:8rem">Customer</th>
+              <th scope="col" style="min-width:8rem">Linked Claims</th>
+              <th scope="col" style="min-width:8rem">Patient Names</th>
+
+              <th scope="col" class="text-left">Arbitrator</th>
+              <th scope="col" class="text-left">Arbitrator Selected</th>
+              <th scope="col" class="text-left">Arbitration Result</th>
+              
+              <th scope="col">Brief Approved By</th>
+              <th scope="col">Brief Approved On</th>
+              <th scope="col">Brief Preperarer</th>
+              <th scope="col">Brief Prep Completed On</th>
+              
+              <th scope="col">Ineligibility Action</th>
+              
+              <!-- new benchmarks at some point ... 
+              <th scope="col" *ngFor="let b of allBenchmarkTableLabels">
+                {{b}}
+              </th>
+              -->
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of disputes">
+              <td>
+                {{!!c.authority ? c.authority.key.toUpperCase() : ''}}
+              </td>
+              <td>
+                <!-- <a *ngIf="isDeveloper" href class="text-danger me-1" (click)="mergeClaims(c)">Merge</a> -->
+                <a [routerLink]="['/','batch',c.id]" class="">{{c.authorityCaseId}}</a>
+              </td>
+              <td>{{c.submissionDate | date:'shortDate'}}</td>
+
+              <td>{{c.authorityStatus}}</td>
+              <td>{{statuses[c.workflowStatus]?.key}}</td>
+
+              <td>{{c.customer}}</td>
+              <td [innerHTML]="getClaimLinks(c.linkedClaimIDs)"></td>
+              <td>{{c.patientName}}</td>
+
+              <td>{{c.arbitratorId}}</td>
+              <td>{{c.arbitratorSelectedOn | date:'shortDate'}}</td>
+              <td>{{ArbitrationResult[c.arbitrationResult]}}</td>
+
+              <td>{{c.briefApprovedBy}}</td>
+              <td>{{c.briefApprovedOn | date:'shortDate'}}</td>
+              <td>{{c.briefPreparer}}</td>
+              <td>{{c.briefWriterCompletedOn | date:'shortDate'}}</td>
+              <td>{{c.ineligibilityAction}}</td>
+          </tbody>
+        </table>
+      </div>
+  </div>
+</div>
+
+<!-- Search Criteria - slide in from Off-Canvas -->
+<ng-template #searchContent let-offcanvas>
+  <div class="offcanvas-header pb-0">
+      <h4 class="offcanvas-title">Case Search</h4>
+      <button type="button" class="btn-close" aria-label="Close" (click)="offcanvas.dismiss('Cross click')"></button>
+  </div>
+  <div class="offcanvas-body">
+    <hr class="mt-0"/>
+    <div class="row justify-content-between mb-1">
+      <!-- Claims or Disputes -->
+      <div class="col-auto">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" 
+                id="isDisputeSearch"
+                name="isDisputeSearch" 
+                autocomplete="off" 
+                (change)="isDisputeSearchChange()"
+                [(ngModel)]="isDisputeSearch" 
+                aria-label="Activate Dispute Search"
+                title="Enable to search Disputes instead of Claims">
+            <label class="form-check-label" for="searchType">Dispute Search</label>
+        </div>
+    </div>
+      <div class="col-auto">
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" 
+              type="checkbox" 
+              [(ngModel)]="includeClosed"
+              [ngModelOptions]="{standalone:true}"
+              [disabled]="status!==CMSCaseStatus.Search"
+              title="Include Closed, Settled and Withdrawn claims"
+              aria-label="Include Closed">
+          <label class="form-check-label">Include Closed</label>
+        </div>
+        
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" 
+              type="checkbox" 
+              [(ngModel)]="includeInactive"
+              [ngModelOptions]="{standalone:true}"
+              [disabled]="status!==CMSCaseStatus.Search"
+              title="Include claims where at least one of the Workflow Status fields is Ineligible"
+              aria-label="Include Inactive">
+          <label class="form-check-label">Include Ineligible</label>
+        </div>
+      </div>
+      <!-- Reset criteria button --
+      <div class="col text-right mb-1">
+        <button type="button" 
+          class="btn btn-sm btn-outline-success" 
+          [disabled]="isLoading" 
+          (click)="resetSearch()"
+          title="Set all search criteria back to their default">Reset All
+        </button>
+      </div>
+      -->
+    </div>
+    <form #searchForm="ngForm" novalidate="novalidate" (submit)="submitForm(searchForm)">
+      <div class="row gx-1 flex-column">
+        <div class="col">
+          <!--- md-6 col-xl-4 -->
+          <!-- Assignment Deadline  -->
+          <div *ngIf="!isDisputeSearch" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4 font-small">Assignment Deadline</span>
+            <input type="text" name="assignmentDeadline"
+                   class="form-control"
+                   ngbDatepicker
+                   [placement]="'bottom'"
+                   [container]="'body'"
+                   data-minDate="{year:1900,month:1,day:1}"
+                   [ngClass]="{'bg-dirty':!!assignmentDeadline}" autocomplete="off"
+                   [(ngModel)]="assignmentDeadline"
+                   aria-label="Assignment Deadline"
+                   title="Date the authority (e.g. TDI) will assign the case to a Mediator if not settled informally."
+                   #add="ngbDatepicker">
+            <!-- (dateSelect)="setAssignmentDeadlineDate($event)" -->
+
+            <button type="button" class="btn btn-outline-secondary"
+                    (click)="add.toggle()" title="Pick Assignment Deadline Date">
+              <i class="bi bi-calendar"></i>
+            </button>
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !assignmentDeadline"
+                    (click)="assignmentDeadline=undefined"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+          <!-- Patient / EHR number -->
+          <div *ngIf="!isDisputeSearch" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">EHR / Patient #</span>
+            <input name="EHRNumber" type="text"
+                   [(ngModel)]="EHRNumber"
+                   [ngClass]="{'bg-dirty':!!EHRNumber}" autocomplete="off"
+                   class="form-control"
+                   aria-label="Case management system id number" />
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !EHRNumber"
+                    (click)="EHRNumber=''"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- Patient Name -->
+          <div *ngIf="!isDisputeSearch" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">Patient Name</span>
+            <input name="patientName" type="text"
+                   [(ngModel)]="patientName"
+                   [ngClass]="{'bg-dirty':!!patientName}" autocomplete="off"
+                   class="form-control"
+                   aria-label="Patient name" />
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !patientName"
+                    (click)="patientName=''"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- DOB -->
+          <div *ngIf="!isDisputeSearch" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">Patient DOB</span>
+            <input type="text" name="DOB"
+                   class="form-control"
+                   [ngClass]="{'bg-dirty':!!DOB}" autocomplete="off"
+                   ngbDatepicker
+                   [placement]="'bottom'"
+                   [container]="'body'"
+                   [minDate]="{year:1900,month:1,day:1}"
+                   [(ngModel)]="DOB"
+                   aria-label="Patient Date of Birth"
+                   title="Patient's Date of Birth" #dob="ngbDatepicker">
+            <!-- (dateSelect)="setDOB($event)" -->
+            <button type="button" class="btn btn-outline-secondary"
+                    (click)="dob.toggle()" title="Pick Date of Birth">
+              <i class="bi bi-calendar"></i>
+            </button>
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !DOB"
+                    (click)="DOB=undefined"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- Payor -->
+          <div *ngIf="!isDisputeSearch" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">Payor</span>
+            <select name="payor"
+                    [(ngModel)]="payor"
+                    class="form-select form-select-sm"
+                    [ngClass]="{'bg-dirty':!!payor}" autocomplete="off"
+                    aria-label="The payor or health plan name" title="Payor / health plan name (top-level 'prime' Payors only)">
+              <option [ngValue]="null" disabled selected>Select...</option>
+              <option *ngFor="let s of allPayors" [value]="s.name">{{s.name}}</option>
+            </select>
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !payor"
+                    (click)="payor=null"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- Service -->
+          <div *ngIf="!isDisputeSearch" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">Service</span>
+            <select name="service" [(ngModel)]="service"
+                    class="form-select form-select-sm"
+                    [ngClass]="{'bg-dirty':!!service}" autocomplete="off"
+                    aria-label="Service" title="Service">
+              <option [ngValue]="null" disabled selected>Select...</option>
+              <option *ngFor="let s of allServices" [value]="s.name">{{s.name}}</option>
+            </select>
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !service"
+                    (click)="service=null"
+                    title="Clear field">X</button>
+          </div>
+
+        </div>
+
+        
+
+
+        <div class="col">
+          <!-- -md-6 col-xl-4 -->
+          <!-- Arbitrator -->
+          <div class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">Arbitrator</span>
+            <input name="arbitrator" type="text"
+                   placeholder="Enter Email or partial name"
+                   [(ngModel)]="arbitrator" autocomplete="off"
+                   class="form-control"
+                   [ngClass]="{'bg-dirty':!!arbitrator}"
+                   aria-label="Arbitrator name" />
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !arbitrator"
+                    (click)="arbitrator=''"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- Assigned User -->
+          <div class="input-group input-group-sm mb-1">
+            <span *ngIf="!isDisputeSearch" class="input-group-text col-4">Assigned User</span>
+            <span *ngIf="isDisputeSearch" class="input-group-text col-4">Brief Preparer/Writer</span>
+            <select class="form-select form-select-sm"
+                    name="assignedUser"
+                    [ngClass]="{'bg-dirty':!!assignedUser}" autocomplete="off"
+                    [(ngModel)]="assignedUser"
+                    aria-label="Assigned User"
+                    title="The user assigned to negotiate the case">
+              <option disabled selected [ngValue]="''">Select</option>
+              <option *ngFor="let s of allUsers" [ngValue]="s.email">{{s.email}}</option>
+            </select>
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !assignedUser"
+                    (click)="assignedUser=''"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- Customer -->
+          <div *ngIf="!isDisputeSearch" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">Customer</span>
+            <select name="customer"
+                    [(ngModel)]="customer"
+                    class="form-select form-select-sm"
+                    [ngClass]="{'bg-dirty':!!customer}" autocomplete="off"
+                    aria-label="Customer" title="Customer who owns the Case. (Customers in italics are currently inactive.)">
+              <option value="">Select...</option>
+              <option value="{empty}">{{'{empty}'}}</option>
+              <option *ngFor="let s of allCustomers" [ngValue]="s.name" [ngClass]="{'data-inactive':!s.isActive}">{{s.name}}</option>
+            </select>
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !customer"
+                    (click)="customer=''"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- Claim Number -->
+          <div *ngIf="!isDisputeSearch" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">Payor Claim Id</span>
+            <input name="payorClaimNumber" type="text"
+                   [(ngModel)]="payorClaimNumber"
+                   [ngClass]="{'bg-dirty':!!payorClaimNumber}" autocomplete="off"
+                   class="form-control"
+                   aria-label="Payor Claim Id" />
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !payorClaimNumber"
+                    (click)="payorClaimNumber=''"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- Workflow Status -->
+          <div class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">Work Queue</span>
+            <select name="status"
+                    [(ngModel)]="status" (change)="workflowStatusChange()"
+                    class="form-select form-select-sm" autocomplete="off"
+                    [ngClass]="{'bg-dirty':status!==CMSCaseStatus.Search}"
+                    aria-label="Current tracking status of the Case" title="MPOWERHealth Status">
+              <option [ngValue]="CMSCaseStatus.Search" selected>Select...</option>
+              <option *ngFor="let s of statuses" [ngValue]="s.id">{{s.key}}</option>
+            </select>
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || status === CMSCaseStatus.Search"
+                    (click)="status=CMSCaseStatus.Search;includeClosed=false;includeInactive=false"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+        </div>
+
+        <div class="col">
+          <!-- -md-6 col-xl-4 -->
+          <!-- Authority -->
+          <div class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">Authority</span>
+            <select name="authority"
+                    (change)="authorityChange()"
+                    [(ngModel)]="authority"
+                    class="form-select form-select-sm"
+                    [ngClass]="{'bg-dirty':!!authority}"
+                    autocomplete="off"
+                    aria-label="Authority"
+                    required
+                    title="Regulatory juristiction such as Texas or NSA">
+              <option [ngValue]="''" disabled selected>Select...</option>
+              <option *ngFor="let s of allAuthorities" [ngValue]="s.key">{{s.name}}</option>
+            </select>
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !authority"
+                    (click)="authority='';authorityStatus='';allAuthorityStatuses.length=0"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- Authority Status -->
+          <div *ngIf="authority!=='nsa'" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">Authority Status</span>
+            <select name="authorityStatus"
+                    [(ngModel)]="authorityStatus"
+                    class="form-select form-select-sm"
+                    [ngClass]="{'bg-dirty':!!authorityStatus}" autocomplete="off"
+                    aria-label="Current status as indicated by the authority" title="Authority (e.g. TDI) Status">
+              <option value="" selected>Select...</option>
+              <option *ngFor="let s of allAuthorityStatuses" [value]="s">{{s}}</option>
+            </select>
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !authorityStatus"
+                    (click)="authorityStatus=''"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- NSA Status -->
+          <div *ngIf="authority==='nsa'" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">NSA Status</span>
+            <select name="NSAStatus"
+                    [(ngModel)]="NSAStatus"
+                    class="form-select form-select-sm"
+                    [ngClass]="{'bg-dirty':!!NSAStatus}" autocomplete="off"
+                    aria-label="Current status as indicated by CMS / NSA" title="NSA Status">
+              <option value="" selected>Select...</option>
+              <option *ngFor="let s of allNSAStatuses" [value]="s">{{s}}</option>
+            </select>
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !NSAStatus"
+                    (click)="NSAStatus=''"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- Authority (e.g. TDI) Number -->
+          <div *ngIf="!isDisputeSearch" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4 font-small">NSA / Authority Case #</span>
+            <input name="authNumber" type="text"
+                   [(ngModel)]="authNumber"
+                   [ngClass]="{'bg-dirty':!!authNumber}" autocomplete="off"
+                   class="form-control"
+                   aria-label="Authority case number"
+                   title="If no Authority is selected, searches for NSACaseId matches. Otherwise, searches for AuthorityCaseId matches." />
+            <span class="input-group-text"><i class="bi bi-question-circle-fill" title="If no Authority is selected, searches for NSACaseId matches. Otherwise, searches for AuthorityCaseId matches."></i></span>
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !authNumber"
+                    (click)="authNumber=''"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+          <div *ngIf="isDisputeSearch" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4 font-small">Dispute Number</span>
+            <input name="authNumber" type="text"
+                   [(ngModel)]="authNumber"
+                   [ngClass]="{'bg-dirty':!!authNumber}" autocomplete="off"
+                   class="form-control"
+                   aria-label="Authority case number"
+                   title="Search the Authority Case Id, aka 'Dispute Number'" />
+            <span class="input-group-text">
+              <i class="bi bi-question-circle-fill" title="Search the Authority Case Id, aka 'Dispute Number'"></i>
+            </span>
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !authNumber"
+                    (click)="authNumber=''"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- Brief Due On -->
+          <div *ngIf="!isDisputeSearch" class="input-group input-group-sm mb-1">
+            <span class="input-group-text font-small col-4">Brief Due On or Before</span>
+            <input type="text" name="briefDate"
+                   class="form-control"
+                   [ngClass]="{'bg-dirty':!!briefDate}" autocomplete="off"
+                   ngbDatepicker
+                   [placement]="'bottom'"
+                   [container]="'body'"
+                   [minDate]="{year:2020,month:1,day:1}"
+                   [(ngModel)]="briefDate"
+                   aria-label="Brief Due Date"
+                   title="Date the Arbitration Brief is due" #briefdate="ngbDatepicker">
+            <!-- (dateSelect)="setDOB($event)" -->
+            <button type="button" class="btn btn-outline-secondary"
+                    (click)="briefdate.toggle()" title="Pick the Brief Due Date">
+              <i class="bi bi-calendar"></i>
+            </button>
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !briefDate"
+                    (click)="briefDate = undefined"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+
+          <!-- Dispute Submission Date aka RequestDate -->
+          <div *ngIf="isDisputeSearch" class="input-group input-group-sm mb-1">
+            <span class="input-group-text col-4">Submission Date</span>
+            <input type="text" name="requestDate"
+                   class="form-control"
+                   [ngClass]="{'bg-dirty':!!requestDate}" autocomplete="off"
+                   ngbDatepicker
+                   [minDate]="{year:2020,month:1,day:1}"
+                   [(ngModel)]="requestDate"
+                   aria-label="Submitted On"
+                   title="Date the case was submitted to the Authority" #subdate="ngbDatepicker">
+            <button type="button" class="btn btn-outline-secondary"
+                    (click)="subdate.toggle()" title="Pick the Submitted Date">
+              <i class="bi bi-calendar"></i>
+            </button>
+
+            <button type="button"
+                    class="btn btn-sm btn-warning"
+                    [disabled]="isLoading || !requestDate"
+                    (click)="requestDate = undefined"
+                    title="Clear field">
+              X
+            </button>
+          </div>
+        </div>
+      </div>
+      <p *ngIf="!isDisputeSearch" class="fs-6 text-danger"><i>Use the token <b>&#123;empty&#125;</b> enclosed in curly braces, in non-date fields, to search for missing values.</i></p>
+      <div class="row mt-1"> <!--  justify-content-end  -->
+        <!--
+        <div class="col-auto">
+          <p class="small" *ngIf="!canSearch()"><i>(please add additional criteria)</i></p>
+          <p class="small" *ngIf="canSearch()"><i>(click here to search ->)</i></p>
+        </div>
+        -->
+        <div class="col d-flex justify-content-between">
+          <!-- Reset All Criteria -->
+        <button type="button" 
+          class="btn btn-sm btn-outline-success" 
+          [disabled]="isLoading" 
+          (click)="resetSearch()"
+          title="Set all search criteria back to their default">Reset All
+        </button>
+          <button type="submit" 
+            class="btn btn-sm btn-primary" 
+            [disabled]="isLoading || !canSearch()" 
+            title="Enter or select at least one search field above">Search
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</ng-template>

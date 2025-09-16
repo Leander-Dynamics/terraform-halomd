@@ -1,28 +1,66 @@
 # Multi-stage ADO pipeline (PR -> Validate & Plan; merge -> Apply dev -> gated stage/prod)
 # Includes AKV-driven secrets and optional temporary IP allow-listing for hosted agents.
 
+variables:
+  - group: terraform-global-common
+  - group: terraform-dev        # for Validate & Plan dev
+  - group: terraform-stage      # used during Plan_All and Apply_Stage
+  - group: terraform-prod       # used during Plan_All and Apply_Prod
+  - name: nodeVersion
+    value: '16.x'
+
 trigger:
   branches: { include: [ main ] }
-  paths: { include: [ 'platform/infra/**', '.ado/**' ] }
+  paths: { include: [ 'platform/infra/**', '.ado/**', 'azure-pipelines.yml' ] }
 
 pr:
   branches: { include: [ main, feature/*, hotfix/*, chore/* ] }
-  paths: { include: [ 'platform/infra/**', '.ado/**' ] }
+  paths: { include: [ 'platform/infra/**', '.ado/**', 'azure-pipelines.yml' ] }
 
 pool: { vmImage: 'ubuntu-latest' }
-
-variables:
-  TF_VERSION: '1.7.5'
-  TF_LOCK_TIMEOUT: '20m'
 
 stages:
 - stage: Validate
   displayName: Validate & Lint
   jobs:
+  - job: build_arbitration
+    displayName: Build & Test Arbitration Solution
+    steps:
+    - checkout: self
+    - task: NodeTool@0
+      displayName: Use Node.js $(nodeVersion)
+      inputs:
+        versionSpec: $(nodeVersion)
+    - task: DotNetCoreCLI@2
+      displayName: Restore MPArbitration.sln
+      inputs:
+        command: 'restore'
+        projects: 'Arbitration/MPArbitration.sln'
+    - script: npm ci --prefix Arbitration/MPArbitration/ClientApp
+      displayName: Install Arbitration client dependencies
+    - script: |
+        cd Arbitration/MPArbitration/ClientApp
+        npm test
+      displayName: Run Arbitration client tests
+    - script: npm run build-dev --prefix Arbitration/MPArbitration/ClientApp
+      displayName: Build Arbitration client (dev)
+    - task: DotNetCoreCLI@2
+      displayName: Build MPArbitration.sln
+      inputs:
+        command: 'build'
+        projects: 'Arbitration/MPArbitration.sln'
+        arguments: '--configuration Release --no-restore'
+    - task: DotNetCoreCLI@2
+      displayName: Run Arbitration tests
+      inputs:
+        command: 'test'
+        projects: 'tests/TestArbitApi/Tests.csproj'
+        arguments: '--configuration Release --no-build --no-restore'
   - template: .ado/templates/tf-validate.yml
     parameters:
       envName: dev
       tfVersion: ${{ variables.TF_VERSION }}
+      dependsOn: build_arbitration
 
 - stage: Plan_All
   displayName: Terraform Plan (dev, stage, prod)
@@ -34,9 +72,8 @@ stages:
       serviceConnection: sc-azure-oidc-dev
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
-      # Pass the CI/CD principal Object ID if provided (used to grant KV Secrets User via TF)
+      variableGroup: terraform-dev
       extraVarFlags: '-var "kv_cicd_principal_id=$(KV_CICD_PRINCIPAL_ID_DEV)"'
-      # AKV integration (pull SQL secrets at plan time)
       useAkv: '$(USE_AKV_FOR_SECRETS)'
       akvName: '$(KV_NAME_DEV)'
       akvEnableDynamicIp: '$(AKV_ENABLE_DYNAMIC_IP_DEV)'
@@ -48,6 +85,7 @@ stages:
       serviceConnection: sc-azure-oidc-stage
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-stage
       extraVarFlags: '-var "kv_cicd_principal_id=$(KV_CICD_PRINCIPAL_ID_STAGE)"'
       useAkv: '$(USE_AKV_FOR_SECRETS)'
       akvName: '$(KV_NAME_STAGE)'
@@ -60,6 +98,7 @@ stages:
       serviceConnection: sc-azure-oidc-prod
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-prod
       extraVarFlags: '-var "kv_cicd_principal_id=$(KV_CICD_PRINCIPAL_ID_PROD)"'
       useAkv: '$(USE_AKV_FOR_SECRETS)'
       akvName: '$(KV_NAME_PROD)'
@@ -78,6 +117,7 @@ stages:
       serviceConnection: sc-azure-oidc-dev
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-dev
 
 - stage: Apply_Stage
   displayName: Terraform Apply (stage)
@@ -90,6 +130,7 @@ stages:
       serviceConnection: sc-azure-oidc-stage
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-stage
 
 - stage: Apply_Prod
   displayName: Terraform Apply (prod)
@@ -102,3 +143,4 @@ stages:
       serviceConnection: sc-azure-oidc-prod
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-prod

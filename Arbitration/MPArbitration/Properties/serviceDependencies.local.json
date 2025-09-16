@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "identityapp1": {
+      "type": "identityapp.aad"
+    },
+    "mssql1": {
+      "secretStore": "LocalSecretsFile",
+      "type": "mssql.onprem",
+      "connectionId": "ConnectionStrings:ConnStr"
+    }
+  }
+}

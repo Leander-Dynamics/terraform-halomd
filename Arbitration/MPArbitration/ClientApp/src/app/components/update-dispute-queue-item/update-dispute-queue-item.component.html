@@ -1,0 +1,25 @@
+<div class="modal-header bg-info text-light">
+    <h4 class="modal-title">{{title}}</h4>
+    <button type="button" (click)="activeModal.dismiss('dismiss click')" class="btn-close" title="Close">
+    </button>
+</div>
+
+<div class="modal-body">
+    <div class="row">
+        <div class="mb-3">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea class="form-control form-control-sm" [(ngModel)]="notes" name="notes" id="notes" rows="5">
+            </textarea>
+        </div>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-sm btn-secondary"
+        (click)="activeModal.dismiss()" title="Cancel this action">
+        <i class="bi bi-arrow-counterclockwise"></i> Cancel
+    </button>
+    <button type="button" class="btn btn-sm btn-success"
+        (click)="activeModal.close()" title="Completed">
+        <i class="bi bi-save"></i> Completed
+    </button>
+</div>

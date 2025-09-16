@@ -1,0 +1,2312 @@
+<div class="card">
+  <div class="card-header">
+    <div class="row">
+      <h4 class="col">Arbitration Calculator and Offer Tracking</h4>
+      <div class="col-auto text-center align-items-center d-flex me-5">
+        <button type="button" [hidden]="isNew||!canDelete||calcForm.form.dirty" (click)="deleteClaim()"
+          class="btn btn-sm btn-danger" title="Soft-delete this Claim record. Use to purge duplicates.">
+          <i class="bi bi-arrow-counterclockwise"></i> Delete Claim
+        </button>
+      </div>
+      <div class="col-auto text-center align-items-center d-flex">
+        <button type="button" [hidden]="!calcForm.form.dirty" (click)="cancelChanges()" class="btn btn-sm btn-secondary"
+          title="Cancel and undo changes">
+          <i class="bi bi-arrow-counterclockwise"></i> Cancel Changes
+        </button>
+      </div>
+      <div class="col-auto text-center" [ngClass]="{'bg-dirty':calcForm.form.dirty}" style="padding:.5rem">
+        <!-- Prevent implicit submission of the form -->
+        <button form="ngForm" type="submit" disabled style="display: none" aria-hidden="true"
+          onclick="return false;"></button>
+        <button type="submit" form="ngForm" class="btn btn-sm btn-success"
+          [disabled]="!calcForm.form.valid||!calcForm.form.dirty" title="Save form changes">
+          <i class="bi bi-save"></i> Save Changes
+        </button>
+        <p *ngIf="calcForm.form.dirty" style="margin-bottom:auto">You have unsaved changes!</p>
+      </div>
+    </div>
+    <!-- Action Row uncomment to use 
+    <div class="row">
+      <div class="col d-flex">
+        
+      </div>
+    </div>
+    -->
+  </div> <!-- End Header-->
+
+  <div class="card-body">
+    <!-- Nav / Workflow Progress Indicator -->
+    <div class="row" *ngIf="!hideWorkflowProgress">
+      <nav class="col font-smaller"
+        style="--bs-breadcrumb-divider: url(&#34;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M2.5 0L1 1.5 3.5 4 1 6.5 2.5 8l4-4-4-4z' fill='%236c757d'/%3E%3C/svg%3E&#34;);"
+        aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item" [ngClass]="{'active':arbCase.status===CMSCaseStatus.New}">New</li>
+          <li class="breadcrumb-item" [ngClass]="{'active':arbCase.status===CMSCaseStatus.Open}">Open</li>
+          <li class="breadcrumb-item" [ngClass]="{'active':arbCase.status===CMSCaseStatus.InformalInProgress}">Informal
+            In Progress</li>
+          <li class="breadcrumb-item active"
+            [ngClass]="{'active':arbCase.status===CMSCaseStatus.SettledInformalPendingPayment}">Settled Informal
+            (Pending Pmt)</li>
+          <li class="breadcrumb-item active" [ngClass]="{'active':arbCase.status===CMSCaseStatus.PendingArbitration}">
+            Pending Arbitration</li>
+
+          <li class="breadcrumb-item"
+            [ngClass]="{'active':arbCase.status===CMSCaseStatus.ActiveArbitrationBriefNeeded}">Active (Brief Needed)
+          </li>
+          <li class="breadcrumb-item"
+            [ngClass]="{'active':arbCase.status===CMSCaseStatus.ActiveArbitrationBriefCreated}">Active (Brief Created)
+          </li>
+          <li class="breadcrumb-item"
+            [ngClass]="{'active':arbCase.status===CMSCaseStatus.ActiveArbitrationBriefSubmitted}">Active (Brief
+            Submitted)</li>
+          <li class="breadcrumb-item"
+            [ngClass]="{'active':arbCase.status===CMSCaseStatus.SettledArbitrationPendingPayment}">Settled Arb (Pending
+            Pmt)</li>
+          <li class="breadcrumb-item"
+            [ngClass]="{'active':arbCase.status===CMSCaseStatus.SettledOutsidePendingPayment}">Settled Outside (Pending
+            Pmt)</li>
+
+          <li class="breadcrumb-item" [ngClass]="{'active':arbCase.status===CMSCaseStatus.ClosedPaymentReceived}">Closed
+            (Pmt Received)</li>
+          <li class="breadcrumb-item" [ngClass]="{'active':arbCase.status===CMSCaseStatus.ClosedPaymentWithdrawn}">
+            Closed (Pmt Withdrawn)</li>
+          <li class="breadcrumb-item" [ngClass]="{'active':arbCase.status===CMSCaseStatus.Ineligible}"
+            [hidden]="arbCase.status!==12">Ineligible</li>
+        </ol>
+      </nav>
+    </div>
+
+    <form #calcForm="ngForm" id="ngForm" (ngSubmit)="onSubmit()" novalidate="novalidate">
+      <fieldset [disabled]="!canEdit">
+        <div class="row">
+          <div class="input-group input-group-sm col">
+            <span class="bg-info input-group-text col-5">NSA Workflow Status</span>
+            <span class="bg-dark text-info input-group-text col overflow-hidden font-small">{{statuses[arbCase.NSAWorkflowStatus]?.key}}</span>
+          </div>
+          <div class="input-group input-group-sm col">
+            <span class="bg-info input-group-text col-5">State Workflow Status</span>
+            <span class="bg-dark text-info input-group-text col overflow-hidden font-small">{{statuses[arbCase.status]?.key}}</span>
+          </div>
+          <div class="input-group input-group-sm col">
+            <span class="bg-info input-group-text col-5">Assigned User</span>
+            <span class="bg-dark text-info input-group-text col overflow-hidden font-small">{{arbCase.assignedUser}}</span>
+          </div>
+        </div>
+
+        <!-- Eligibility - Appears if the Authority / Payor transmits that the case is ineligible OR 
+          if the State workflow status field (arbCase.status) is set to Ineligible -->
+        <!--
+        <div class="row justify-content-between mt-4" 
+        *ngIf="arbCase.ineligibilityReasons||arbCase.authorityStatus.toLowerCase().indexOf('ineligible')>-1||arbCase.authorityStatus.toLowerCase().indexOf('denied')>-1||arbCase.status===CMSCaseStatus.Ineligible">
+          <h6 class="col-md-auto">State Authority Eligibility Information</h6>
+        </div>
+      -->
+
+        <div class="row justify-content-between mt-2">
+          <h5 class="col text-left">Case Summary</h5>
+          <div *ngIf="!isNew" class="col font-small text-center">
+            <b>Received from Customer 
+              <span *ngIf="!!arbCase.receivedFromCustomer">{{arbCase.receivedFromCustomer | date:'shortDate'}}</span>
+              <span *ngIf="!arbCase.receivedFromCustomer">(unknown)</span>
+            </b>
+          </div>
+          <div class="col font-small text-end" *ngIf="!isNew">
+            Last updated {{arbCase.updatedOn | date:'medium'}} by {{arbCase.updatedBy}}
+          </div>
+        </div>
+
+        <!-- Summary Columns -->
+        <div class="row">
+          <!-- Left Summary Column-->
+          <div class="col-lg-6">
+
+
+            <!-- Customer -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5 bg-primary text-light">Customer</span>
+              <select class="form-select form-select-sm" required name="customer"
+                [ngClass]="{'bg-required':!arbCase.customer}" [(ngModel)]="arbCase.customer" (change)="customerChange()"
+                aria-label="Customer" title="The owner of this data. Has an effect on EHR Source and data importing">
+                <option value="" disabled>Select...</option>
+                <option *ngFor="let s of allCustomers" [ngValue]="s.name">{{s.name}}</option>
+              </select>
+            </div>
+
+            <!-- Patient / EHR # 
+                 [ngClass]="{'bg-required':!arbCase.EHRNumber && !arbCase.authorityCaseId, 'bg-warning':!arbCase.EHRNumber && arbCase.authorityCaseId}"
+                 title="{{!arbCase.EHRNumber && arbCase.authorityCaseId ? 'RECOMMENDED. ':''}}EHR number (ex. USMon PID)"
+            -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5">Patient / EHR #</span>
+              <input type="text" class="form-control" name="EHRNumber" [(ngModel)]="arbCase.EHRNumber"
+                [required]="!arbCase.authorityCaseId" aria-label="EHR Number"
+                title="EHR number (ex. USMon PID). Recommended!">
+            </div>
+
+            <!-- Payor Claim Number-->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5 bg-primary text-light">Payor Claim Number</span>
+              <input type="text" name="payorClaimNumber" class="form-control" required maxlength="50"
+                [ngClass]="{'bg-required':!arbCase.payorClaimNumber}" [(ngModel)]="arbCase.payorClaimNumber"
+                (blur)="checkForExistingClaim()" aria-label="Payor Claim Number" title="Payor's identifying number">
+            </div>
+
+            <!-- Use popup button for date picker. Note that model is local and not part of arbCase directly! -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5 bg-primary text-light">Service Date</span>
+              <input type="text" name="serviceDate" class="form-control" 
+                required
+                ngbDatepicker 
+                readonly
+                [(ngModel)]="arbCase.serviceDateForPicker"
+                aria-label="Service Date" 
+                title="Date service was performed. This is a Key value."
+                #sd="ngbDatepicker">
+
+              <button type="button" class="btn btn-outline-secondary" (click)="sd.toggle()" title="Pick Service Date">
+                <i class="bi bi-calendar"></i>
+              </button>
+            </div>
+
+            <!-- Location Geo Zip-->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5 bg-primary text-light">Location Geo-Zip</span>
+              <input type="text" name="locationGeoZip" autocomplete="off" required minlength="3" maxlength="5"
+                [disabled]="isZiplocked" [(ngModel)]="arbCase.locationGeoZip" class="form-control"
+                [ngClass]="{'bg-required':(arbCase.locationGeoZip ?? '').length < 3}" (change)="resetZip()"
+                aria-label="Location Geo-Zip" title="Geographical Zipcode to use for calculations"
+                (focus)="selectAll($event)">
+              <span class="input-group-text" (click)="confirmUnlockZip()">
+                <i class="bi bi-lock-fill"></i>
+              </span>
+            </div>
+
+            <!-- Benchmark GeoZip Override-->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5">Benchmark GeoZip (override)</span>
+              <input type="text" name="benchmarkGeoZip" class="form-control" autocomplete="off" minlength="3"
+                maxlength="5" [ngClass]="{'bg-info':!!arbCase.benchmarkGeoZip}" [(ngModel)]="arbCase.benchmarkGeoZip"
+                (focus)="_beforeBMGeoZip=arbCase.benchmarkGeoZip" (change)="resetBMZip()" aria-label="Benchmark GeoZip"
+                title="Geographical Zipcode to use for calculations instead of LocationGeoZip."
+                (focus)="selectAll($event)">
+            </div>
+            <!-- First Response Date (Read-only) -->
+            <div *ngIf="!arbCase.authority || arbCase.authority==='tx'" class="input-group input-group-sm">
+              <span class="input-group-text col-5 justify-content-between">First Response Date
+                <i class="bi bi-question-circle-fill" title="This can be changed by editing First Response Date under State Dates and Deadlines"></i>
+              </span>
+              <span class="input-group-text col bg-disabled">{{arbCase.firstResponseDate | date:'shortDate'}}</span>
+            </div>
+            <!-- First Response Date (editable) -->
+            <div *ngIf="!!arbCase.authority && arbCase.authority!=='tx'" class="input-group input-group-sm">
+              <div class="input-group-text col-5 justify-content-between bg-success text-light">
+                <span>First Response Date</span>
+                <i class="bi bi-question-circle-fill"
+                  title="Date of first response from Payor or Provider (self-pay) to the patient. Editable by users with the State role."></i>
+              </div>
+              <!-- NOTE that setFirstResponseDate only runs if this is a TEXAS case due to the ngIf above -->
+              <input type="text" name="firstResponseDate" class="form-control" 
+                ngbDatepicker
+                [(ngModel)]="arbCase.firstResponseDateForPicker" 
+                [ngModelOptions]="{updateOn:'blur'}"
+                aria-label="First Response Date" 
+                (change)="firstResponseDateChange()"  
+                readonly
+                title="Date first payment on this case was received from Payor"
+                #frd="ngbDatepicker">
+
+              <button *ngIf="isState" type="button" class="btn btn-outline-secondary" (click)="frd.toggle()"
+                title="Pick First Response Date">
+                <i class="bi bi-calendar"></i>
+              </button>
+              <button *ngIf="isState" type="button" class="btn btn-outline-danger" 
+                  (click)="arbCase.firstResponseDate=undefined;firstResponseDateChange()"
+                  title="Clear First Response Date">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+            
+            <!-- First Appeal Date -->
+            <div class="input-group input-group-sm">
+              <div class="input-group-text col-5 justify-content-between bg-success text-light">
+                <span>First Appeal Date</span>
+                <i class="bi bi-question-circle-fill"
+                  title="Date of first appeal from Provider to the Payor. Editable by managers only."></i>
+              </div>
+              <input type="text" name="firstAppealDate" class="form-control" 
+                ngbDatepicker
+                [(ngModel)]="arbCase.firstAppealDateForPicker" 
+                [ngModelOptions]="{updateOn:'blur'}"
+                aria-label="First Response Date"
+                (change)="firstAppealDateChange()"
+                readonly
+                title="Date Payor was first contacted through the appeals process"
+                #frd="ngbDatepicker">
+
+              <button *ngIf="isState&&isManager" type="button" class="btn btn-outline-secondary" (click)="frd.toggle()"
+                title="Pick First Appeal Date">
+                <i class="bi bi-calendar"></i>
+              </button>
+              <button *ngIf="isState&&isManager" type="button" class="btn btn-outline-danger" 
+                  (click)="arbCase.firstAppealDate=undefined;firstAppealDateChange()"
+                  title="Clear First Response Date">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+          <!-- Right Summary Column-->
+          <div class="col-lg-6">
+            <!-- Service -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5 bg-primary text-light">Service</span>
+              <select class="form-select form-select-sm" *ngIf="isNew||!isServiceLocked"
+                [ngClass]="{'bg-required':!arbCase.service}" name="service" [(ngModel)]="arbCase.service"
+                (change)="serviceChange()" required aria-label="Full service name"
+                title="The full Service name, e.g. IOM Pro">
+                <option value="" disabled>Select...</option>
+                <option *ngFor="let s of services" [value]="s.name">{{s.name}}</option>
+              </select>
+
+              <span class="input-group-text col bg-disabled" *ngIf="!isNew&&isServiceLocked">{{arbCase.service}}
+              </span>
+            </div>
+
+            <!-- Service Line -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5">Service Line</span>
+              <span class="input-group-text col bg-disabled">{{arbCase.serviceLine}}</span>
+            </div>
+
+            <!-- Payor -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5 bg-primary text-light">Payor</span>
+              <select class="form-select form-select-sm" [ngClass]="{'bg-required':!arbCase.payorId}" name="payorId"
+                [(ngModel)]="arbCase.payorId" (change)="payorChange()" required aria-label="Payor"
+                title="Payor is typically the insurance company, healthcare plan or responsible party">
+                <option [ngValue]="null" selected disabled>Select...</option>
+                <option *ngFor="let s of allPayors" [ngValue]="s.id">{{s.name}}</option>
+              </select>
+            </div>
+
+            <!-- Policy Type PPO, EPO, etc -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5">Policy Type</span>
+              <select class="form-select form-select-sm" [(ngModel)]="arbCase.policyType" name="policyType"
+                aria-label="Policy Type" title="EPO, HMO, PPO, etc.">
+                <option selected disabled value="">Choose...</option>
+                <option>Blue Card</option>
+                <option>EPO</option>
+                <option>ERS</option>
+                <option>HMO</option>
+                <option>None</option>
+                <option>PPO</option>
+                <option>TRS</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <!-- Policy Number-->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5">Policy Number</span>
+              <input type="text" name="policyNumber" class="form-control" required
+                [ngClass]="{'bg-required': !arbCase.policyNumber}" [(ngModel)]="arbCase.policyNumber"
+                aria-label="Policy Number" title="Policy Number">
+            </div>
+
+            <!-- Payor Group Number-->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5">Group Number
+                <i class="bi bi-question-circle-fill margin-left-auto"
+                  title="If the group number entered matches an existing group number, Group Name and Play Type will be updated automatically"></i>
+              </span>
+              <input type="text" name="payorGroupNo" class="form-control" 
+                (change)="payorGroupNumberChange()"
+                [(ngModel)]="arbCase.payorGroupNo"
+                aria-label="Payor Group Number" 
+                title="Payor Group Number">
+            </div>
+
+            <!-- Payor Group Name-->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5">Group Name</span>
+              <span class="input-group-text col bg-disabled">{{arbCase.payorGroupName}}</span>
+            </div>
+
+            <!-- Plan Type -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5">Plan Type</span>
+              <select class="form-select form-select-sm" 
+                [(ngModel)]="arbCase.planType" 
+                name="planType"
+                aria-label="Plan Type" 
+                title="Self Pay, etc.">
+                <option selected disabled value="">Choose...</option>
+                <option>Fully Insured</option>
+                <option>Self-Funded</option>
+                <option>Self-Funded (Opt-In)</option>
+                <!-- <option>Unknown</option> -->
+              </select>
+            </div>
+
+          </div>
+        </div>
+
+        <hr/>
+
+        <!-- NSA Section -->
+        <div class="row justify-content-between mb-2">
+          <h5 class="col-6">
+            NSA Summary and Info
+          </h5>
+          <!-- Last EOB Date -->
+          <div class="col-6">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5 bg-primary text-light">Last EOB Date</span>
+              <input type="text" name="EOBDate" class="form-control" 
+                [required]="isNSA"
+                [disabled]="!isNSA"
+                (change)="lastEOBChange()"
+                (dateSelect)="lastEOBChange()"
+                ngbDatepicker 
+                [(ngModel)]="arbCase.eobDateForPicker"
+                [ngModelOptions]="{updateOn:'blur'}"
+                aria-label="Last EOB Date" 
+                title="Date of the last received EOB. Changing this will change the NSA filing Deadline!"
+                #eobd="ngbDatepicker">
+
+              <button type="button" class="btn btn-outline-secondary" (click)="eobd.toggle()" title="Pick EOB Date">
+                <i class="bi bi-calendar"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-lg-6">
+            <!-- NSA Case Number -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5">NSA Case #</span>
+              <input type="text" class="form-control text-bold" name="NSACaseId" autocomplete="off"
+                [(ngModel)]="arbCase.NSACaseId" [disabled]="!isNSA||lockNSAId" (change)="validateNSAId()"
+                aria-label="NSA (CMS) Case Number" title="The Case Number assigned by the CMS portal">
+            </div>
+
+            <!-- NSA Status -->
+            <div class="input-group input-group-sm">
+              <div class="input-group-text col-5">
+                NSA (CMS) Status
+              </div>
+              <select name="NSAStatus" class="form-select form-select-sm" 
+                [(ngModel)]="arbCase.NSAStatus"
+                (change)="NSAStatusChange()" 
+                [required]="isNSA" 
+                [disabled]="!isNSA||lockNSA"
+                [ngClass]="{'bg-required':!arbCase.NSAStatus}" 
+                autocomplete="off" 
+                aria-label="NSA (CMS) Status"
+                title="Current status as indicated by the CMS portal">
+                <option value="" disabled selected>Select...</option>
+                <option *ngFor="let s of allNSAStatuses" [value]="s">{{s}}</option>
+              </select>
+            </div>
+
+            <!-- NSA Workflow Status-->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5">NSA Workflow Status</span>
+              <select name="NSAWorkflowStatus" [(ngModel)]="arbCase.NSAWorkflowStatus"
+                class="form-select form-select-sm" *ngIf="isNSA && !isNSACaseLocked()"
+                (change)="workflowStatusChange('nsa')" aria-label="NSA Workflow Status"
+                title="In-house status tracking field for the NSA Team">
+                <option *ngFor="let s of statuses" [ngValue]="s.id">{{s.key}}</option>
+              </select>
+              <span *ngIf="!isNSA||isNSACaseLocked()"
+                class="input-group-text col">{{CMSCaseStatus[arbCase.NSAWorkflowStatus]}}</span>
+            </div>
+          </div>
+
+          <!-- NSA Ineligibility / Denial Reasons - This is a total hack until we get more info about how NSA works -->
+          <div class="col-lg-6"
+            *ngIf="arbCase.NSAWorkflowStatus===CMSCaseStatus.Ineligible||arbCase.NSAStatus==='NSA Negotiation Request Denied'||arbCase.NSAStatus==='Ineligible'">
+            <!-- Ineligibility Action -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5 text-start">Payor's NSA Ineligibility Action</span>
+              <select name="payorNSAIneligibilityAction" class="form-select form-select-sm"
+                [(ngModel)]="arbCase.payorNSAIneligibilityAction" 
+                [required]="isNSA"
+                [attr.disabled]="!isNSA?'true':null"
+                aria-label="NSA Ineligibility Action" 
+                [ngClass]="{'bg-required':!arbCase.payorNSAIneligibilityAction}"
+                title="Categorize the ineligibility reason given by the CMS">
+                <option [ngValue]="''" disabled selected>Select...</option>
+                <option *ngFor="let s of allNSAIneligibilityActions" [ngValue]="s">{{s}}</option>
+              </select>
+            </div>
+            <!-- Ineligibility Reason -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5 text-start">Payor's NSA<br />Ineligibility Reasons</span>
+              <textarea class="form-control form-control-sm" name="payorNSAIneligibilityReasons" 
+                [required]="isNSA"
+                [readonly]="!isNSA" [ngClass]="{'bg-required':!arbCase.payorNSAIneligibilityReasons}"
+                [(ngModel)]="arbCase.payorNSAIneligibilityReasons" 
+                aria-label="NSA Ineligibility Reasons" rows="5"
+                title="CMS stated that this Claim is ineligible for further action">
+                </textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- NSA Notifications Section -->
+        <div class="row mt-2 justify-content-between">
+          <div class="d-flex mb-2 align-items-center">
+            <button class="btn btn-sm btn-outline-primary ms-1 me-1" type="button" (click)="collapseNSANotify.toggle()"
+              [attr.aria-expanded]="!hideNSA" title="Toggle NSA Notifications">
+              <i *ngIf="hideNSANotify" class="bi bi-chevron-right"></i>
+              <i *ngIf="!hideNSANotify" class="bi bi-chevron-down"></i>
+            </button>
+            <h6 class="mb-0">NSA Notifications and Receipts ({{arbCase.notifications.length}})</h6>
+          </div>
+        </div>
+
+        <div #collapseNSANotify="ngbCollapse" [(ngbCollapse)]="hideNSANotify">
+          <!-- NSA Dates -->
+          <div class="row">
+            <div class="col table-responsive">
+              <table class="table table-sm font-small table-no-wrap table-normal-head bb-0">
+                <thead>
+                  <tr class="bg-primary text-light fw-lighter">
+                    <th class="calc-col-5rem">Type</th>
+                    <th class="calc-col-5rem">To</th>
+                    <th class="calc-col-5rem">Submitted On</th>
+                    <th class="calc-col-5rem">Submitted By</th>
+                    <th class="calc-col-5rem">Service Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let n of arbCase.notifications">
+                    <td>{{NotificationType[n.notificationType]}}</td>
+                    <td>{{n.to}}</td>
+                    <td>{{n.submittedOn | date:'short'}}</td>
+                    <td>{{n.submittedBy}}</td>
+                    <td>
+                      <a *ngIf="n.status==='success'" 
+                        title="Delivery details" 
+                        href="#" 
+                        (mouseover)="showDeliveryDetails(n)">
+                        {{n.status}}
+                      </a>
+                      <span *ngIf="n.status!=='success'" [innerHTML]="n.status"></span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- NSA Dates and Deadlines Section -->
+        <div class="row mt-2 justify-content-between">
+          <div class="d-flex mb-2 align-items-center">
+            <button class="btn btn-sm btn-outline-primary ms-1 me-1" type="button" (click)="collapseNSA.toggle()"
+              [attr.aria-expanded]="!hideNSA" title="Toggle Dates and Deadlines">
+              <i *ngIf="hideNSA" class="bi bi-chevron-right"></i>
+              <i *ngIf="!hideNSA" class="bi bi-chevron-down"></i>
+            </button>
+            <h6 class="mb-0">NSA Dates and Deadlines</h6>
+          </div>
+        </div>
+
+        <div #collapseNSA="ngbCollapse" [(ngbCollapse)]="hideNSA">
+          <!-- NSA Dates -->
+          <div class="row">
+            <!-- Left Column -->
+            <div class="col-lg-6">
+              <!-- Tracking Data Template-->
+              <ng-container *ngIf="NSAAuthority?.trackingDetails?.length">
+                <ng-container *ngFor="let t of NSATrackingFieldsForUI | filter: 'Left' : 'displayColumn';let i=index">
+                  <div class="input-group input-group-sm">
+
+                    <div class="input-group-text col-7 justify-content-between"
+                      [ngClass]="{'bg-primary':t.trackingLabel==='Date of Payment','text-light':t.trackingLabel==='Date of Payment'}">
+                      <span>{{t.trackingLabel}}</span>
+                      <i class="bi bi-question-circle-fill ms-2" [title]="t.helpText+(!!t.referenceFieldName?' (references ['+t.referenceFieldName+'])':'')"></i>
+                    </div>
+
+                    <span *ngIf="!!t.referenceFieldName;else entrydate" class="input-group-text col bg-disabled">
+                      {{NSATrackingObject[t.trackingFieldName] | date:'mediumDate'}}
+                      <span *ngIf="!!t.referenceFieldName && !!NSATrackingObject[t.trackingFieldName]" class="ms-auto text-danger">
+                        {{getDaysRemaining(NSATrackingObject[t.trackingFieldName])}}
+                      </span>
+                    </span>
+                    
+                    <ng-template #entrydate>
+                      <input type="text" name="{{t.trackingFieldName}}" 
+                        class="form-control" 
+                        [attr.aria-label]="t.trackingFieldName"
+                        ngbDatepicker
+                        (dateSelect)="onNSADateSelect($event)" 
+                        (change)="onNSADateSelect($event)" 
+                        [id]="'nsa_dt_'+t.trackingFieldName" 
+                        [(ngModel)]="NSATrackingObject[t.trackingFieldName]"
+                        [readonly]="!isNSA" #dpk="ngbDatepicker" 
+                        [ngModelOptions]="{updateOn:'blur',standalone:true}"
+                        title="{{t.helpText}} Editable by users in the NSA role.'">
+
+                      <button *ngIf="isNSA" type="button" class="btn btn-outline-secondary" (click)="dpk.toggle()"
+                        title="Select {{t.trackingLabel}}">
+                        <i class="bi bi-calendar"></i>
+                      </button>
+                    </ng-template>
+                  </div>
+                </ng-container>
+              </ng-container>
+            </div>
+
+            <!-- Right Column -->
+
+            <div class="col-lg-6">
+              <!-- NSA Tracking Data -->
+              <ng-container *ngIf="NSAAuthority?.trackingDetails?.length">
+
+                <ng-container *ngFor="let t of NSATrackingFieldsForUI | filter: 'Right' : 'displayColumn';let i=index">
+                  <div class="input-group input-group-sm">
+
+                    <div class="input-group-text col-7 justify-content-between">
+                      <span>{{t.trackingLabel}}</span>
+                      <i class="bi bi-question-circle-fill ms-2" [title]="t.helpText"></i>
+                    </div>
+
+                    <span *ngIf="!!t.referenceFieldName;else entrydate" class="input-group-text col bg-disabled">
+                      {{NSATrackingObject[t.trackingFieldName] | date:'shortDate'}}
+                    </span>
+
+                    <ng-template #entrydate>
+                      <input type="text" name="{{t.trackingFieldName}}" class="form-control" [attr.aria-label]="t.trackingFieldName"
+                        (dateSelect)="onNSADateSelect($event)" (change)="onNSADateSelect($event)" ngbDatepicker
+                        [id]="'nsa_dt_'+t.trackingFieldName" [(ngModel)]="NSATrackingObject[t.trackingFieldName]"
+                        [readonly]="!isNSA" #dpk="ngbDatepicker" [ngModelOptions]="{standalone:true}"
+                        title="{{t.helpText}} Editable by users in the NSA role.">
+
+                      <button *ngIf="isNSA" type="button" class="btn btn-outline-secondary" (click)="dpk.toggle()"
+                        title="Select {{t.trackingLabel}}">
+                        <i class="bi bi-calendar"></i>
+                      </button>
+                    </ng-template>
+                  </div>
+                </ng-container>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+        
+        <!-- State Authority and Info -->
+        <hr/>
+        <div class="row">
+          <div class="d-flex mb-2 align-items-center">
+            <h5 class="mb-0">State Authority and Info</h5>
+            <span class="ms-2 font-smaller text-danger" *ngIf="!!activeAuthority&&!activeAuthority?.isActive">({{activeAuthority.name}} does not have an Arbitration process!)</span>
+          </div>
+
+          <!-- Dates and Deadlines Expander Section -->
+          <div class="row">
+            <!-- Left Column -->
+            <!-- Dates -->
+            <div class="col-lg-6 justify-content-end">
+              <!-- Authority-->
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-success text-light col-5">Authority</span>
+                <select class="form-select form-select-sm" 
+                  name="authority" #authority 
+                  [(ngModel)]="arbCase.authority"
+                  aria-label="Authority" required 
+                  [ngClass]="{'bg-required':!arbCase.authority}"
+                  (change)="authorityChange()" 
+                  [attr.disabled]="!isState||isCaseActive?true:null"
+                  title="Regulatory mediator such as CMS or TDI">
+                  <option [ngValue]="''" disabled selected>Select...</option>
+                  <option *ngFor="let s of allAuthorities" [ngValue]="s.key">{{s.name}}</option>
+                </select>
+              </div>
+
+              <!-- Authority Case Number -->
+              <div class="input-group input-group-sm">
+                <div class="input-group-text col-5 justify-content-between bg-success text-light">
+                  <span>Authority Case #</span>
+                  <span *ngIf="previousCaseNumbers!=='none'">(archives: {{allArchivedCases.length}})</span>
+                  <i class="bi bi-question-circle-fill" [title]="'Previous Case Numbers:  '+previousCaseNumbers"></i>
+                </div>
+
+                <input type="text" class="form-control text-bold" name="authorityCaseId" autocomplete="off"
+                  [(ngModel)]="arbCase.authorityCaseId" 
+                  [disabled]="!isState||lockAuthorityId"
+                  [required]="isState && !!activeAuthority?.website && !!arbCase?.authorityStatus && arbCase?.authorityStatus!=='Not Submitted' && arbCase?.authorityStatus!=='Ineligible'"
+                  aria-label="Authority Case Number"
+                  title="Authority, such as Texas Department of Insurance, case number">
+
+                  <button type="button" class="btn btn-sm btn-info input-group-addon" 
+                    [disabled]="isNew||!arbCase.authorityCaseId||lockAuthority||calcForm.form.dirty" 
+                    (click)="authorityChange()"
+                    title="Archive this Authority Case Id">
+                    <span class="bi bi-archive"></span>
+                  </button>
+              </div>
+
+              <!-- Authority User Id i.e. "portal name" or "portal user account"-->    
+              <div class="input-group input-group-sm col">
+                <span class="input-group-text col-5">Authority User Id                
+                  <i class="bi bi-question-circle-fill margin-left-auto" title="Typically this is the account login for the State portal, i.e. the 'Portal Name'"></i>
+                </span>
+                <span class="input-group-text col bg-disabled overflow-hidden">{{arbCase.authorityUserId}}</span>
+              </div>
+
+              <!-- Authority Status -->
+              <div class="input-group input-group-sm">
+                <div class="input-group-text col-5">
+                  Authority Status
+                </div>
+                <div class="input-group-text col bg-disabled" *ngIf="!isState">
+                  {{arbCase.authorityStatus}}</div>
+                <select name="authorityStatus" class="form-select form-select-sm" *ngIf="isState"
+                  (change)="authorityStatusChange()" 
+                  [(ngModel)]="arbCase.authorityStatus" required
+                  [ngClass]="{'bg-required':!arbCase.authorityStatus}" autocomplete="off"
+                  aria-label="Current status as indicated by the authority" title="Authority (e.g. TDI) Status">
+                  <option value="" selected>Select...</option>
+                  <option *ngFor="let s of authorityStatuses" [value]="s">{{s}}</option>
+                </select>
+              </div>
+
+              <!-- State Workflow Status-->
+              <div class="input-group input-group-sm">
+                <span class="input-group-text col-5">Workflow Status</span>
+                <select name="status" [(ngModel)]="arbCase.status" class="form-select form-select-sm"
+                  [attr.disabled]="!isState||isCaseLocked()?true:null" (change)="workflowStatusChange('state')"
+                  aria-label="Current tracking status of the Case" title="MPOWERHealth internal status">
+                  <option *ngFor="let s of statuses" [ngValue]="s.id">{{s.key}}</option>
+                </select>
+                <!-- <span *ngIf="!isState||isCaseLocked()" class="input-group-text col">{{CMSCaseStatus[arbCase.status]}}</span> -->
+              </div>
+
+            </div>
+            <div class="col-lg-6 justify-content-end">
+              <ng-container
+                *ngIf="arbCase.ineligibilityReasons||arbCase.authorityStatus.toLowerCase().indexOf('ineligible')>-1||arbCase.authorityStatus.toLowerCase().indexOf('denied')>-1||arbCase.status===CMSCaseStatus.Ineligible">
+                <div class="col-12">
+                  <div class="input-group input-group-sm">
+                    <div class="input-group-text col-5">
+                      Authority Status
+                    </div>
+                    <div class="input-group-text col bg-disabled">{{arbCase.authorityStatus}}</div>
+                  </div>
+                  <!-- Ineligibility Reason -->
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5">Ineligibility Reasons</span>
+                    <textarea class="form-control form-control-sm" name="ineligibilityReasons"
+                      [readonly]="!isState||(!!arbCase.ineligibilityReasons&&!calcForm.form.dirty)"
+                      [required]="isState" 
+                      [(ngModel)]="arbCase.ineligibilityReasons" aria-label="Ineligibility Reason" rows="4"
+                      title="The Payor stated that this Claim is ineligible for further action">
+                        </textarea>
+                  </div>
+                </div>
+
+                <!-- Ineligibility Action -->
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text col-5">Ineligibility Action</span>
+                  <select name="ineligibilityAction" class="form-select form-select-sm"
+                    [attr.disabled]="!isState||(!!arbCase.ineligibilityAction&&!calcForm.form.dirty?'true':null)"
+                    [required]="isState" 
+                    [(ngModel)]="arbCase.ineligibilityAction" aria-label="Ineligibility Action"
+                    title="Categorize the ineligibility reason given by the Authority">
+                    <option [ngValue]="''" disabled selected>Select...</option>
+                    <option *ngFor="let s of allStateIneligibilityActions" [ngValue]="s">{{s}}</option>
+                  </select>
+                </div>
+
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- State Dates and Deadlines-->
+          <div class="row mt-2 justify-content-between">
+            <div class="d-flex mb-2 align-items-center">
+              <button class="btn btn-sm btn-outline-primary ms-1 me-1" type="button" (click)="collapseDates.toggle()"
+                [attr.aria-expanded]="!hideDates" title="Toggle Dates and Deadlines">
+                <i *ngIf="hideDates" class="bi bi-chevron-right"></i>
+                <i *ngIf="!hideDates" class="bi bi-chevron-down"></i>
+              </button>
+              <h6 class="mb-0">State Dates and Deadlines</h6>
+            </div>
+          </div>
+          <div #collapseDates="ngbCollapse" [(ngbCollapse)]="hideDates">
+            <div class="row">
+              <div class="col-lg-6 justify-content-end">
+                <!-- TEXAS only (or default if no Authority specified) -->
+                <ng-container *ngIf="!arbCase.authority || arbCase.authority==='tx'">
+                  <!-- First Response Date -->
+                  <!-- Use popup button for date picker. Note that model is local and not part of arbCase directly! -->
+                  <div class="input-group input-group-sm">
+                    <div class="input-group-text col-7 justify-content-between bg-success text-light">
+                      <span>First Response Date</span>
+                      <i class="bi bi-question-circle-fill"
+                        title="Date of first response from Payor or Provider (self-pay) to the patient. Editable by users with the State role."></i>
+                    </div>
+                    <!-- NOTE that setFirstResponseDate only runs if this is a TEXAS case due to the ngIf above -->
+                    <input type="text" name="firstResponseDate" class="form-control" 
+                      ngbDatepicker
+                      aria-label="First Response Date"  
+                      [(ngModel)]="arbCase.firstResponseDateForPicker" 
+                      (dateSelect)="firstResponseDateChange()"
+                      readonly
+                      title="Date first payment on this case was received from Payor"
+                      #frd="ngbDatepicker">
+                      <!-- [readonly]="!isState" -->
+                    <button *ngIf="isState" type="button" class="btn btn-outline-secondary" (click)="frd.toggle()"
+                      title="Pick First Response Date">
+                      <i class="bi bi-calendar"></i>
+                    </button>
+                    <button *ngIf="isState" type="button" class="btn btn-outline-danger" 
+                        (click)="arbCase.firstResponseDate=undefined;firstResponseDateChange()"
+                        title="Clear First Response Date">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+
+                  <!-- Arbitration Filing Deadline -->
+                  <div class="input-group input-group-sm">
+                    <div class="input-group-text col-7 justify-content-between">
+                      <span>Arbitration Filing Deadline</span>
+                      <i class="bi bi-question-circle-fill"
+                        title="Calculated. Must file arbitration 90 Days after First Response Date."></i>
+                    </div>
+                    <!-- Should not be able to change this deadline date since it is computed from First Response Date.
+                           May need to allow some sort of adjustment for cases that get extensions but we'll wait for business
+                           to decide on that. -->
+                    <div class="input-group-text col bg-disabled">
+                      {{arbCase.arbitrationDeadlineDate | date:'mediumDate'}}
+                    </div>
+                    <!-- <ng-container *ngIf="!lockAuthority||!arbDeadlineDate"> 
+                        <input type="text" name="arbDeadlineDate" class="form-control" ngbDatepicker
+                          [(ngModel)]="arbDeadlineDate" aria-label="Arbitration Filing Deadline"
+                          (dateSelect)="setAbitrationDeadlineDate($event)"
+                          title="Deadline to file an Arbitration claim with the selected authority. Usually 30 to 90 days after first payment received."
+                          #afd="ngbDatepicker">
+
+                          <button type="button" class="btn btn-outline-secondary" (click)="afd.toggle()"
+                            title="Pick the Arbitration Filing Deadline date">
+                            <i class="bi bi-calendar"></i>
+                          </button>
+                      </ng-container> -->
+                  </div>
+
+                  <!-- Arbitration Brief Due Date -->
+                  <!-- Use popup button for date picker. Note that model is local and not part of arbCase directly! -->
+                  <div class="input-group input-group-sm">
+                    <div class="input-group-text col-7 justify-content-between">
+                      <span>Arbitration Brief Due Date</span>
+                      <i class="bi bi-question-circle-fill"
+                        title="Date by which the Arbitration Brief needs to be completed. Editable by users with the State role."></i>
+                    </div>
+                    <input type="text" name="arbitrationBriefDueDate" class="form-control" 
+                      ngbDatepicker
+                      [(ngModel)]="arbCase.arbitrationBriefDueDateForPicker" 
+                      aria-label="Arbitration Brief Due Date"
+                      readonly
+                      title="Calculated. Arbitration brief needs to be done 7 days prior to Assignment Deadline"
+                      #abd="ngbDatepicker">
+
+                    <button *ngIf="isState" type="button" class="btn btn-outline-secondary" (click)="abd.toggle()"
+                      title="Pick Arbitration Brief Date">
+                      <i class="bi bi-calendar"></i>
+                    </button>
+                    <button *ngIf="isState" type="button" class="btn btn-outline-danger" 
+                        (click)="arbCase.arbitrationBriefDueDate=undefined"
+                        title="Clear Arbitration Brief Due Date">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+
+                  <!-- Assignment Deadline Date -->
+                  <div class="input-group input-group-sm">
+                    <div class="input-group-text col-7 justify-content-between">
+                      <span>Arbitrator Assignment Deadline</span>
+                      <i class="bi bi-question-circle-fill ms-2"
+                        title="If a settlement is not reached by this date, an Arbitrator will be assigned. Supplied by the Authority. Turns red inside of 7 days to go."></i>
+                    </div>
+                    <span class="input-group-text col bg-disabled" *ngIf="!isState"
+                      [ngClass]="{'overdue':arbCase.assignmentDeadlineDate && dayDiff(arbCase.assignmentDeadlineDate) <= 7 && dayDiff(arbCase.assignmentDeadlineDate) >= -1}">
+                      {{arbCase.assignmentDeadlineDate | date:'mediumDate'}}
+                    </span>
+                    <ng-container *ngIf="isState">
+                      <input type="text" name="assignmentDeadlineDate" class="form-control" 
+                        ngbDatepicker
+                        [ngClass]="{'overdue':arbCase.assignmentDeadlineDate && dayDiff(arbCase.assignmentDeadlineDate) <= 7 && dayDiff(arbCase.assignmentDeadlineDate) >= -1}"
+                        [(ngModel)]="arbCase.assignmentDeadlineDateForPicker" 
+                        [ngModelOptions]="{updateOn:'blur'}"
+                        aria-label="Arbitrator Assignment Deadline"
+                        title="Arbitrator Assignment Deadline is the date the authority will assign an Arbitrator / Mediator.  Editable by users with the State role."
+                        #asdd="ngbDatepicker">
+
+                      <button type="button" class="btn btn-outline-secondary" (click)="asdd.toggle()"
+                        title="Pick Arbitrator Assignment Deadline date">
+                        <i class="bi bi-calendar"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-danger" 
+                          (click)="arbCase.assignmentDeadlineDate=undefined"
+                          title="Clear Arbitrator Assignment Deadline Date">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </ng-container>
+                  </div>
+
+                  <!-- Resolution Deadline Date -->
+                  <div class="input-group input-group-sm">
+                    <div class="input-group-text col-7 justify-content-between">
+                      <span>Authority Resolution Deadline</span>
+                      <i class="bi bi-question-circle-fill"
+                        title="Date when the assigned Arbitrator will come to a decision. Supplied by the Authority.">
+                      </i>
+                    </div>
+                    <span class="input-group-text col bg-disabled" *ngIf="!isState">
+                      {{arbCase.resolutionDeadlineDate | date:'mediumDate'}}
+                    </span>
+                    <ng-container *ngIf="isState">
+                      <input type="text" name="resolutionDeadlineDate" class="form-control" 
+                        ngbDatepicker
+                        [(ngModel)]="arbCase.resolutionDeadlineDateForPicker" 
+                        [ngModelOptions]="{updateOn:'blur'}"
+                        aria-label="Authority Resolution Deadline Date"
+                        title="Date when the Authority's assigned Arbitration will come to a decision. Editable by users with the State role."
+                        #rdd="ngbDatepicker">
+
+                      <button type="button" class="btn btn-outline-secondary" (click)="rdd.toggle()"
+                        title="Pick Resolution Deadline Date">
+                        <i class="bi bi-calendar"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-danger" 
+                          (click)="arbCase.resolutionDeadlineDate=undefined"
+                          title="Clear Authority Resolution Deadline Date">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </ng-container>
+                  </div>
+                </ng-container>
+
+                <!-- Tracking Data Template-->
+                <ng-container *ngIf="arbCase.authority && arbCase.authority!=='tx'">
+                  <p *ngIf="!activeAuthority||!activeAuthority.trackingDetails.length">No date scheme available for this Authority</p>
+                  <div *ngIf="!!activeAuthority && activeAuthority.trackingDetails.length">
+                    <ng-container *ngFor="let t of trackingFieldsForUI | filter: 'Left' : 'displayColumn';let i=index">
+                      <div class="input-group input-group-sm">
+
+                        <div class="input-group-text col-7 justify-content-between">
+                          <span>{{t.trackingLabel}}</span>
+                          <i class="bi bi-question-circle-fill ms-2" [title]="t.helpText"></i>
+                        </div>
+
+                        <span *ngIf="!!t.referenceFieldName;else entrydate" class="input-group-text col bg-disabled">
+                          {{trackingObject[t.trackingFieldName] | date:'shortDate'}}
+                        </span>
+
+                        <ng-template #entrydate>
+                          <input type="text" name="{{t.trackingFieldName}}" class="form-control" aria-label="blah"
+                            (dateSelect)="onDateSelect($event)" 
+                            (change)="onDateSelect($event)" 
+                            ngbDatepicker
+                            [id]="t.trackingFieldName" 
+                            [(ngModel)]="trackingObject[t.trackingFieldName]"
+                            [readonly]="!isState" 
+                            #dpk="ngbDatepicker" 
+                            [ngModelOptions]="{standalone:true}"
+                            [title]="t.helpText">
+
+                          <button *ngIf="isState" type="button" class="btn btn-outline-secondary" (click)="dpk.toggle()"
+                            title="Select {{t.trackingLabel}}">
+                            <i class="bi bi-calendar"></i>
+                          </button>
+                        </ng-template>
+                      </div>
+                    </ng-container>
+                  </div>
+                </ng-container>
+              </div>
+
+              <!-- Right Column -->
+              <!-- Dates -->
+              <div class="col-lg-6">
+                <ng-container *ngIf="!arbCase.authority || arbCase.authority==='tx'">
+                  <!-- Request Date aka Authority Submission Date -->
+                  <div class="input-group input-group-sm">
+                    <div class="input-group-text col-7 justify-content-between">
+                      <span>Date Submitted to Authority</span>
+                      <i class="bi bi-question-circle-fill ms-2"
+                        title="Supplied by the Authority. Date the case was submitted to the authority. Editable by users with the State role."></i>
+                    </div>
+                    <span *ngIf="!isState" class="input-group-text col bg-disabled">
+                      {{arbCase.requestDate | date:'mediumDate'}}
+                    </span>
+                    <ng-container *ngIf="isState">
+                      <input type="text" name="requestDate" class="form-control" 
+                        ngbDatepicker 
+                        [(ngModel)]="arbCase.requestDateForPicker"
+                        [ngModelOptions]="{updateOn:'blur'}"
+                        aria-label="Date the case was submitted to the Authority" 
+                        title="Date the case was submitted to the Authority" 
+                        #dsa="ngbDatepicker">
+
+                      <button type="button" class="btn btn-outline-secondary" (click)="dsa.toggle()"
+                        title="Pick Date Submitted to Authority">
+                        <i class="bi bi-calendar"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-danger" 
+                          (click)="arbCase.requestDate=undefined"
+                          title="Clear Date Submitted to Authority">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </ng-container>
+                  </div>
+
+                  <!-- Informal Teleconference Date -->
+                  <div class="input-group input-group-sm">
+                    <div class="input-group-text col-7 justify-content-between">
+                      <span>Informal Teleconference Date</span>
+                      <i class="bi bi-question-circle-fill ms-2"
+                        title="Date of informal discussion between Provider and Payor. Supplied by the Authority. Editable by users with the State role."></i>
+                    </div>
+                    <span *ngIf="!isState" class="input-group-text col bg-disabled">
+                      {{arbCase.informalTeleconferenceDate | date:'mediumDate'}}
+                    </span>
+                    <ng-container *ngIf="isState">
+                      <input type="text" name="informalTeleconferenceDate" 
+                        class="form-control" 
+                        ngbDatepicker
+                        [(ngModel)]="arbCase.informalTeleconferenceDateForPicker" 
+                        [ngModelOptions]="{updateOn:'blur'}"
+                        aria-label="Informal Teleconference Date"
+                        title="Date the Authority establishes as end of informal negotiation" 
+                        #dsa="ngbDatepicker">
+
+                      <button type="button" class="btn btn-outline-secondary" (click)="dsa.toggle()"
+                        title="Pick Informal Teleconference Date">
+                        <i class="bi bi-calendar"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-danger" 
+                          (click)="arbCase.informalTeleconferenceDate=undefined"
+                          title="Clear Informal Teleconference Date">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </ng-container>
+                  </div>
+
+                  <!-- Payor Resolution Request Received Date -->
+                  <div class="input-group input-group-sm">
+                    <div class="input-group-text col-7 justify-content-between">
+                      <span>Payor Resolution Request Received On</span>
+                      <i class="bi bi-question-circle-fill ms-2"
+                        title="Supplied by the Authority. Editable by users with the State role."></i>
+                    </div>
+                    <span *ngIf="!isState" class="input-group-text col bg-disabled">
+                      {{arbCase.payorResolutionRequestReceivedDate | date:'mediumDate'}}
+                    </span>
+
+                    <ng-container *ngIf="isState">
+                      <input type="text" name="payorResolutionReqRcvdDate" class="form-control" 
+                        ngbDatepicker
+                        [(ngModel)]="arbCase.payorResolutionRequestReceivedDateForPicker" 
+                        [ngModelOptions]="{updateOn:'blur'}"
+                        aria-label="Description needed"
+                        title="Description needed"
+                        #prr="ngbDatepicker">
+
+                      <button type="button" class="btn btn-outline-secondary" (click)="prr.toggle()"
+                        title="Pick Payor Resolution Request Received date">
+                        <i class="bi bi-calendar"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-danger" 
+                          (click)="arbCase.payorResolutionRequestReceivedDate=undefined"
+                          title="Clear Payor Resolution Request Received Date">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </ng-container>
+                  </div>
+
+                  <!-- Payment Made Date -->
+                  <div class="input-group input-group-sm">
+                    <div class="input-group-text col-7 justify-content-between">
+                      <span>Payment Made Date</span>
+                      <i class="bi bi-question-circle-fill ms-2"
+                        title="Supplied by the Authority. Editable by users with the State role."></i>
+                    </div>
+                    <span *ngIf="!isState" class="input-group-text col bg-disabled">
+                      {{arbCase.paymentMadeDate | date:'mediumDate'}}
+                    </span>
+
+                    <ng-container *ngIf="isState">
+                      <input type="text" name="paymentMadeDate" class="form-control" 
+                        ngbDatepicker
+                        [(ngModel)]="arbCase.paymentMadeDateForPicker" 
+                        [ngModelOptions]="{updateOn:'blur'}"
+                        aria-label="Payment Made Date"
+                        title="Payment Made Date" 
+                        #pmd="ngbDatepicker">
+
+                      <button type="button" class="btn btn-outline-secondary" (click)="pmd.toggle()"
+                        title="Pick Payment Made Date">
+                        <i class="bi bi-calendar"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-danger" 
+                          (click)="arbCase.paymentMadeDate=undefined"
+                          title="Clear Payment Made Date">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </ng-container>
+                  </div>
+
+                  <!-- Provider Paid Date -->
+                  <div class="input-group input-group-sm mb-4">
+                    <div class="input-group-text col-7 justify-content-between">
+                      <span>Provider Paid Date</span>
+                      <i class="bi bi-question-circle-fill ms-2"
+                        title="Supplied by the Authority. Editable by users with the State role."></i>
+                    </div>
+                    <span *ngIf="!isState" class="input-group-text col bg-disabled">
+                      {{arbCase.providerPaidDate | date:'mediumDate'}}
+                    </span>
+
+                    <ng-container *ngIf="isState">
+                      <input type="text" name="providerPaidDate" class="form-control" 
+                        ngbDatepicker
+                        [(ngModel)]="arbCase.providerPaidDateForPicker" 
+                        [ngModelOptions]="{updateOn:'blur'}"
+                        aria-label="Provider Paid Date"
+                        title="Date the insurance carrier or responsible party made their last payment" 
+                        #ppd="ngbDatepicker">
+
+                      <button type="button" class="btn btn-outline-secondary" (click)="ppd.toggle()"
+                        title="Pick Payor Resolution Request Received date">
+                        <i class="bi bi-calendar"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-danger" 
+                          (click)="arbCase.providerPaidDateForPicker=undefined"
+                          title="Clear Provider Paid Date">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </ng-container>
+                  </div>
+                </ng-container> <!-- END TDI dates -->
+
+                <!-- Begin Custom Authority Tracking Data-->
+                <ng-container *ngIf="arbCase.authority && arbCase.authority!=='tx'">
+                  <div *ngIf="!!activeAuthority && activeAuthority.trackingDetails.length">
+                    <ng-container *ngFor="let t of trackingFieldsForUI | filter: 'Right' : 'displayColumn';let i=index">
+                      <div class="input-group input-group-sm">
+
+                        <div class="input-group-text col-7 justify-content-between">
+                          <span>{{t.trackingLabel}}</span>
+                          <i class="bi bi-question-circle-fill ms-2"
+                            [title]="t.helpText+' Editable by users with the State role.'"></i>
+                        </div>
+
+                        <span *ngIf="!!t.referenceFieldName;else entrydate" class="input-group-text col bg-disabled">
+                          {{trackingObject[t.trackingFieldName] | date:'shortDate'}}
+                        </span>
+
+                        <ng-template #entrydate>
+                          <input type="text" aria-label="-----"
+                            name="{{t.trackingFieldName}}" 
+                            class="form-control" 
+                            ngbDatepicker
+                            (dateSelect)="onDateSelect($event)" 
+                            (change)="onDateSelect($event)" 
+                            [id]="t.trackingFieldName" 
+                            [(ngModel)]="trackingObject[t.trackingFieldName]"
+                            [readonly]="!isState" 
+                            #dpk="ngbDatepicker" 
+                            [ngModelOptions]="{standalone:true,updateOn:'blur'}"
+                            [title]="t.helpText">
+
+                          <button type="button" class="btn btn-outline-secondary" (click)="dpk.toggle()"
+                            title="Select {{t.trackingLabel}}">
+                            <i class="bi bi-calendar"></i>
+                          </button>
+                        </ng-template>
+                      </div>
+                    </ng-container>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Case Detail -->
+        <hr/>
+        <div class="row mt-4">
+          <div class="d-flex mb-2">
+            <button class="btn btn-sm btn-outline-primary" type="button" (click)="collapseDetail.toggle()"
+              [attr.aria-expanded]="!hideCaseDetail" title="Toggle Case Detail">
+              <i *ngIf="hideCaseDetail" class="bi bi-chevron-right"></i>
+              <i *ngIf="!hideCaseDetail" class="bi bi-chevron-down"></i>
+            </button>
+
+            <h5 class="ms-2">Case Detail</h5>
+
+          </div>
+
+          <!-- Case Detail Expander Section -->
+          <div #collapseDetail="ngbCollapse" [(ngbCollapse)]="hideCaseDetail">
+            <div class="card card-body">
+              <div class="row">
+                <!-- Case Detail Left Column -->
+                <div class="col-md">
+                  <!-- Encounter Service Number-->
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5">Encounter Service No.</span>
+                    <input type="text" name="encounterServiceNo" class="form-control"
+                      [(ngModel)]="arbCase.encounterServiceNo" aria-label="Encounter Service No"
+                      title="An optional identifier used to group multiple EHR cases together">
+                  </div>
+
+                  <!-- Patient Name-->
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5 bg-info">Patient Name</span>
+                    <input type="text" name="patientName" class="form-control" 
+                      required
+                      [ngClass]="{'bg-required': !arbCase.patientName}" 
+                      [(ngModel)]="arbCase.patientName"
+                      aria-label="Patient Name" title="Name of the patient who received services">
+                  </div>
+
+                  <!-- Use popup button for date picker. Note that model is local and not part of arbCase directly! -->
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5 bg-info">Patient DOB</span>
+                    <!-- [ngStyle]="{'border-color':dobctrl.invalid?'lightcoral':null}"    
+                      #dobctrl="ngModel"
+                    -->
+                    <input type="text" class="form-control" 
+                      name="DOB" 
+                      id="DOB"
+                      autocomplete="off"
+                      ngbDatepicker
+                      [minDate]="{year:1900,month:1,day:1}" 
+                      [(ngModel)]="arbCase.DOBForPicker" 
+                      [ngModelOptions]="{updateOn:'blur'}"
+                      aria-label="Patient Date of Birth"
+                      title="Patient's Date of Birth" 
+                      #dob="ngbDatepicker">
+
+                    <button type="button" class="btn btn-outline-secondary" (click)="dob.toggle()"
+                      title="Pick Date of Birth">
+                      <i class="bi bi-calendar"></i>
+                    </button>
+                  </div>
+
+                  <!-- Place of Service Code aka ServiceLocationCode-->
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5 bg-info">Place of Service Code</span>
+                    <select class="form-select form-select-sm" 
+                      name="serviceLocationCode"
+                      autocomplete="off"
+                      [(ngModel)]="arbCase.serviceLocationCode" 
+                      aria-label="Place of Service Code"
+                      title="Location code for the service location">
+                      <option value="" disabled>Select...</option>
+                      <option *ngFor="let s of allPlaceCodes" [ngValue]="s.codeNumber" [title]="s.description">{{s.codeNumber + ' - ' + s.name}}</option>
+                    </select>
+                  </div>
+
+                  <!-- Place of Service Location aka ServiceLocationName 
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5 bg-info">Place of Service Name</span>
+                    <span class="input-group-text col bg-disabled">
+                      {{getServiceLocationName()}}
+                    </span>
+                  </div>
+                  -->
+                </div>
+
+                <!-- Case Detail Right Column -->
+                <div class="col-md">
+                  <!-- Provider Name -->
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5 bg-primary text-light">Provider Name</span>
+                    <input type="text" name="providerName" class="form-control" [(ngModel)]="arbCase.providerName"
+                      aria-label="Provider Name" title="Name of the organization the Rendering Provider works for">
+                    <button type="button" 
+                      class="btn btn-sm btn-info input-group-addon" 
+                      (click)="openExternalLink('cv')"
+                      [disabled]="!arbCase.providerName"
+                      title="Find Provider CV">
+                      <i class="bi bi-card-text"></i>
+                    </button>
+                  </div>
+
+                  <!-- Provider NPI -->
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5 bg-primary text-light">Provider NPI</span>
+                    <input class="form-control form-control-sm" aria-label="Provider NPI" name="providerNPI"
+                      [(ngModel)]="arbCase.providerNPI" title="NPI number for the provider">
+                  </div>
+
+                  <!-- Provider Type -->
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5">Provider Type</span>
+                    <select name="providerType" [(ngModel)]="arbCase.providerType" class="form-select form-select-sm"
+                      aria-label="Provider Type" title="Select a Provider Type">
+                      <option value="" disabled>Select...</option>
+                      <option *ngFor="let s of allProviderTypes" [ngValue]="s">{{s}}</option>
+                    </select>
+                  </div>
+
+                  <!-- Rendering Provider - removed per DevOps #828
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5">Rendering Provider</span>
+                    <input type="text" name="renderingProvider" class="form-control"
+                      [(ngModel)]="arbCase.renderingProvider" aria-label="Rendering Provider"
+                      title="Name of the individual who provided services">
+                  </div>
+                  -->
+
+                  <!-- Entity  
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5 bg-primary text-light">Entity</span>
+                    <input class="form-control form-control-sm" aria-label="Entity" name="entity"
+                      [(ngModel)]="arbCase.entity" title="Name of the Provider Entity">
+                  </div>
+                  -->
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5">
+                      <span class="pt-0 pb-0 line-height-1">Entity Name</span>
+                    </span>
+                    <input class="form-control form-control-sm" 
+                        aria-label="Entity" 
+                        name="entity"
+                        readonly
+                        [(ngModel)]="arbCase.entity" 
+                        title="Name of the Provider Entity">
+                  </div>
+
+                  <!-- Entity NPI -->
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5 bg-primary text-light">
+                      <span class="pt-0 pb-0 line-height-1">Entity NPI</span>
+                      <i *ngIf="isExcludedNPI" 
+                        class="bi bi-exclamation-diamond-fill bg-danger margin-left-auto ps-1 pe-1" 
+                        title="This Entity is on the Payor's Arbitration Exclusion list!">
+                      </i>
+                      <!-- Was going to let the user temporarily add an Entity but after talking to Diana we will first try to force users to see out a Manager to get the Entity added
+                      <button *ngIf="!isExcludedNPI" 
+                        type="button" 
+                        class="btn btn-sm btn-success margin-left-auto mt-0 mb-0 line-height-1 p-btn-tiny"
+                        (click)="addEntity()"
+                        [disabled]="!arbCase.customer"
+                        aria-label="Add Entity">
+                        <i class="bi bi-plus-circle"></i>
+                      </button>
+                      -->
+                    </span>
+                    <!-- [attr.disabled]="!!arbCase.customer?null:'disabled'"-->
+                    <select name="entityNPI" class="form-select form-select-sm" 
+                      required
+                      (change)="entityChange()"
+                      [(ngModel)]="arbCase.entityNPI"
+                      aria-label="Entity NPI" 
+                      title="Select an Entity that is serviced by the current Customer. EntityNPI is a Key value.">
+                      <option [ngValue]="''" disabled>Select...</option>
+                      <option *ngFor="let s of allEntities" [ngValue]="s.NPINumber">{{s.name + ' | ' + s.NPINumber}}</option>
+                    </select>
+                  </div>
+                  
+                </div> <!-- END Case Detail Right Column -->
+
+              </div>
+            </div>
+          </div> <!-- End #collapseDetail -->
+        </div> <!-- End Row -->
+
+        <hr />
+
+        <!-- CPT Codes-->
+        <div class="row mt-4">
+          <div class="d-flex mb-2">
+            <button class="btn btn-sm btn-outline-primary" type="button" (click)="collapseCpt.toggle()"
+              [attr.aria-expanded]="!hideCpt" title="Toggle CPT list">
+              <i *ngIf="hideCpt" class="bi bi-chevron-right"></i>
+              <i *ngIf="!hideCpt" class="bi bi-chevron-down"></i>
+            </button>
+
+            <h5 class="ms-2">CPT Codes</h5>
+            <div class="margin-left-auto col-auto justify-content-end">
+              <button *ngIf="!hideCpt" type="button" class="btn btn-sm btn-warning" [disabled]="!canAddCpt()"
+                title="Add CPT" (click)="reloadBenchmarks(true)">
+                <i class="bi bi-plus"></i> Reload Benchmarks
+              </button>
+              <button *ngIf="!hideCpt" type="button" class="btn btn-sm btn-success ms-2" [disabled]="!canAddCpt()"
+                title="Add CPT" (click)="addCpt()">
+                <i class="bi bi-plus"></i> Add Code
+              </button>
+            </div>
+          </div>
+
+          <div #collapseCpt="ngbCollapse" [(ngbCollapse)]="hideCpt">
+            <div class="card card-body">
+              
+                <div class="table-responsive">
+                  <table class="table table-sm font-small table-no-wrap table-normal-head mb-0 bb-0">
+                    <thead>
+                      <tr class="bg-primary text-light fw-lighter text-center">
+                        <th *ngIf="isDev"class="calc-col-6rem">Disputes</th>
+                        <th class="calc-col-5rem">Allow</th>
+                        <th class="calc-col-5rem">Svc</th>
+                        <th class="calc-col-5rem">GeoZip</th>
+                        <th class="calc-col-5rem">CPT Code</th>
+
+                        <th class="calc-col-5rem">Mod 26</th>
+                        <th class="calc-col-8rem">Charge Amount</th>
+                        <th class="calc-col-8rem">Paid Amount</th>
+                        <th class="calc-col-8rem">Patient Resp Amount</th>
+
+                        <th class="calc-col-5rem">Units</th>
+
+                        <th class="calc-col-8rem">FH Base 50th</th>
+                        <th class="calc-col-8rem">FH Extended 50th</th>
+                        <th class="calc-col-8rem">FH Extended 80th</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let c of arbCase.cptCodes;let i=index">
+                        <!-- Disputes Hover-->
+                        <td *ngIf="isDev" [innerHTML]="getDisputeLinks(c)" class="no-wrap">
+                          <!-- <i *ngIf="!!c.disputes.length" class="bi bi-basket2-fill fs-4 text-success" [title]=""></i> -->
+                        </td>
+                        <!-- Is Included -->
+                        <td class="text-center">
+                          <input class="form-check-input warn-when-empty"
+                            title="Uncheck to remove this code from the calculation" type="checkbox" value=""
+                            id="isIncluded_{{i}}" (change)="cptChanged(c)" [(ngModel)]="c.isIncluded"
+                            [ngModelOptions]="{standalone:true}">
+                        </td>
+                        <!-- Service Line -->
+                        <td class="no-wrap">
+                          <input class="form-control form-control-sm text-center calc-col-3rem" title="Service line" type="text"
+                            readonly autocomplete="off" id="serviceLine_{{i}}" [(ngModel)]="arbCase.serviceLine"
+                            (keydown)="handleGridNav($event)"
+                            [ngModelOptions]="{standalone:true}">
+                        </td>
+                        <!-- GeoZip -->
+                        <td class="text-center" [ngClass]="{'bg-info':!!arbCase.benchmarkGeoZip}">
+                          {{!!arbCase.benchmarkGeoZip ? arbCase.benchmarkGeoZip : arbCase.locationGeoZip}}</td>
+                        <!-- CPT Code-->
+                        <td>
+                          <input class="form-control form-control-sm text-center cpt-code"
+                            title="Procedure (CPT) Code (requires a value for Location Geo Zip)" type="text"
+                            autocomplete="off" id="cptCode_{{i}}" [disabled]="!arbCase.locationGeoZip || !arbCase.service" 
+                            (keydown)="handleGridNav($event)"
+                            (change)="cptChanged(c)" (focus)="selectAll($event)" 
+                            [(ngModel)]="c.cptCode" [ngModelOptions]="{standalone:true}">
+                        </td>
+                        <!-- Modifiers 
+                      <td>
+                        <input class="form-control form-control-sm text-center" title="Modifiers" type="text" 
+                        autocomplete="off" id="modifiers{{i}}" 
+                        [(ngModel)]="c.modifiers" [ngModelOptions]="{standalone:true}">
+                      </td>
+                      -->
+                        <!-- Mod 26 -->
+                        <td class="text-center">
+                          <input class="form-check-input" title="Check to toggle this value" type="checkbox" value=""
+                            id="modifier26_YN_{{i}}" (change)="cptChanged(c)" [(ngModel)]="c.modifier26_YN"
+                            [ngModelOptions]="{standalone:true}">
+                        </td>
+                        <!-- Provider Charge Amount -->
+                        <td>
+                          <input class="form-control form-control-sm text-center" title="Provider Charge Amount"
+                            type="number" autocomplete="off" id="providerChargeAmount_{{i}}" (focus)="selectAll($event)"
+                            pattern="^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$"  (keydown)="handleGridNavNumeric($event)"
+                            (change)="cptChanged(c)" [(ngModel)]="c.providerChargeAmount"
+                            [ngModelOptions]="{standalone:true}">
+                        </td>
+                        <!-- Paid Amount-->
+                        <td>
+                          <input class="form-control form-control-sm text-center" title="Payor Paid Amount"
+                            pattern="^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$"  (keydown)="handleGridNavNumeric($event)"
+                            type="number" autocomplete="off" id="paidAmount_{{i}}" (focus)="selectAll($event)"
+                            (change)="cptChanged(c)" [(ngModel)]="c.paidAmount" [ngModelOptions]="{standalone:true}">
+                        </td>
+                        <!-- Patient Responsibility Amount-->
+                        <td>
+                          <input class="form-control form-control-sm text-center" title="Patient Responsibility Amount"
+                            type="number" autocomplete="off" id="patientRespAmount_{{i}}" (focus)="selectAll($event)"
+                            pattern="^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$"  (keydown)="handleGridNavNumeric($event)"
+                            (change)="cptChanged(c)" [(ngModel)]="c.patientRespAmount"
+                            [ngModelOptions]="{standalone:true}">
+                        </td>
+                        <!-- Units -->
+                        <td>
+                          <input class="form-control form-control-sm text-center" title="Units" 
+                            type="number" autocomplete="off" id="units_{{i}}" (focus)="selectAll($event)" 
+                            pattern="^0$|^[1-9]\d*$|^\.\d+$|^0\.\d*$|^[1-9]\d*\.\d*$"  (keydown)="handleGridNavNumeric($event)"
+                            (change)="cptChanged(c)" [(ngModel)]="c.units" [ngModelOptions]="{standalone:true}">
+                        </td>
+                        <!-- FH 50th Allowable Base -->
+                        <td class="text-center">
+                          <span>{{c.fh50thPercentileCharges | number:'.2-2'}}</span>
+                        </td>
+                        <!-- FH 50th Extended Charges -->
+                        <td class="text-center">
+                          <span>{{c.fh50thPercentileExtendedCharges | number:'.2-2'}}</span>
+                        </td>
+                        <!-- FH 80th Extended Charges -->
+                        <td class="text-center">
+                          <span>{{c.fh80thPercentileExtendedCharges | number:'.2-2'}}</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr class="text-bold text-center fs-6">
+                        <td *ngIf="isDev"></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+
+                        <!-- Sum of Charge Amount -->
+                        <td>{{getSum('charge') | currency}}</td>
+
+                        <!-- Sum of Paid Amount -->
+                        <td>{{getSum('paid') | currency}}</td>
+
+                        <!-- Sum of Patient Resp Amount -->
+                        <td>{{getSum('patient') | currency}}</td>
+
+                        <!-- skip units -->
+                        <td></td>
+
+                        <!-- skip FH Base 50th -->
+                        <td></td>
+
+                        <!-- Sum FH Ext 50th -->
+                        <td>{{getSum('fh50Ext') | currency}}</td>
+
+                        <!-- Sum of FH Ext 80th -->
+                        <td>{{getSum('fh80Ext') | currency}}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              
+            </div>
+          </div>
+        </div>
+
+        <!-- Arbitrators Collapse Section - uncomment to activate -->
+        <ng-container *ngIf="arbCase.arbitrators && arbCase.arbitrators.length>0">
+          <hr />
+          <div class="row">
+            <h6>
+              <button class="btn btn-sm btn-outline-primary" type="button" (click)="collapseArb.toggle()"
+                [attr.aria-expanded]="!hideArbitrators" title="Toggle Arbitrators list">
+                <i *ngIf="hideArbitrators" class="bi bi-chevron-right"></i>
+                <i *ngIf="!hideArbitrators" class="bi bi-chevron-down"></i>
+              </button>
+              <span class="ms-2">Arbitrator Selection Review</span>
+            </h6>
+          </div>
+          <div #collapseArb="ngbCollapse" [(ngbCollapse)]="hideArbitrators">
+            <div class="card card-body">
+              <table class="table table-sm table-borderless font-small mb-0">
+                <thead>
+                  <tr>
+                    <th class="text-center">
+                      Still Active ?
+                    </th>
+                    <th class="text-center">
+                      Last Resort ?
+                    </th>
+                    <th *ngIf="arbCase.serviceLine==='IOM'">IOM OK ?</th>
+                    <th *ngIf="arbCase.serviceLine==='PA'">PA OK ?</th>
+                    <th style="min-width:10rem;white-space:nowrap">Arbitrator</th>
+                    <!-- Stats -->
+                    <th class="text-center">Cases</th>
+                    <th class="text-center">Wins</th>
+                    <th class="text-center">Losses</th>
+                    <th class="text-center">Win %</th>
+                    <th class="text-center">Fee for Provider</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let a of arbCase.arbitrators">
+                    <td class="text-center">
+                      <i class="bi bi-check text-success bigger half-height"></i>
+                    </td>
+                    <td class="text-center">
+                      <span
+                        title="Eliminate this person first. Use only as a last resort if our win % is better or cost is lower than another person tagged as a Last Resort."
+                        class="btn btn-sm no-cursor" *ngIf="a.isLastResort">
+                        <i class="bi bi-person-x-fill text-danger alert-icon h4"></i>
+                      </span>
+                    </td>
+                    <td class="text-center" *ngIf="arbCase.serviceLine==='IOM'">
+                      <i *ngIf="a.unfavorableServices.indexOf('IOM')===-1"
+                        class="bi bi-check text-success bigger half-height"></i>
+                      <i *ngIf="a.unfavorableServices.indexOf('IOM')>-1"
+                        class="bi bi-x-lg text-danger bigger half-height"></i>
+                    </td>
+                    <td class="text-center" *ngIf="arbCase.serviceLine==='PA'">
+                      <i *ngIf="a.unfavorableServices.indexOf('PA')===-1"
+                        class="bi bi-check text-success bigger half-height"></i>
+                      <i *ngIf="a.unfavorableServices.indexOf('PA')>-1"
+                        class="bi bi-x-lg text-danger bigger half-height"></i>
+                    </td>
+                    <td>{{a.name}}</td>
+                    <td class="text-center">{{getArbStats(a).cases}}</td>
+                    <td class="text-center">{{getArbStats(a).won}}</td>
+                    <td class="text-center">{{getArbStats(a).lost}}</td>
+                    <td class="text-center">{{getArbWinPct(getArbStats(a)) | number:'1.2-2'}}</td>
+                    <td class="text-center">{{a.fee | currency}}</td>
+                    <td>{{a.email}}</td>
+                    <td>{{a.phone}}</td>
+                    <td>{{a.notes}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </ng-container>
+
+        <!--Details and metrics -->
+        <hr />
+        <div class="row">
+          <!-- Left Column -->
+          <div class="col-lg-6">
+            <h6>Informal Negotiation Details</h6>
+
+            <!-- Payor Negotiator -->
+            <div class="input-group input-group-sm">
+              <div class="input-group-text col-5 justify-content-between">
+                <span>Payor Negotiator</span>
+                <button class="btn btn-sm btn-primary btn-modal" [disabled]="!arbCase.payorId||isNew"
+                  (click)="addNegotiator()" type="button">
+                  <i class="bi bi-plus" title="Add a new negotiator"></i>
+                </button>
+              </div>
+              <select class="form-select form-select-sm" name="payorNegotiatorId" (change)="payorNegotiatorChange()"
+                [(ngModel)]="arbCase.payorNegotiatorId" aria-label="Payor Negotiator"
+                title="Payor's representative during the informal arbitration process">
+                <option [ngValue]="null" disabled>Select...</option>
+                <option *ngFor="let n of allNegotiators" [ngValue]="n.id">{{n.name}}</option>
+              </select>
+            </div>
+
+            <!-- Payor Negotiator Email -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5">Negotiator Email</span>
+              <span class="input-group-text col bg-disabled">{{arbCase.payorNegotiator?.email}}</span>
+            </div>
+
+            <!-- Payor Negotiator Phone -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-5">Negotiator Phone</span>
+              <span class="input-group-text col bg-disabled">{{arbCase.payorNegotiator?.phone}}</span>
+            </div>
+
+            <!-- Original Billed Amount -->
+            <div class="input-group input-group-sm mt-4">
+              <div class="input-group-text col-6 justify-content-between">
+                <span>Original Billed Amount</span>
+                <i class="bi bi-question-circle-fill ms-2" title="Amount of first bill sent to Payor"></i>
+              </div>
+              <div class="input-group-text currency-addon">$</div>
+              <input type="number" name="originalBilledAmount" 
+                class="form-control currency-input" (focus)="selectAll($event)"
+                [readonly]="!!activeAuthority?.website"
+                [(ngModel)]="arbCase.originalBilledAmount"
+                aria-label="Original Billed Amount" title="Amount of first bill sent to Payor (Disabled for states with imported data, e.g. TX)">
+            </div>
+
+            <!-- Total Pre-Arbitration Payment (was First Response Payments, then was Initial Payment Amount see DevOps Story 835) -->
+            <div class="input-group input-group-sm mt-4">
+              <div class="input-group-text col-6 justify-content-between">
+                <span>Total Pre-Arbitration Payment</span>
+                <i class="bi bi-question-circle-fill ms-2" title="The first payment received from the Payor aka FirstResponsePayment"></i>
+              </div>
+              <div class="input-group-text bg-white currency-addon">$</div>
+              <input type="number" name="firstResponsePayment" 
+                class="form-control currency-input" (focus)="selectAll($event)"
+                [ngClass]="{'bg-required':!arbCase.firstResponsePayment}" [(ngModel)]="arbCase.firstResponsePayment"
+                aria-label="First Response Payment" title="Usually the first payment response from Payor (FirstResponsePayment)">
+            </div>
+
+            <!-- Patient Share Amount -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-6">Patient Share Amount</span>
+              <div class="input-group-text bg-white currency-addon">$</div>
+              <input type="number" name="patientShareAmount" 
+                class="form-control currency-input" required (focus)="selectAll($event)"
+                [(ngModel)]="arbCase.patientShareAmount" aria-label="Patient Share Amount"
+                title="Amount of the claim the patient is responsible for">
+            </div>
+
+            <!-- Initial Allowed Amount (calculated) -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-6">Initial Allowed Amount</span>
+              <span class="input-group-text col bg-disabled">{{arbCase.firstResponsePayment+arbCase.patientShareAmount | currency}}</span>
+            </div>
+
+            <!-- Disputed Amount -->
+            <div class="input-group input-group-sm mt-4">
+              <div class="input-group-text col-6 justify-content-between">
+                <span>Disputed Amount</span>
+                <i class="bi bi-question-circle-fill ms-2"
+                  title="Estimated disputed amount according to Authority."></i>
+              </div>
+              <span class="input-group-text col bg-disabled">{{arbCase.disputedAmount | currency}}
+              </span>
+            </div>
+
+            <!-- Benchmark 80th getSum('fh80Ext') -->
+            <div class="input-group input-group-sm mt-4">
+              <span class="input-group-text col-6 text-small">Offer Base: {{calculatorVars?.nsaOfferBaseValueFieldname}}</span>
+              <span class="input-group-text col bg-disabled">{{getSum(calculatorVars?.nsaOfferBaseValueFieldname) | currency}}</span>
+            </div>
+
+            <!-- NSA Request Discount -->
+            <div class="input-group input-group-sm">
+              <div class="input-group-text col-6 justify-content-between">
+                <span>NSA Request Discount (default)</span>
+                <i class="bi bi-question-circle-fill ms-2" title="A discount is a reduction! The higher the discount, the lower the offer. (Admins can adjust the default discount under Manage Formulas.)"></i>
+              </div>
+              <span class="input-group-text col bg-disabled">{{(!!calculatorVars ? calculatorVars.nsaOfferDiscount : 0) | percent}}</span>
+            </div>
+
+            <!-- NSA Request Discount Override -->
+            <div class="input-group input-group-sm">
+              <div class="input-group-text col-6 justify-content-between">
+                <span>NSA Request Discount</span>
+                <i class="bi bi-question-circle-fill ms-2" title="Discount off the default benchmark total. Range is .01 to .99."></i> <!--Use a negative value to increase the offer.-->
+              </div>
+              <!--
+                type="number" 
+                min="0" max=".99" step=".01"
+              -->
+              <input type="text" name="NSARequestDiscount" class="form-control" 
+                [(ngModel)]="arbCase.NSARequestDiscount" (focus)="selectAll($event)"
+                [readonly]="!isNSA || arbCase.NSAStatus !== 'Pending NSA Negotiation Request'"
+                (change)="NSARequestDiscChange($event)" 
+                aria-label="NSA Request Discount"
+                title="Discount off the default benchmark when submitting initial NSA Submission Request. Range is 0 to .99.">
+                
+
+              <button type="button" *ngIf="isNSA && arbCase.NSAStatus==='Pending NSA Negotiation Request'"
+                class="btn btn-sm btn-warning" 
+                (click)="clearNSARequestDicsount()"
+                title="Reset to default">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+              <div class="input-group-text col-auto">% as decimal</div>
+            </div>
+
+            <!-- NSA Request Offer -->
+            <div class="input-group input-group-sm">
+              <div class="input-group-text col-6 justify-content-between">
+                <span>NSA Request Offer</span>
+                <i class="bi bi-question-circle-fill ms-2" title="An estimate of what to offer in the NSA Open Request notification letter based on the service line discount: fh80th * (1 - discount)"></i>
+              </div>
+              <span class="input-group-text col bg-disabled">{{getNSARequestOffer() | currency}}</span>
+            </div>
+
+            <!-- NSA Request Offer Override 
+            <div class="input-group input-group-sm" *ngIf="arbCase.serviceLine==='ER'">
+              <div class="input-group-text col-5 justify-content-between">
+                <span>NSA Request Offer (override)</span>
+                <i class="bi bi-question-circle-fill ms-2" title="Override the estimated offer using an explicit dollar amount. The Discount Override will automatically be updated."></i>
+              </div>
+              <input type="text" name="NSAOpenRequestOffer" class="form-control" 
+                [(ngModel)]="arbCase.NSAOpenRequestOffer" (focus)="selectAll($event)"
+                (change)="NSARequestOverrideChange()"
+                type="number" aria-label="NSA Request Discount"
+                title="Initial NSA Submission Request offer (override the calculated suggestion)">
+            </div>
+            -->
+
+            <!-- removed Additional Paid Amount per user story 835 
+            <div class="input-group input-group-sm">
+              <div class="input-group-text col-5 justify-content-between">
+                <span>Additional Paid Amount</span>
+                <i class="bi bi-question-circle-fill ms-2" title="Supplied by the Authority."></i>
+              </div>
+              <span class="input-group-text col bg-disabled">{{arbCase.additionalPaidAmount | currency}}
+              </span>
+            </div>
+            -->
+
+            <!-- Payor Offer -->
+            <div class="input-group input-group-sm">
+              <div class="input-group-text col-6 justify-content-between">
+                <span>Payor Offer</span>
+                <button class="btn btn-sm btn-primary btn-modal" *ngIf="canAddOffers()" 
+                  [disabled]="isNew"
+                  (click)="addOffer('Payor')" 
+                  type="button">
+                  <i class="bi bi-plus" title="Add a new Offer"></i>
+                </button>
+              </div>
+              <div class="input-group-text col bg-disabled justify-content-between">
+                <span><b>{{arbCase.payorFinalOfferAmount | currency}}</b></span>
+                <button *ngIf="hasOffer('Payor')" 
+                  type="button" class="btn btn-sm btn-primary" 
+                  (click)="editOffer('Payor')"
+                  title="Edit">...</button>
+              </div>
+            </div>
+
+            <!-- Provider Final Offer (override) -->
+            <div class="input-group input-group-sm">
+              <div class="input-group-text col-6 justify-content-between">
+                <span>Provider Offer</span>
+                <button class="btn btn-sm btn-primary btn-modal" *ngIf="canAddOffers()" 
+                  [disabled]="isNew"
+                  (click)="addOffer('Provider')" type="button">
+                  <i class="bi bi-plus" title="Add a new Offer"></i>
+                </button>
+              </div>
+              <div class="input-group-text col bg-disabled justify-content-between" title="Provider Final Offer">
+                <span><b>{{arbCase.providerFinalOfferAmount | currency}}</b></span>
+                <button *ngIf="hasOffer('Provider')" 
+                  type="button" class="btn btn-sm btn-primary" 
+                  (click)="editOffer('Provider')"
+                  title="Edit">...</button>
+              </div>
+              <!-- removed since we don't type directly into this anymore
+              <input type="text" name="providerFinalOfferAdjustedAmount" 
+                class="form-control" readonly
+                [(ngModel)]="arbCase.providerFinalOfferAdjustedAmount" 
+                aria-label="Provider Final Offer (override)"
+                title="The last offer submitted to the Payor">
+              -->
+            </div>
+
+            <!-- Offer history -->
+            <div class="input-group input-group-sm offfer-history-container" *ngIf="arbCase.offerHistory?.length">
+              <div class="input-group-text col-auto font-smaller">
+                Offer History
+              </div>
+              <div class="col bg-disabled">
+                <div class="input-group input-group-sm">
+                  <div class="col input-group-text font-smaller justify-content-between">
+                    <span>Accepted</span>
+                    <i class="bi bi-question-circle-fill" title="Requires an active authority or NSA status, 1+ Allowed CPTs, an assigned Payor and no unsaved changes."></i>
+                  </div>
+                  <div class="col input-group-text font-smaller">Offer Date</div>
+                  <div class="col input-group-text font-smaller">Who ?</div>
+                  <div class="col input-group-text font-smaller">How ?</div>
+                  <div class="col input-group-text font-smaller">Amount</div>
+                </div>
+                <div class="input-group input-group-sm" *ngFor="let p of arbCase.offerHistory">
+                  <div class="col input-group-text font-smaller justify-content-center"
+                    [ngClass]="{'text-white':p.wasOfferAccepted,'bg-info':p.wasOfferAccepted,'bg-white':!p.wasOfferAccepted}">
+                    <span *ngIf="p.wasOfferAccepted">Yes</span>
+                    <!-- hide until ready to use -->
+                    <button *ngIf="!p.wasOfferAccepted && showButton('acceptoffer')" 
+                      type="button" 
+                      (click)="addSettlementFromOffer(p)"
+                      [disabled]="!canAddSettlement(false)"
+                      class="btn btn-sm btn-primary" 
+                      title="Choose an Offer to accept. (Requires assigning a Payor to this Claim and saving all changes.)">
+                    
+                      Accept
+                    </button>
+                    
+                  </div>
+                  <div class="col input-group-text font-smaller bg-white"
+                    [ngClass]="{'text-white':p.wasOfferAccepted,'bg-info':p.wasOfferAccepted,'bg-white':!p.wasOfferAccepted}">
+                    {{p.updatedOn | date:'shortDate'}}
+                  </div>
+                  <div class="col input-group-text font-smaller bg-white"
+                    [ngClass]="{'text-white':p.wasOfferAccepted,'bg-info':p.wasOfferAccepted,'bg-white':!p.wasOfferAccepted}">
+                    {{p.offerType}}
+                  </div>
+                  <div class="col input-group-text font-smaller bg-white"
+                    [ngClass]="{'text-white':p.wasOfferAccepted,'bg-info':p.wasOfferAccepted,'bg-white':!p.wasOfferAccepted}">
+                    {{p.offerSource}}
+                  </div>
+                  <div class="col input-group-text font-smaller bg-white"
+                    [ngClass]="{'text-white':p.wasOfferAccepted,'bg-info':p.wasOfferAccepted,'bg-white':!p.wasOfferAccepted}">
+                    {{p.offerAmount | currency}}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- old Offer Actions row 
+            <div class="row mt-2" *ngIf="showButton('acceptoffer')">
+              <div class="col d-flex">
+                <button type="button" 
+                  (click)="acceptOffer()"
+                  class="btn btn-sm btn-primary" 
+                  title="Choose an offer to accept from either the Payor or the Provider">
+                  <i class="bi bi-hand-thumbs-up-fill"></i> Accept Offer
+                </button>    
+              </div>
+            </div>
+            -->
+
+            <!-- Potential Outcomes removed...
+            <h6 class="mt-4">Potential Outcomes, Including Arbitration Fee Est.</h6>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-6 bold">Scenario</span>
+              <span class="input-group-text col bold">Provider</span>
+              <span class="input-group-text col bold">Payor</span>
+            </div>
+
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-6">Informal - Provider Offer Accepted</span>
+              <span class="input-group-text col bg-disabled">
+                {{(arbCase.providerFinalOfferAdjustedAmount ? arbCase.providerFinalOfferAdjustedAmount :
+                arbCase.providerFinalOfferCalculatedAmount) - arbCase.totalPaidAmount | currency}}
+              </span>
+              <span class="input-group-text col bg-disabled">{{arbCase.payorFinalOfferAmount - arbCase.totalPaidAmount |
+                currency}}</span>
+            </div>
+
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-6">Formal - Provider Wins</span>
+              <span class="input-group-text col bg-disabled">{{getFormalProfit('provider') | currency}}</span>
+              <span class="input-group-text col bg-disabled">{{getFormalProfit('provider') * -1| currency}}</span>
+            </div>
+
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-6">Formal - Payor Wins</span>
+              <span class="input-group-text col bg-disabled">{{arbCase.payorFinalOfferAmount - arbCase.totalPaidAmount |
+                currency}}</span>
+              <span class="input-group-text col bg-disabled">0.00</span>
+            </div>
+            -->
+
+            <!-- Provider Final Offer -->
+            <div class="input-group input-group-sm mt-2">
+              <span class="input-group-text col-6">Provider Offer <span class="font-smaller ms-1">(calculated off of the
+                  FH 80th)</span></span>
+              <!-- <input type="number" min="0" name="providerFinalOfferAmount" [(ngModel)]="arbCase.providerFinalOfferAmount"
+              class="form-control" [ngClass]="{'bg-required':!arbCase.providerFinalOfferAmount}"
+              (focus)="selectAll($event)" aria-label="Provider Final Offer"
+              title="Final settlement offer sent TO the Payor"> -->
+              <span class="input-group-text col bg-disabled"><b>{{arbCase.providerFinalOfferCalculatedAmount |
+                  currency}}</b></span>
+            </div>
+            <!-- Provider Final Offer Not To Exceed -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-6">Provider Final Offer Not To Exceed</span>
+              <span class="input-group-text col" [ngClass]="{'bg-danger':arbCase.providerFinalOfferAmount>arbCase.providerFinalOfferNotToExceed,
+                              'bg-disabled':arbCase.providerFinalOfferAmount<=arbCase.providerFinalOfferNotToExceed,
+                              'text-white':arbCase.providerFinalOfferAmount>arbCase.providerFinalOfferNotToExceed}">
+                {{arbCase.providerFinalOfferNotToExceed | number}}
+              </span>
+            </div>
+
+            <!-- Projected Profit from Formal Arb. -->
+            <div class="input-group input-group-sm">
+              <span class="input-group-text col-6">Projected Profit from Formal Arb.</span>
+              <span class="input-group-text col bg-disabled">{{arbCase.projectedProfitFromFormalArb | number}}</span>
+            </div>
+          </div>
+
+          <!-- Right Column -->
+          <div class="col-lg-6 d-flex flex-column">
+            <h6>Available Benchmarks</h6>
+            <!-- Datset toggles removed -> d-flex flex-column -->
+            <div class="col dataset-selector flex-grow-0 mb-2" *ngIf="!!activeAuthority && allDSToggle.length">
+              <div *ngFor="let b of allDSToggle" class="ds-sources mb-1">
+                <button type="button" class="me-2 btn btn-outline-success btn-sm btn-modal" (click)="moveBenchmark(b)"
+                  title="Move down">
+                  <i class="bi bi-arrow-down-circle-fill"></i>
+                </button>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="checkbox" (change)="toggleDataset(b)" [(ngModel)]="b.isVisible"
+                    [ngModelOptions]="{standalone:true}" aria-label="Toggle visibility" id="chk_{{b.name.replaceAll(' ','_')}}">
+                  <label class="form-check-label" for="chk_{{b.name.replaceAll(' ','_')}}">{{b.name}}</label>
+                </div>
+              </div>
+            </div>
+            <h6>Fair Health vs Offer Comparison</h6>
+            <canvas baseChart [data]="barChartData" [options]="barChartOptions" [plugins]="barChartPlugins"
+              [type]="barChartType">
+              <!--
+               (chartClick)="chartClicked($event)"
+              (chartHover)="chartHovered($event)"
+            -->
+            </canvas>
+
+            <!-- Line guage - who's closer -->
+            <div class="mt-4" style="text-align:center">
+              <canvas id="rangeGauge" width="400" height="100" style="margin-left:auto;margin-right:auto;">
+                Your browser does not support the canvas element.
+              </canvas>
+            </div>
+            <div class="d-flex flex-grow-1"></div>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- Settlement Details -->
+        <div class="row mt-2">
+          <div class="d-flex mb-2 align-items-center flex-row">
+            <button class="btn btn-sm btn-outline-primary ms-1 me-1" type="button" (click)="collapseStateSettlement.toggle()"
+              [attr.aria-expanded]="!hideStateSettlement" title="Toggle State Settlement Details">
+              <i *ngIf="hideStateSettlement" class="bi bi-chevron-right"></i>
+              <i *ngIf="!hideStateSettlement" class="bi bi-chevron-down"></i>
+            </button>
+            <h6 class="mb-0">Settlement Details</h6>
+            <button *ngIf="!isNew" 
+              type="button" 
+              class="btn btn-sm btn-success margin-left-auto" 
+              [disabled]="!canAddSettlement()"
+              (click)="addFormalSettlement()" 
+              title="Record a formal Settlement as determined by an Authority.">
+              <i class="bi bi-plus"></i> Add Formal Settlement
+            </button>
+            <i *ngIf="!canAddSettlement()" class="bi bi-question-circle-fill ms-1 text-danger" title="(Requires 1+ Allowed CPTs, an assigned Payor, at least one Case # and no unsaved changes.)"></i>
+            
+          </div>
+        </div>
+        <div #collapseStateSettlement="ngbCollapse" [(ngbCollapse)]="hideStateSettlement">
+          <div class="row">
+            <div class="col table-responsive">
+              <table class="table table-sm table-normal-head small bb-0">
+                <thead>
+                  <tr>
+                    <th>...</th>
+                    <th>Authority</th>
+                    <th>Case #</th>
+                    <th>Prevailing Party</th>
+                    <th>Settled On</th>
+                    <th>Reasonable Amount</th>
+                    <th>Authority Settlement Amount</th>
+                    <th>Gross Settlement Amount</th>
+                    <th>Total Payments</th>
+                    <th>Net Settlement Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <ng-container *ngFor="let g of arbCase.caseSettlements">
+                    <tr>
+                      <td>
+                        <!-- hide until ready to use -->
+                        <button type="button" class="btn btn-sm btn-primary"
+                                *ngIf="isManager"
+                                (click)="openSettlementDialog(g)"
+                                title="More details">
+                          <i class="bi bi-card-text"></i>
+                        </button>
+
+                      </td>
+                      <td class="text-center">{{g.authorityKey}}</td>
+                      <td [ngClass]="{'text-bold':g.authorityCaseId===arbCase.authorityCaseId}">{{g.authorityCaseId}}</td>
+                      <td>{{g.prevailingParty}}</td>
+                      <td>{{g.partiesAwardNotificationDate|date:'shortDate'}}</td>
+                      <td>{{g.reasonableAmount | currency}}</td>
+                      <td>{{g.totalSettlementAmount | currency}}</td>
+                      <td>{{g.grossSettlementAmount | currency}}</td>
+                      <td>{{getSum('paid') | currency}}</td>
+                      <td>{{g.grossSettlementAmount - getSum('paid') | currency}}</td>
+                    </tr>
+                    <tr *ngIf="g.caseSettlementDetails.length">
+                      <td></td>
+                      <td colspan="8">
+                        <!-- Settlement Details / Payments nested table-->
+                        <table class="table table-sm small w-auto">
+                          <thead><tr>
+                            <th><b>Additional Paid Amount</b></th>
+                            <th><b>Paid On</b></th>
+                            <th><b>Method of Payment</b></th>
+                            <th><b>Payment Reference #</b></th>
+                          </tr></thead>
+                          <tbody>
+                            <tr *ngFor="let r of g.caseSettlementDetails">
+                              <td>{{r.additionalPaidAmount | currency}}</td>
+                              <td>{{r.paymentMadeDate | date: 'shortDate'}}</td>
+                              <td>{{r.methodOfPayment}}</td>
+                              <td>{{r.paymentReferenceNumber}}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  </ng-container>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <hr/>
+        <!-- Notes -->
+        <div class="row" *ngIf="!isNew">
+          <div class="d-flex mb-2">
+            <button class="btn btn-sm btn-outline-primary" type="button" 
+              (click)="collapseNotes.toggle()"
+              [attr.aria-expanded]="!hideNotes" title="Toggle Notes section">
+              <i *ngIf="hideNotes" class="bi bi-chevron-right"></i>
+              <i *ngIf="!hideNotes" class="bi bi-chevron-down"></i>
+            </button>
+
+            <h6 class="ms-2 m-auto">Case Notes</h6>
+          </div>
+
+          <div #collapseNotes="ngbCollapse" [(ngbCollapse)]="hideNotes">
+            <div class="card card-body">
+              <!-- New Note -->
+              <div class="row align-items-baseline mt-1">
+                <label class="col small" for="newNote">Enter a note (5 or more characters) and click Save
+                  Note...{{newNote}}</label>
+                <div class="col-auto p-1" [ngClass]="{'bg-danger':newNote.length>4}">
+                  <button type="button" class="btn btn-sm btn-success" 
+                    (click)="createNote()"
+                    [disabled]="newNote.length < 5">
+                    <i class="bi bi-plus"></i> Save Note
+                  </button>
+                </div>
+              </div>
+              <div class="row mt-2">
+                <div class="col-12 d-flex justify-content-end">
+                  <textarea class="form-control form-control-sm" 
+                    [(ngModel)]="newNote" [ngModelOptions]="{standalone:true}"
+                    rows="3" name="newNote" id="newNote" autocomplete="off"
+                    aria-label="New Note"></textarea>
+                </div>
+              </div>
+              <!-- All Notes -->
+              <div class="row">
+                <div class="col-12">
+                  <textarea class="form-control form-control-sm" 
+                    readonly 
+                    [(ngModel)]="caseNotes" 
+                    rows="8"
+                    name="caseNotes" 
+                    aria-label="Case Notes"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- Files and Documents -->
+        <div class="row">
+          <div class="d-flex mb-2">
+            <button class="btn btn-sm btn-outline-primary" type="button" (click)="collapseFiles.toggle()"
+              [attr.aria-expanded]="!hideFiles" title="Toggle the Files list">
+              <i *ngIf="hideFiles" class="bi bi-chevron-right"></i>
+              <i *ngIf="!hideFiles" class="bi bi-chevron-down"></i>
+            </button>
+
+            <h6 class="ms-2 m-auto">Files and Documents</h6>
+
+            <div *ngIf="calcForm.form.valid" class="col-md-4 margin-left-auto">
+              <label *ngIf="!hideFiles" for="caseFile" class="form-label"><b>Select a file</b></label>
+              <input *ngIf="!hideFiles" class="btn btn-sm btn-outline-success form-control form-control-sm"
+                [disabled]="isSaving || isNew" (change)="caseFileChanged($event)" type="file" #caseFile id="caseFile">
+              <!-- (change)="addFile($event)" -->
+            </div>
+
+            <div *ngIf="calcForm.form.valid" class="col-lg-auto ms-2">
+              <label *ngIf="!hideFiles" for="documentType" class="form-label"><b>Document Type</b></label>
+              <select *ngIf="!hideFiles" class="form-select form-select-sm" id="documentType" [(ngModel)]="documentType"
+                aria-label="Document Type" [ngModelOptions]="{standalone: true}"
+                title="The type of document you are adding to this case">
+                <option [ngValue]="null">Select...</option>
+                <option *ngFor="let n of allDocTypes" [ngValue]="n.id">{{n.key}}</option>
+              </select>
+            </div>
+
+            <div *ngIf="calcForm.form.valid" class="col-lg-auto ms-4 d-flex align-items-end">
+              <button *ngIf="!hideFiles" type="button" class="btn btn-sm btn-success"
+                [disabled]="documentType===null || !caseFile?.nativeElement.files.length" (click)="addFile()">
+                <i class="bi bi-plus"></i> Add File
+              </button>
+            </div>
+          </div>
+
+          <div #collapseFiles="ngbCollapse" [(ngbCollapse)]="hideFiles">
+            <div class="card card-body">
+              <div class="row">
+                <div class="col table-responsive">
+                  <table class="table table-sm font-small table-no-wrap table-normal-head mb-0 bb-0">
+                    <thead>
+                      <tr>
+                        <th *ngIf="canEdit">...</th>
+                        <th>Filename</th>
+                        <td>Document Type</td>
+                        <td>Uploaded By</td>
+                        <td>Created On</td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let f of allCaseFileVMs">
+                        <td *ngIf="canEdit">
+                          <button type="button" class="btn btn-sm btn-danger" [disabled]="!canEdit"
+                            (click)="deleteFile(f)" title="Delete this attachment from the case.">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </td>
+                        <td class="td-tight">
+                          <button type="button" class="btn btn-sm btn-link btn-modal" (click)="viewFile(f)"
+                            [title]="'View '+f.DocumentType">
+                            {{f.blobName}}
+                          </button>
+                        </td>
+                        <td class="td-tight">{{f.DocumentType}}</td>
+                        <td class="td-tight">{{f.UpdatedBy}}</td>
+                        <td class="td-tight">{{f.createdOn | date:'shortDate'}}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr />
+      </fieldset>
+    </form>
+
+    <!-- Last Authority Values -->
+    <div class="row" *ngIf="latestAuthorityData">
+      <div class="d-flex mb-2">
+        <button class="btn btn-sm btn-outline-primary" type="button" (click)="collapseAuth.toggle()"
+          [attr.aria-expanded]="!hideAuth" title="Toggle Authority Data">
+          <i *ngIf="hideAuth" class="bi bi-chevron-right"></i>
+          <i *ngIf="!hideAuth" class="bi bi-chevron-down"></i>
+        </button>
+        <h6 class="ms-2">Last Authority Import Data</h6>
+      </div>
+
+      <div #collapseAuth="ngbCollapse" [(ngbCollapse)]="hideAuth">
+        <div class="card card-body">
+          <h6>Last upload: <b>{{latestAuthorityData?.batchUploadDate | date:'short'}}</b></h6>
+          <p>
+            {{Json.stringify(latestAuthorityData)}}
+          </p>
+        </div>
+      </div>
+    </div>
+    <hr />
+    <!-- Case Log -->
+    <div class="row" *ngIf="!isNew && (isManager||isNegotiator)">
+      <div class="d-flex mb-2 align-items-center">
+        <button class="btn btn-sm btn-outline-primary" type="button" (click)="collapseLog.toggle()"
+          [attr.aria-expanded]="!hideLog" title="Toggle Change Log Details">
+          <i *ngIf="hideLog" class="bi bi-chevron-right"></i>
+          <i *ngIf="!hideLog" class="bi bi-chevron-down"></i>
+        </button>
+
+        <h6 class="ms-2 m-auto">Change Log</h6>
+        <div class="col d-flex justify-content-end">
+          <span *ngIf="isLogLoading" class="spinner-border" role="status" aria-hidden="true"></span>
+          <h6 *ngIf="isLogLoading">Loading...</h6>
+          <button *ngIf="!isLogLoading && !collapseLog.collapsed" class="btn btn-sm btn-success text-white ms-2"
+            type="button" (click)="refreshLog()" title="Load the Change Log entries">
+            <i class="bi bi-arrow-clockwise"></i>
+            Refresh
+          </button>
+
+        </div>
+      </div>
+
+      <div #collapseLog="ngbCollapse" [(ngbCollapse)]="hideLog">
+        <div class="card card-body font-small">
+          <h6 *ngIf="!allLogs.length">Click Refresh to load any available log entries for this case...</h6>
+          <div class="row mb-1" *ngFor="let g of allLogs">
+            <div class="col-sm-5 col-md-4 col-lg-3 col-xl-2"><b>{{g.createdOn | date:'medium'}}</b><br />{{g.createdBy}}
+            </div>
+            <div class="col-sm-7 col-md-8 col-lg-9 col-xl-10">{{g.details}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modals -->
+
+  <!-- Dirty nav confirmation -->
+  <!-- Modal -->
+  <ng-template #confirmationDialog let-modal>
+
+    <div class="modal-header text-light bg-danger">
+      <h5 class="modal-title">{{confirmationTitle}}</h5>
+      <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()"
+        aria-label="Cancel"></button>
+    </div>
+    <div class="modal-body">
+      {{confirmationMessage}}
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-danger" (click)="modal.close()" aria-label="Lose Changes">Lose
+        Changes</button>
+      <button type="button" class="btn btn-success" (click)="modal.dismiss()" aria-label="Keep Editing">Keep
+        Editing</button>
+    </div>
+  </ng-template>
+
+  <ng-template #archiveDialog let-modal>
+    <div class="modal-header text-light bg-danger">
+      <h5 class="modal-title">Archive Authority Info?</h5>
+      <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()"
+        aria-label="Cancel"></button>
+    </div>
+    <div class="modal-body">
+      <p>Click 'Archive' to store a copy of the current Case Number, Dates and other info (such as Ineligibility information) 
+        in the Case Archives table before clearing all of the current fields.
+      </p>
+      <p class="text-right">
+        <button type="button" class="btn btn-success" (click)="modal.close()" aria-label="Lose Changes">Archive</button>
+      </p>
+      <p>
+        Click 'Overwrite' to simply clear the current Authority fields and start over. You might use this option if the initial 
+        Authority was incorrect or if this Claim is tracking the wrong Authority case information. 
+      </p>
+      <p>
+        <textarea class="form-control form-control-sm" [disabled]="!isManager"
+          [(ngModel)]="archiveReason" rows="3" 
+          name="archiveReason" minlength="5" 
+          aria-label="Archive Reason">
+        </textarea>
+        <span><i>(Requires Manager rights and a note explaining why the case info should be reset.)</i></span>
+        <span *ngIf="!isManager" class="text-danger"> You are not a Manager!</span>
+      </p>
+      <p class="text-right">
+        <button [disabled]="!isManager||!archiveReason||archiveReason.endsWith(' ')||archiveReason.startsWith(' ')" 
+        type="button" class="btn btn-warning" 
+        (click)="modal.dismiss()" 
+        aria-label="Overwrite Authority Case Info">Overwrite</button>
+      </p>
+      <!--
+      <div class="row">
+          <div class="mb-3form-check form-check-inline">
+              <input class="form-check-input" type="radio" 
+                  [(ngModel)]="keepOrDiscard" 
+                  name="keepOrDiscard"
+                  value="1"
+                  id="keepOrDiscard1"
+                  aria-label="Archive Case Info">
+              <label class="form-check-label" for="keepOrDiscard1">Archive Case Info</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" 
+                [(ngModel)]="keepOrDiscard" 
+                name="keepOrDiscard"
+                value="0"
+                id="keepOrDiscard2" 
+                aria-label="Discard Case Info">
+            <label class="form-check-label" for="keepOrDiscard2">Discard Case Info</label>
+        </div>
+      </div>
+      -->
+    </div>
+  </ng-template>

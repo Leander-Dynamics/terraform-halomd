@@ -12,7 +12,6 @@ variable "location" {
 
 variable "dns_prefix" {
   type    = string
-  default = ""
 }
 
 variable "node_count" {
@@ -28,4 +27,10 @@ variable "vm_size" {
 variable "tags" {
   type    = map(string)
   default = {}
+}
+
+variable "log_analytics_workspace_id" {
+  description = "Log Analytics workspace resource ID used for Container Insights."
+  type        = string
+  default     = null
 }

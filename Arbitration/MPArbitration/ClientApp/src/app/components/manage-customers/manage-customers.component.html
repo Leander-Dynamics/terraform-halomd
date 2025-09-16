@@ -1,0 +1,258 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <h4>Manage Customers</h4>
+        <button *ngIf="canEdit" type="button" [disabled]="currentCustomer?.id===0 || customerForm?.dirty"
+            (click)="addCustomer()" class="btn btn-sm btn-success" title="Add a new Customer">
+            <i class="bi bi-plus"></i> Add Customer
+        </button>
+    </div>
+</div>
+
+<div class="row mt-2">
+    <div class="col-auto">
+        <!-- Customer -->
+        <div class="input-group input-group-sm">
+            <span class="input-group-text col-auto">Select a Customer</span>
+            <select class="form-select form-select-sm" [disabled]="currentCustomer?.id===0||!!customerForm?.dirty"
+                name="currentCustomer" (change)="customerSelected()" [(ngModel)]="currentCustomer" aria-label="Customer"
+                title="Customer is typically the insurance company, healthcare plan or responsible party">
+                <option [value]="null" selected disabled>Select...</option>
+                <option *ngFor="let s of allCustomers" [ngValue]="s">{{s.name}}</option>
+            </select>
+        </div>
+    </div>
+    <!-- Authority stats -->
+    <div class="col-auto">
+        <table class="table table-sm small table-info text-center">
+            <thead>
+                <tr>
+                    <th *ngFor="let k of statKeys">{{k}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td *ngFor="let k of statKeys">{{getStat(k) | number:'1.0-0'}}</td>
+                </tr>
+            </tbody>
+        </table>
+        <p *ngIf="!!currentCustomer" class="fs-6"><i>These statistics are based on the Workflow fields which portray
+                HaloMD's perspective of each Claim.</i></p>
+    </div>
+</div>
+
+<form id="ngForm" #customerForm="ngForm" (ngSubmit)="onSubmit()" novalidate="novalidate">
+
+    <div class="card mt-4" *ngIf="currentCustomer">
+        <div class="card-header d-flex justify-content-between">
+            <h6>{{currentCustomer.id===0 ? 'New Customer' : currentCustomer.name}}</h6>
+
+            <div class="text-right">
+                <button type="button" *ngIf="currentCustomer.id===0||customerForm.dirty"
+                    [disabled]="currentCustomer.id!==0 && !customerForm.dirty" (click)="cancelChanges()"
+                    class="btn btn-sm btn-secondary me-4" title="Cancel">
+                    <i class="bi bi-save"></i> Cancel
+                </button>
+                <button type="submit"
+                    [disabled]="!currentCustomer.defaultAuthority||!currentCustomer.name||currentCustomer.name.length<3||currentCustomer.name==='(new)'||!customerForm.dirty||!isNewEntityValid()"
+                    class="btn btn-sm btn-success" title="Save Changes">
+                    <i class="bi bi-save"></i> Save Changes
+                </button>
+            </div>
+
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="input-group input-group-sm mb-1">
+                        <span class="col-md-4 input-group-text">* Customer Name</span>
+                        <input type="text" required [disabled]="currentCustomer.id > 0" (focus)="selectAll($event)"
+                            class="form-control form-control-sm" [(ngModel)]="currentCustomer.name"
+                            title="Enter the name of the customer" name="name" aria-label="Customer name" id="name">
+                    </div>
+                    <!-- Authority -->
+                    <div class="input-group input-group-sm mb-1">
+                        <span class="input-group-text col-4">* Default Authority</span>
+                        <select name="defaultAuthority" [(ngModel)]="currentCustomer.defaultAuthority"
+                            class="form-select form-select-sm" autocomplete="off" required
+                            aria-label="Regulatory mediatory authority such as TDI"
+                            title="Regulatory mediatory authority such as TDI">
+                            <option [ngValue]="''" disabled selected>Select...</option>
+                            <option *ngFor="let s of allAuthorities" [ngValue]="s.key">{{s.name}}</option>
+                        </select>
+                    </div>
+                    <div class="input-group input-group-sm mb-2">
+                        <span class="input-group-text col-4">EHR System</span>
+                        <input type="text" (focus)="selectAll($event)" class="form-control form-control-sm"
+                            [(ngModel)]="currentCustomer.EHRSystem"
+                            title="Enter the name of the customer's EHR System e.g. USMON" name="EHRSystem"
+                            aria-label="EHR System">
+                    </div>
+                    <!-- IsActive -->
+                    <div class="input-group mb-2">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" [(ngModel)]="currentCustomer.isActive"
+                                name="isActive" id="isActive" aria-label="Is Customer Active">
+                            <label class="form-check-label" for="isActive">Is Active</label>
+                        </div>
+                    </div>
+                    <!-- NSA ReplyTo Address -->
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text col-md-4">NSA ReplyTo Address</span>
+                        <input type="text" class="form-control" [(ngModel)]="currentCustomer.NSAReplyTo"
+                            pattern="[^@\s]+@[^@\s]+\.[^@\s]+" aria-label="NSA ReplyTo Email" name="NSAReplyTo"
+                            title="All correspondence related to NSA Eligibility and Claims should reply to this address.">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Entity Management -->
+<ng-container *ngIf="!!currentCustomer">
+    
+        <div class="card-body">
+            <div class="row">
+                <div class="col d-flex">
+                    <button class="btn btn-sm btn-outline-primary" type="button" (click)="hideEntities=!hideEntities"
+                        [attr.aria-expanded]="!hideEntities" title="Toggle Entities">
+                        <i *ngIf="hideEntities" class="bi bi-chevron-right"></i>
+                        <i *ngIf="!hideEntities" class="bi bi-chevron-down"></i>
+                    </button>
+
+                    <div class="card col">
+                        <div class="card-header">
+                            <h6 class="ms-2">Customer Entities {{newEntity.address}}</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Entity Records -->
+            <div class="row" #collapseStatusMapping="ngbCollapse" [(ngbCollapse)]="hideEntities">
+                <div class="col">
+                    <div class="table-responsive">
+                        <table class="table table-sm font-small table-no-wrap table-normal-head mb-0 bb-0">
+                            <thead>
+                                <tr>
+                                    <th *ngIf="isAdmin||isManager">...</th>
+                                    <th><b>Entity Name</b></th>
+                                    <th><b>NPI Number</b></th>
+                                    <th><b>Owner Name</b></th>
+                                    <th><b>Owner Tax Id</b></th>
+                                    <th><b>USPS Address</b></th>
+                                    <th><b>City</b></th>
+                                    <th><b>State</b></th>
+                                    <th><b>Zipcode</b></th>
+                                </tr>
+                            </thead>
+                            <tbody *ngIf="allEntities.length>0">
+                                <tr *ngFor="let j of allEntities;let i = index;trackBy:trackById">
+                                    <td *ngIf="isAdmin||isManager">
+                                        <button type="button" class="btn btn-sm btn-danger" (click)="deleteEntity(j)"
+                                            title="Remove this Entity file from the Customer.">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <input class="form-control form-control-sm font-small" [(ngModel)]="j.name"
+                                            (change)="entityChange(j)" aria-label="Entity Name" title="Entity Name"
+                                            name="entityName_{{i}}">
+                                    </td>
+                                    <td>
+                                        <input class="form-control form-control-sm font-small" [value]="j.NPINumber"
+                                            readonly aria-label="NPI Number" title="NPI Number" name="NPINumber_{{i}}">
+                                    </td>
+                                    <td>
+                                        <input class="form-control form-control-sm font-small" [(ngModel)]="j.ownerName"
+                                            (change)="entityChange(j)" aria-label="Entity Owner Name"
+                                            title="Entity owner name (person or organization)"
+                                            name="entityOwnerName_{{i}}">
+                                    </td>
+                                    <td>
+                                        <input class="form-control form-control-sm font-small"
+                                            [(ngModel)]="j.ownerTaxId" (change)="entityChange(j)"
+                                            aria-label="Entity Tax Id" title="Entity federal tax id"
+                                            name="entityTaxId_{{i}}">
+                                    </td>
+                                    <td>
+                                        <input class="form-control form-control-sm font-small" [(ngModel)]="j.address"
+                                            (change)="entityChange(j)" aria-label="Entity Address"
+                                            title="Entity mailing address" name="entityAddress_{{i}}">
+                                    </td>
+                                    <td>
+                                        <input class="form-control form-control-sm font-small" [(ngModel)]="j.city"
+                                            (change)="entityChange(j)" aria-label="Entity City"
+                                            title="Entity mailing city" name="entityCity_{{i}}">
+                                    </td>
+                                    <td>
+                                        <input class="form-control form-control-sm font-small" [(ngModel)]="j.state"
+                                            (change)="entityChange(j)" aria-label="Entity State"
+                                            title="Entity mailing state" name="entityState_{{i}}">
+                                    </td>
+                                    <td>
+                                        <input class="form-control form-control-sm font-small" [(ngModel)]="j.zipCode"
+                                            (change)="entityChange(j)" aria-label="Entity Zipcode"
+                                            title="Entity mailing zipcode" name="entityZipcode_{{i}}">
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th *ngIf="isAdmin||isManager">...</th>
+                                    <th>
+                                        <input class="form-control form-control-sm font-small" name="newEntityName"
+                                            (change)="entityChange(newEntity,true)" [(ngModel)]="newEntity.name"
+                                            aria-label="New Entity Name" title="New Entity Name">
+                                    </th>
+                                    <th>
+                                        <input class="form-control form-control-sm font-small" name="newEntityNPINumber"
+                                            (change)="entityChange(newEntity,true)" pattern="[0-9]{10}" maxlength="10"
+                                            minlength="10" [(ngModel)]="newEntity.NPINumber"
+                                            aria-label="New Entity NPINumber" title="New Entity NPI Number">
+                                    </th>
+                                    <th>
+                                        <input class="form-control form-control-sm font-small" name="newEntityOwnerName"
+                                            (change)="entityChange(newEntity,true)" [(ngModel)]="newEntity.ownerName"
+                                            aria-label="Entity Owner Name"
+                                            title="Entity owner name (person or organization)">
+                                    </th>
+                                    <th>
+                                        <input class="form-control form-control-sm font-small"
+                                            name="newEntityOwnerTaxId" (change)="entityChange(newEntity,true)"
+                                            [(ngModel)]="newEntity.ownerTaxId" aria-label="Entity Tax Id"
+                                            title="Entity federal tax id">
+                                    </th>
+                                    <th>
+                                        <input class="form-control form-control-sm font-small"
+                                            [(ngModel)]="newEntity.address" (change)="entityChange(newEntity,true)"
+                                            aria-label="New Entity Address" name="newEntityAddress"
+                                            title="New Entity mailing address">
+                                    </th>
+                                    <th>
+                                        <input class="form-control form-control-sm font-small"
+                                            [(ngModel)]="newEntity.city" (change)="entityChange(newEntity,true)"
+                                            aria-label="New Entity City" name="newEntityCity"
+                                            title="New Entity mailing city">
+                                    </th>
+                                    <th>
+                                        <input class="form-control form-control-sm font-small"
+                                            [(ngModel)]="newEntity.state" (change)="entityChange(newEntity,true)"
+                                            aria-label="New Entity State" name="newEntityState"
+                                            title="New Entity mailing state">
+                                    </th>
+                                    <th>
+                                        <input class="form-control form-control-sm font-small"
+                                            [(ngModel)]="newEntity.zipCode" (change)="entityChange(newEntity,true)"
+                                            aria-label="New Entity Zipcode" name="newEntityZipcode"
+                                            title="New Entity mailing zipcode">
+                                    </th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+</ng-container>

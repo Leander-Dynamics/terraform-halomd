@@ -1,0 +1,204 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <h5>Manage Users</h5>
+        <button *ngIf="canEdit" type="button" (click)="addUser()" class="btn btn-sm btn-success" title="Add a new user">
+            <i class="bi bi-plus"></i> Add User
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="row justify-content-between mb-1">
+            <div class="col">
+                <ng-container *ngFor="let u of allUsers;let i=index">
+                    <div class="row" *ngIf="!i">
+                        <div class="col-1">...</div>
+                        <div class="col-3 bold">Email</div>
+                        <div class="col bold">Active <i class="bi bi-question-circle-fill"
+                                title="Inactive users cannot search or view Cases."></i></div>
+                        <div class="col bold">Admin <i class="bi bi-question-circle-fill"
+                                title="Admins can manage the system but cannot modify Cases."></i></div>
+                        <div class="col bold">Brief Appr <i class="bi bi-question-circle-fill"
+                                title="Brief Approver members can approve Arbitration Briefs."></i></div>
+                        <div class="col bold">Brief Prep <i class="bi bi-question-circle-fill"
+                                title="Brief Preparation members can prepare Arbitration Brief assets."></i></div>
+                        <div class="col bold">Brief Writer <i class="bi bi-question-circle-fill"
+                                title="Brief Writer members can create Arbitration Briefs."></i></div>
+                        <div class="col bold">Manager <i class="bi bi-question-circle-fill"
+                                title="Managers can assign Cases to other Managers and Negotiators."></i></div>
+                        <div class="col bold">Negotiator <i class="bi bi-question-circle-fill"
+                                title="Negotiators can search, view and edit Cases."></i></div>
+                        <div class="col bold">Reporter <i class="bi bi-question-circle-fill"
+                                title="Reporters can search and view Cases."></i></div>
+                        <div class="col bold">NSA <i class="bi bi-question-circle-fill"
+                            title="NSA members can edit NSA case information."></i></div>
+                        <div class="col bold">State <i class="bi bi-question-circle-fill"
+                            title="State members can edit State case information."></i></div>
+                    </div>
+                    <div class="row mt-1">
+                        <div class="col-1">
+                            <button *ngIf="!hasGlobalRoles(u)" type="button" (click)="toggleGranular(u)"
+                                class="btn btn-sm btn-primary" title="Show granular roles for {{u.email}}">
+                                <span *ngIf="visibleUserId!==u.id" class="bi bi-chevron-right"></span>
+                                <span *ngIf="visibleUserId===u.id" class="bi bi-chevron-down"></span>
+                            </button>
+                        </div>
+                        <div class="col-3">{{u.email}}</div>
+                        <div class="col">
+                            <input class="form-check-input text-center" [disabled]="!canEdit"
+                                title="Uncheck to deactivate {{u.email}}" type="checkbox" value="" id="isActive{{i}}"
+                                (change)="toggleRole(u,'')" [(ngModel)]="u.isActive">
+                        </div>
+                        <div class="col">
+                            <input class="form-check-input text-center" [disabled]="!canEdit"
+                                title="Toggle the Admin role for {{u.email}}" type="checkbox" 
+                                id="isAdmin{{i}}"
+                                (change)="toggleRole(u,'')" 
+                                [(ngModel)]="u.isAdmin">
+                        </div>
+                        
+                        <div class="col">
+                            <input class="form-check-input text-center" [disabled]="!canEdit"
+                                title="Toggle the Brief Approver role for {{u.email}}" 
+                                type="checkbox"
+                                id="isBriefApprover{{i}}" 
+                                (change)="toggleRole(u,'briefapprover')" 
+                                [(ngModel)]="u.isBriefApprover">
+                        </div>
+                        
+                        <div class="col">
+                            <input class="form-check-input text-center" [disabled]="!canEdit"
+                                title="Toggle the Brief Preparer role for {{u.email}}" 
+                                type="checkbox"
+                                id="isBriefPreparer{{i}}" 
+                                (change)="toggleRole(u,'briefpreparer')" 
+                                [(ngModel)]="u.isBriefPreparer">
+                        </div>
+                        
+                        <div class="col">
+                            <input class="form-check-input text-center" [disabled]="!canEdit"
+                                title="Toggle the Brief Writer role for {{u.email}}" 
+                                type="checkbox"
+                                id="isBriefWriter{{i}}" 
+                                (change)="toggleRole(u,'briefwriter')" 
+                                [(ngModel)]="u.isBriefWriter">
+                        </div>
+
+                        <div class="col">
+                            <input class="form-check-input text-center" [disabled]="!canEdit"
+                                title="Toggle the Manager role for {{u.email}}" type="checkbox"
+                                id="isManager{{i}}" 
+                                (change)="toggleRole(u,'manager')" 
+                                [(ngModel)]="u.isManager">
+                        </div>
+                        <div class="col">
+                            <input class="form-check-input text-center" [disabled]="!canEdit"
+                                title="Toggle the Negotiator role for {{u.email}}" 
+                                type="checkbox" 
+                                id="isNegotiator{{i}}" 
+                                (change)="toggleRole(u,'negotiator')"
+                                [(ngModel)]="u.isNegotiator">
+                        </div>
+                        <div class="col">
+                            <input class="form-check-input text-center" [disabled]="!canEdit"
+                                title="Toggle the Reporter role for {{u.email}}" 
+                                type="checkbox"
+                                id="isReporter{{i}}" 
+                                (change)="toggleRole(u,'reporter')" 
+                                [(ngModel)]="u.isReporter">
+                        </div>
+
+                        
+                        <div class="col">
+                            <input class="form-check-input text-center" [disabled]="!canEdit"
+                                title="Toggle the NSA role for {{u.email}}" 
+                                type="checkbox"
+                                id="isNSA{{i}}" 
+                                (change)="toggleRole(u,'nsa')" 
+                                [(ngModel)]="u.isNSA">
+                        </div>
+                        
+                        <div class="col">
+                            <input class="form-check-input text-center" [disabled]="!canEdit"
+                                title="Toggle the State role for {{u.email}}" 
+                                type="checkbox"
+                                id="isState{{i}}" 
+                                (change)="toggleRole(u,'state')" 
+                                [(ngModel)]="u.isState">
+                        </div>
+                    </div>
+                    <div *ngIf="visibleUserId===u.id" class="granular-roles">
+                        <div class="row">
+                            <div class="col-1"></div>
+                            <div class="col-4 bold">Customer</div>
+                            <div class="col"></div>
+                            <div class="col"></div>
+                            <div class="col bold">
+                                <!-- <span>Manager</span>
+                                <i class="bi bi-question-circle-fill" title="Managers can assign cases to other Managers and Negotiators."></i> -->
+                            </div>
+                            <div class="col bold">
+                                <!-- <span>Negotiator</span>
+                                <i class="bi bi-question-circle-fill" title="Negotiators can search, view and edit cases."></i> -->
+                            </div>
+                            <div class="col bold">
+                                <!-- <span>Reporter</span> 
+                                <i class="bi bi-question-circle-fill" title="Reporters can search and view cases."></i> -->
+                            </div>
+                        </div>
+                        <div class="row granular-role" *ngFor="let g of userGranularRoles">
+                            <div class="col-1"></div>
+                            <div class="col-4">
+                                {{g.name}}
+                            </div>
+                            <div class="col"></div>
+                            <div class="col"></div>
+                            <div class="col">
+                                <input class="form-check-input text-center" [disabled]="!canEdit"
+                                    title="Toggle the Customer Manager role for {{u.email}}" type="checkbox" value=""
+                                    id="isCustomerManager{{i}}" (change)="toggleGranularRole(u,g,'manager')"
+                                    [(ngModel)]="g.isManager">
+                            </div>
+                            <div class="col">
+                                <input class="form-check-input text-center" [disabled]="!canEdit"
+                                    title="Toggle the Customer Negotiator role for  {{u.email}}" type="checkbox" value=""
+                                    id="isCustomerNegotiator{{i}}" (change)="toggleGranularRole(u,g,'negotiator')"
+                                    [(ngModel)]="g.isNegotiator">
+                            </div>
+                            <div class="col">
+                                <input class="form-check-input text-center" [disabled]="!canEdit"
+                                    title="Toggle the Customer Reporter role for  {{u.email}}" type="checkbox" value=""
+                                    id="isCustomerReporter{{i}}" (change)="toggleGranularRole(u,g,'reporter')"
+                                    [(ngModel)]="g.isReporter">
+                            </div>
+                        </div>
+                    </div>
+                </ng-container>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<ng-template #addDialog let-modal>
+    <div class="modal-header text-light bg-success">
+        <h5 class="modal-title">Add User</h5>
+        <button type="button" class="btn btn-close btn-close-white" (click)="modal.dismiss()"
+            aria-label="Cancel"></button>
+    </div>
+    <div class="modal-body">
+        <div class="row">
+            <div class="col">
+                <!-- Email -->
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text col-5">Email Address</span>
+                    <input type="email" class="bg-required form-control form-control-sm col-7" name="email"
+                        [(ngModel)]="newUser.email" required aria-label="Email Address" title="New user email address">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" [disabled]="!newUser.email" (click)="modal.dismiss()"
+            aria-label="Cancel">Cancel</button>
+        <button type="button" class="btn btn-success" (click)="modal.close()" aria-label="Add User">Add User</button>
+    </div>
+</ng-template>

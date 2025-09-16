@@ -1,0 +1,48 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <style type="text/css">
+        @page {
+            size: letter;
+            margin: .75in;
+        }
+
+        table.arbit-data {
+            font-size: 18pt;
+            border:solid 1px black;
+        }
+        table.arbit-data thead, table.arbit-data tbody {
+            font-family: 'Times New Roman', Times, serif;
+        }
+        table.arbit-data tfoot {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color:dodgerblue;
+        }
+    </style>
+    </head>
+    <body>
+        <table class="arbit-data">
+            <thead>
+                <tr>
+                    <th>Claim Number</th>
+                    <th>Name of provider, National Provider Identifier (NPI)</th>
+                    <th>Date of Service</th>
+                    <th>Service code</th>
+                    <th>Offer (per unit)</th>
+                    <th>Number of units (when applicable)</th>
+                    <th>Total Offer Amount (per service code)</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="5"></td>
+                    <td class="arbit-data-sum"></td>
+                    <td class="arbit-data-sum"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </body>
+</html>

@@ -1,0 +1,66 @@
+# Azure DevOps multi-stage pipeline for the Arbitration web application
+# Build -> Deploy (dev -> stage -> prod)
+# Environment approvals for stage/prod should be configured on the
+# corresponding Azure DevOps environments (arbitration-stage, arbitration-prod).
+
+trigger:
+  branches: { include: [ main ] }
+  paths: { include: [ 'Arbitration/**', '.ado/pipelines/arbitration-app.yml' ] }
+
+pr:
+  branches: { include: [ main, feature/*, hotfix/*, release/* ] }
+  paths: { include: [ 'Arbitration/**', '.ado/pipelines/arbitration-app.yml' ] }
+
+variables:
+  buildConfiguration: 'Release'
+  dotnetVersion: '8.0.x'
+  nodeVersion: '16.x'
+  artifactName: 'arbitration-app'
+
+stages:
+- stage: build
+  displayName: Build & Package
+  jobs:
+  - template: .ado/templates/arbitration-build.yml
+
+- stage: deploy_dev
+  displayName: Deploy to dev
+  dependsOn: build
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  variables:
+  - group: arbitration-app-dev  # provides webAppName/appSettingsJson/connectionStringsJson
+  jobs:
+  - template: .ado/templates/arbitration-deploy.yml
+    parameters:
+      jobName: deploy_dev
+      environmentName: arbitration-dev
+      displayNameSuffix: dev
+      azureSubscription: sc-azure-oidc-dev
+
+- stage: deploy_stage
+  displayName: Deploy to stage
+  dependsOn: deploy_dev
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  variables:
+  - group: arbitration-app-stage  # provides webAppName/appSettingsJson/connectionStringsJson
+  jobs:
+  - template: .ado/templates/arbitration-deploy.yml
+    parameters:
+      jobName: deploy_stage
+      environmentName: arbitration-stage
+      displayNameSuffix: stage
+      azureSubscription: sc-azure-oidc-stage
+
+- stage: deploy_prod
+  displayName: Deploy to prod
+  dependsOn: deploy_stage
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  variables:
+  - group: arbitration-app-prod  # provides webAppName/appSettingsJson/connectionStringsJson
+  jobs:
+  - template: .ado/templates/arbitration-deploy.yml
+    parameters:
+      jobName: deploy_prod
+      environmentName: arbitration-prod
+      displayNameSuffix: prod
+      azureSubscription: sc-azure-oidc-prod

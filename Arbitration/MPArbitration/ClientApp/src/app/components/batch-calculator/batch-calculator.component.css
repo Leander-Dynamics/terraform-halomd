@@ -1,0 +1,11 @@
+:host{height:100%}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button {-webkit-appearance: none;margin:0;}
+input[type=number]{-moz-appearance: textfield;}
+table.batch-search>tbody>tr>td.text-center {
+    text-align: center !important;
+}
+tbody, td, tfoot, th, thead, tr {
+    border-color: inherit;
+    border-style: none;
+    border-width: 0;
+}

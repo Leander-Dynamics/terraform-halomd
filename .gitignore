@@ -1,11 +1,19 @@
-.DS_Store
+# Terraform local files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfplan
+
+# Editor directories
 .vscode/
 .idea/
-**/bin/
-**/obj/
-**/__pycache__/
-**/.pytest_cache/
-**/.terraform/
-**/.terraform.lock.hcl
 
-
+# OS metadata
+.DS_Store
