@@ -16,6 +16,7 @@ internal class Program
         const string corsPolicyName = "CorsPolicy";
 
         var builder = WebApplication.CreateBuilder(args);
+        SecureConfigurationHelper.ConfigureKeyVault(builder);
         // The following line enables Application Insights telemetry collection.
 //        builder.Services.AddApplicationInsightsTelemetry();
         var configuration = builder.Configuration;
@@ -118,10 +119,10 @@ internal class Program
 
         builder.Services.AddTransient<IImportDataSynchronizer, ImportDataSynchronizer>();
 
-        var cs = configuration.GetConnectionString("ConnStr");
+        var arbitrationConnectionString = SecureConfigurationHelper.GetRequiredSqlConnectionString(configuration, "ConnStr");
         builder.Services.AddDbContext<ArbitrationDbContext>(options =>
         {
-            options.UseSqlServer(cs, sqlServerOptionsAction: sqlOptions =>
+            options.UseSqlServer(arbitrationConnectionString, sqlServerOptionsAction: sqlOptions =>
             {
                 sqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
@@ -130,10 +131,10 @@ internal class Program
             });
         });
 
-        var idr_cs = configuration.GetConnectionString("IDRConnStr");
+        var idrConnectionString = SecureConfigurationHelper.GetRequiredSqlConnectionString(configuration, "IDRConnStr");
         builder.Services.AddDbContext<DisputeIdrDbContext>(options =>
         {
-            options.UseSqlServer(idr_cs, sqlServerOptionsAction: sqlOptions =>
+            options.UseSqlServer(idrConnectionString, sqlServerOptionsAction: sqlOptions =>
             {
                 sqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
@@ -141,6 +142,8 @@ internal class Program
                     errorNumbersToAdd: null);
             });
         });
+
+        SecureConfigurationHelper.EnsureApiKeyConfigured(configuration);
 
         //------------------- BUILD AND USE MIDDLEWARE ----------------------------------------------
         var app = builder.Build();
