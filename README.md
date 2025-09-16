@@ -34,7 +34,7 @@ ARBIT centralizes cloud infrastructure for development, staging, and production 
 
 1. **Create ADO service connections (OIDC):** `sc-azure-oidc-dev`, `sc-azure-oidc-stage`, `sc-azure-oidc-prod` scoped to the target subscription/resource group with **Storage Blob Data Contributor** on the Terraform state storage account.
 2. **Create ADO environments:** `dev`, `stage`, `prod`. Require approvals for stage and prod (optionally add branch control or business-hours policies).
-3. **Verify remote state backends:** Each `platform/infra/envs/<env>/backend.tfvars` is prefilled; keep `use_azuread_auth = true` and update resource names if they differ in your tenant.
+3. **Verify remote state backends:** Each `platform/infra/envs/<env>/backend.tfvars` is prefilled; keep `use_azuread_auth = true` and update resource names if they differ in your tenant. Storage containers now use the pattern `arbit-<env>` so that each environment isolates its state blob.
 4. **Import the pipeline:** Point Azure DevOps to the root `azure-pipelines.yml` multi-stage pipeline.
 5. **Open a test pull request:** Review the three plan artifacts, merge to trigger the dev apply, and approve stage/prod when ready.
 
@@ -145,7 +145,7 @@ arbit-consolidated-infra-ado/
 | Lock timeout | `TF_LOCK_TIMEOUT` variable | Default `20m`; increase if state contention occurs. |
 | Service connections | Parameters in plan/apply templates | Rename to match your ADO service connections. |
 | Feature toggles | `platform/infra/envs/<env>/terraform.tfvars` | Toggle modules (Storage, SQL, AKS/ACR, Key Vault access). |
-| Backend coordinates | `platform/infra/envs/<env>/backend.tfvars` | Update RG/Storage/Container names per environment. |
+| Backend coordinates | `platform/infra/envs/<env>/backend.tfvars` | Update RG/Storage/Container names per environment (containers follow `arbit-<env>`). |
 | SQL admin credentials | ADO variable groups / Key Vault / secure `terraform.tfvars` | Required when `enable_sql = true`; provide before running plan/apply. |
 
 ### Manual runs and re-runs
