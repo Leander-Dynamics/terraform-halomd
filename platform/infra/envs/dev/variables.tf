@@ -22,6 +22,30 @@ variable "tags" {
   default     = {}
 }
 
+# -------------------------
+# Monitoring
+# -------------------------
+
+variable "log_analytics_workspace_name" {
+  description = "Name assigned to the Log Analytics workspace for this environment."
+  type        = string
+}
+
+variable "application_insights_name" {
+  description = "Name assigned to the Application Insights resource for this environment."
+  type        = string
+}
+
+variable "log_analytics_retention_in_days" {
+  description = "Number of days to retain data within the Log Analytics workspace."
+  type        = number
+}
+
+variable "log_analytics_daily_quota_gb" {
+  description = "Daily ingestion quota, in GB, for the Log Analytics workspace (-1 for unlimited)."
+  type        = number
+}
+
 variable "kv_cicd_principal_id" {
   description = "Optional object ID for the CI/CD principal that needs access to Key Vault secrets."
   type        = string
@@ -38,6 +62,154 @@ variable "tenant_id" {
   description = "Optional Azure AD tenant ID override when the authenticated context differs from the desired target."
   type        = string
   default     = null
+}
+
+# -------------------------
+# Application Gateway
+# -------------------------
+variable "app_gateway_subnet_key" {
+  description = "Key referencing the subnet used by the Application Gateway when selecting from the virtual network map."
+  type        = string
+  default     = null
+}
+
+variable "app_gateway_subnet_id" {
+  description = "Resource ID of the subnet used by the Application Gateway when referencing an existing subnet directly."
+  type        = string
+  default     = null
+}
+
+variable "app_gateway_fqdn_prefix" {
+  description = "Prefix applied to DNS names associated with the Application Gateway."
+  type        = string
+  default     = null
+}
+
+variable "app_gateway_backend_fqdns" {
+  description = "List of backend FQDNs configured on the Application Gateway."
+  type        = list(string)
+  default     = []
+}
+
+# -------------------------
+# DNS
+# -------------------------
+variable "dns_zone_name" {
+  description = "Name of the DNS zone hosting environment-specific records."
+  type        = string
+  default     = null
+}
+
+variable "dns_a_records" {
+  description = "Map of DNS A record definitions keyed by record name."
+  type = map(object({
+    ttl     = number
+    records = list(string)
+  }))
+  default = {}
+}
+
+variable "dns_cname_records" {
+  description = "Map of DNS CNAME record definitions keyed by record name."
+  type = map(object({
+    ttl    = number
+    record = string
+  }))
+  default = {}
+}
+
+# -------------------------
+# App Service
+# -------------------------
+variable "app_service_plan_sku" {
+  description = "SKU assigned to the App Service plan hosting the web applications."
+  type        = string
+  default     = null
+}
+
+variable "app_service_fqdn_prefix" {
+  description = "Prefix used when composing the primary hostname for the web application."
+  type        = string
+  default     = null
+}
+
+variable "app_service_app_settings" {
+  description = "Application settings applied to the App Service instance."
+  type        = map(string)
+  default     = {}
+}
+
+variable "app_service_connection_strings" {
+  description = "Connection string definitions applied to the App Service instance."
+  type = map(object({
+    type  = string
+    value = string
+  }))
+  default = {}
+}
+
+# -------------------------
+# Arbitration App
+# -------------------------
+variable "arbitration_app_settings" {
+  description = "Application settings applied to the arbitration App Service instance."
+  type        = map(string)
+  default     = {}
+}
+
+# -------------------------
+# SQL Database
+# -------------------------
+variable "sql_database_name" {
+  description = "Name of the SQL database to deploy or reference."
+  type        = string
+  default     = ""
+}
+
+variable "sql_sku_name" {
+  description = "SKU name applied to the SQL database or elastic pool."
+  type        = string
+  default     = null
+}
+
+variable "sql_max_size_gb" {
+  description = "Maximum size in gigabytes allocated to the SQL database."
+  type        = number
+  default     = null
+}
+
+variable "sql_auto_pause_delay" {
+  description = "Auto-pause delay in minutes for serverless SQL configurations."
+  type        = number
+  default     = null
+}
+
+variable "sql_min_capacity" {
+  description = "Minimum compute capacity (vCores) allocated for serverless SQL databases."
+  type        = number
+  default     = null
+}
+
+variable "sql_max_capacity" {
+  description = "Maximum compute capacity (vCores) allocated for serverless SQL databases."
+  type        = number
+  default     = null
+}
+
+variable "sql_public_network_access" {
+  description = "Flag controlling public network access to the SQL server."
+  type        = bool
+  default     = true
+}
+
+variable "sql_firewall_rules" {
+  description = "List of firewall rule definitions to apply to the SQL server."
+  type = list(object({
+    name             = string
+    start_ip_address = string
+    end_ip_address   = string
+  }))
+  default = []
 }
 
 # -------------------------
@@ -416,4 +588,70 @@ variable "subnet_network_security_rules" {
     description                  = optional(string)
   })))
   default = {}
+}
+
+# -------------------------
+# SQL Database
+# -------------------------
+variable "sql_database_name" {
+  description = "Optional override for the SQL database name. Defaults to <project>-<env> when blank."
+  type        = string
+  default     = ""
+}
+
+variable "sql_admin_login" {
+  description = "Administrator login for the SQL server. Provide securely via pipeline variables or Key Vault."
+  type        = string
+}
+
+variable "sql_admin_password" {
+  description = "Administrator password for the SQL server. Provide securely via pipeline variables or Key Vault."
+  type        = string
+  sensitive   = true
+}
+
+variable "sql_sku_name" {
+  description = "SKU name for the serverless SQL database (for example GP_S_Gen5_2)."
+  type        = string
+  default     = "GP_S_Gen5_2"
+}
+
+variable "sql_max_size_gb" {
+  description = "Maximum size of the SQL database in gigabytes."
+  type        = number
+  default     = 75
+}
+
+variable "sql_auto_pause_delay" {
+  description = "Number of minutes before the serverless database auto pauses. Use -1 to disable."
+  type        = number
+  default     = 60
+}
+
+variable "sql_min_capacity" {
+  description = "Minimum vCore capacity for the serverless database."
+  type        = number
+  default     = 0.5
+}
+
+variable "sql_max_capacity" {
+  description = "Maximum vCore capacity for the serverless database."
+  type        = number
+  default     = 4
+}
+
+variable "sql_public_network_access" {
+  description = "Whether public network access is enabled for the SQL server."
+  type        = bool
+  default     = true
+}
+
+variable "sql_firewall_rules" {
+  description = "List of firewall rules to apply to the SQL server."
+  type = list(object({
+    name             = string
+    start_ip_address = string
+    end_ip_address   = string
+  }))
+  default = []
 }
