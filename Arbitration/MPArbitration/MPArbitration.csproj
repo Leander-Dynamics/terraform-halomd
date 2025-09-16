@@ -77,12 +77,12 @@
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
   </Target>
   
-  <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish" Condition="'$(Configuration)' == 'Debug'">
-	<!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build -- --prod=false --configuration development" />
+  <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish" Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release'">
+    <!-- As part of publishing, ensure the JS resources are freshly built in production mode for Debug builds -->
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" Condition="'$(Configuration)' == 'Debug'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build -- --prod=false --configuration development" Condition="'$(Configuration)' == 'Debug'" />
 
-    <!-- Include the newly-built files in the publish output for Debug only - DevOps handles the other deployment scenario below -->
+    <!-- Include the newly-built files in the publish output -->
     <ItemGroup>
       <DistFiles Include="$(SpaRoot)dist\**; $(SpaRoot)dist-server\**" />
       <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
@@ -92,17 +92,4 @@
       </ResolvedFileToPublish>
     </ItemGroup>
   </Target>
-	
-  <!-- Do not rebuild during Release - let the DevOps pipeline do it -->
-	<Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish" Condition="'$(Configuration)' == 'Release'">
-		<!-- Include the newly-built files in the publish output -->
-		<ItemGroup>
-			<DistFiles Include="$(SpaRoot)dist\**; $(SpaRoot)dist-server\**" />
-			<ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
-				<RelativePath>wwwroot\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
-				<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-				<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-			</ResolvedFileToPublish>
-		</ItemGroup>
-	</Target>
 </Project>
