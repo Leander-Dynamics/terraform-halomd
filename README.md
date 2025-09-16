@@ -1,21 +1,12 @@
 # ARBIT — Consolidated Infrastructure (Terraform) + Azure DevOps CI/CD
 
-
-ARBIT centralizes cloud infrastructure for dev, stage, and prod along with the automation that deploys it. This repository provides:
-=======
-This repository contains:
-- **Terraform modules** under `platform/infra/Azure/modules`.
-- **Per-environment Terraform roots** under `platform/infra/envs/{dev,stage,prod}` with independent backends.
-- **Azure DevOps CI/CD** under `.ado/` (reusable templates consumed by the multi-stage pipeline).
-- **Bootstrap scripts** for Terraform state.
-- **Docs** for setup, naming, migration, and network posture (see [`docs/`](docs/) and [`docs/network/`](docs/network/)).
-- **Angular client developers**: see [`Arbitration/MPArbitration/ClientApp/README.md`](Arbitration/MPArbitration/ClientApp/README.md) for project-specific guidance.
-
+ARBIT centralizes cloud infrastructure for development, staging, and production while automating deployments with Azure DevOps. This repository includes:
 
 - **Terraform modules** under `platform/infra/Azure/modules` for reusable building blocks (resource groups, Key Vault, App Service, Functions, Storage, SQL, and optional AKS/ACR).
 - **Per-environment Terraform roots** under `platform/infra/envs/{dev,stage,prod}` with independent remote state backends.
 - **Azure DevOps (ADO) multi-stage pipeline** definitions under `azure-pipelines.yml` and `.ado/templates/*`.
 - **Bootstrap scripts and documentation** that explain setup, networking posture, and ongoing operations (see `scripts/`, [`docs/`](docs/), and [`docs/network/`](docs/network/)).
+- **Angular client developers**: see [`Arbitration/MPArbitration/ClientApp/README.md`](Arbitration/MPArbitration/ClientApp/README.md) for project-specific guidance.
 
 > **Posture:** AKS/ACR modules exist but are **disabled by default**. Optional **Storage** and **SQL** modules are off by default, and Key Vault public network access is **toggleable per environment**.
 
