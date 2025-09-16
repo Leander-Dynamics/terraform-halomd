@@ -22,6 +22,14 @@ variable "app_settings" {
   default = {}
 }
 
+variable "connection_strings" {
+  type = map(object({
+    type  = string
+    value = string
+  }))
+  default = {}
+}
+
 variable "tags" {
   type    = map(string)
   default = {}

@@ -30,3 +30,26 @@ kv_private_endpoint_subnet_key      = "data"
 storage_private_endpoint_subnet_key = "data"
 
 kv_public_network_access = true
+
+# -------------------------
+# App Service
+# -------------------------
+app_service_plan_sku                     = "B1"
+app_service_app_insights_connection_string = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/app-service-appinsights-connection-string)"
+app_service_app_settings                 = {}
+app_service_connection_strings = {
+  PrimaryDatabase = {
+    type  = "SQLAzure"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/app-service-primary-database-connection)"
+  }
+}
+
+# -------------------------
+# Arbitration App
+# -------------------------
+enable_arbitration_app_service          = true
+arbitration_app_settings = {
+  "Storage__Connection" = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/arbitration-storage-connection)"
+  "Storage__Container"  = "arbitration-calculator"
+}
+arbitration_app_insights_connection_string = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/arbitration-appinsights-connection-string)"
