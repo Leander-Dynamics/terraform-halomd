@@ -1,91 +1,24 @@
-locals {
-  normalized_runtime_stack = lower(trimspace(coalesce(var.runtime_stack, "dotnet")))
-}
+module "web_app" {
+  source = "../../Azure/modules/web-app"
 
-resource "azurerm_service_plan" "plan" {
-  name                = var.plan_name
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  os_type             = "Linux"
-  sku_name            = var.plan_sku
-  tags                = var.tags
-}
-
-resource "azurerm_linux_web_app" "app" {
   name                = var.name
-  location            = var.location
+  app_name            = var.name
+  plan_name           = var.plan_name
+  plan_sku            = var.plan_sku
   resource_group_name = var.resource_group_name
-  service_plan_id     = azurerm_service_plan.plan.id
-  https_only          = true
+  location            = var.location
 
-  identity {
-    type = "SystemAssigned"
-  }
+  runtime_stack   = var.runtime_stack
+  runtime_version = var.runtime_version
+  always_on       = var.always_on
+  https_only      = true
+  ftps_state      = "Disabled"
 
-  site_config {
-    always_on = var.always_on
-    ftps_state = "Disabled"
-
-    application_stack {
-      dotnet_version = local.normalized_runtime_stack == "dotnet" ? var.runtime_version : null
-      node_version   = local.normalized_runtime_stack == "node"   ? var.runtime_version : null
-      python_version = local.normalized_runtime_stack == "python" ? var.runtime_version : null
-    }
-  }
-
-  app_settings = merge(
-    {
-      "APPINSIGHTS_CONNECTION_STRING" = var.app_insights_connection_string
-      "APPINSIGHTS_CONNECTIONSTRING"  = var.app_insights_connection_string
-    },
-    var.run_from_package == true ? { "WEBSITE_RUN_FROM_PACKAGE" = "1" } : {},
-    var.app_settings
-  )
-
-  dynamic "connection_string" {
-    for_each = var.connection_strings
-    content {
-      name  = connection_string.key
-      type  = connection_string.value.type
-      value = connection_string.value.value
-    }
-  }
+  app_insights_connection_string = var.app_insights_connection_string
+  log_analytics_workspace_id     = var.log_analytics_workspace_id
+  run_from_package               = var.run_from_package
+  app_settings                   = var.app_settings
+  connection_strings             = var.connection_strings
 
   tags = var.tags
-}
-
-resource "azurerm_monitor_diagnostic_setting" "app" {
-  count = var.log_analytics_workspace_id == null || var.log_analytics_workspace_id == "" ? 0 : 1
-
-  name                       = "${var.name}-diag"
-  target_resource_id         = azurerm_linux_web_app.app.id
-  log_analytics_workspace_id = var.log_analytics_workspace_id
-
-  dynamic "log" {
-    for_each = [
-      "AppServiceHTTPLogs",
-      "AppServiceConsoleLogs",
-      "AppServiceAppLogs",
-      "AppServiceAuditLogs",
-      "AppServiceFileAuditLogs",
-      "AppServicePlatformLogs"
-    ]
-    content {
-      category = log.value
-      enabled  = true
-
-      retention_policy {
-        enabled = false
-      }
-    }
-  }
-
-  metric {
-    category = "AllMetrics"
-    enabled  = true
-
-    retention_policy {
-      enabled = false
-    }
-  }
 }

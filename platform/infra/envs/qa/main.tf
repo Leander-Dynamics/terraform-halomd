@@ -188,17 +188,26 @@ module "storage_private_endpoint" {
 }
 
 # App Services
-module "app_service_web" {
-  source = "../../Azure/modules/app-service-web"
+module "web_app" {
+  source = "../../Azure/modules/web-app"
 
   name                = local.app_service_name
+  app_name            = local.app_service_name
   plan_name           = local.app_service_plan_name
   plan_sku            = var.app_service_plan_sku
   resource_group_name = module.resource_group.name
   location            = var.location
 
-  dotnet_version                  = var.app_service_dotnet_version
+  runtime_stack   = "dotnet"
+  runtime_version = var.app_service_dotnet_version
+  always_on       = true
+  https_only      = true
+  ftps_state      = "Disabled"
+
   app_insights_connection_string = var.app_service_app_insights_connection_string
   log_analytics_workspace_id     = var.app_service_log_analytics_workspace_id
   app_settings                   = var.app_service_app_settings
-  connection_stri_
+  connection_strings             = var.app_service_connection_strings
+
+  tags = var.tags
+}
