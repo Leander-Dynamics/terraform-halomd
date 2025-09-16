@@ -89,6 +89,16 @@ module "resource_group" {
   tags     = var.tags
 }
 
+module "dns_zone" {
+  count               = length(trimspace(coalesce(var.dns_zone_name, ""))) > 0 ? 1 : 0
+  source              = "../../Azure/modules/dns-zone"
+  zone_name           = var.dns_zone_name
+  resource_group_name = module.resource_group.name
+  tags                = var.tags
+  a_records           = var.dns_a_records
+  cname_records       = var.dns_cname_records
+}
+
 module "network" {
   source              = "../../Azure/modules/network"
   name                = "vnet-${var.project_name}-${var.env_name}"
