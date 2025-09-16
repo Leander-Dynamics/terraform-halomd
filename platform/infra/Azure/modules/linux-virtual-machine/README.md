@@ -1,8 +1,10 @@
-# Linux virtual machine module
+# Linux Virtual Machine Module
 
-This module provisions an Azure Linux virtual machine using an existing network interface. Provide the VM sizing, administrator credentials, and image reference details via input variables.
+This module provisions an Azure Linux virtual machine using an existing network interface.  
+Provide the VM sizing, administrator credentials, and image reference details via input variables.  
+You can also optionally apply tags.
 
-## Example usage
+## Example Usage
 
 ```hcl
 module "linux_vm" {
@@ -21,7 +23,9 @@ module "linux_vm" {
   image_sku       = "22_04-lts"
 
   ssh_key = file("~/.ssh/id_rsa.pub")
-}
-```
 
-The SSH key should be a public key string (for example, the contents of `~/.ssh/id_rsa.pub`).
+  tags = {
+    Environment = "lab"
+    Project     = "example"
+  }
+}
