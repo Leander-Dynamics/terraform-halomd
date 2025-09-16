@@ -1,7 +1,6 @@
 # -------------------------
 # General
 # -------------------------
-
 variable "project_name" {
   description = "Project or application identifier used for naming."
   type        = string
@@ -26,11 +25,30 @@ variable "tags" {
 # -------------------------
 # Monitoring
 # -------------------------
-
 variable "app_insights_name" {
   description = "Optional name override for the Application Insights resource."
   type        = string
   default     = ""
+}
+
+# -------------------------
+# Bastion
+# -------------------------
+variable "enable_bastion" {
+  description = "Flag to deploy an Azure Bastion host."
+  type        = bool
+  default     = false
+}
+
+variable "bastion_subnet_key" {
+  description = "Key of the subnet reserved for the Bastion host."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.enable_bastion == false || try(trimspace(var.bastion_subnet_key), "") != ""
+    error_message = "bastion_subnet_key must be provided when enable_bastion is true."
+  }
 }
 
 # -------------------------
@@ -45,82 +63,6 @@ variable "enable_nat_gateway" {
     condition     = var.enable_nat_gateway == false || var.nat_gateway_configuration != null
     error_message = "nat_gateway_configuration must be provided when enable_nat_gateway is true."
   }
-}
-
-variable "enable_vpn_gateway" {
-  description = "Flag to deploy a virtual network gateway for hybrid connectivity."
-  type        = bool
-  default     = false
-
-  validation {
-    condition     = var.enable_vpn_gateway == false || var.vpn_gateway_configuration != null
-    error_message = "vpn_gateway_configuration must be provided when enable_vpn_gateway is true."
-  }
-}
-
-variable "enable_bastion" {
-  description = "Flag to deploy an Azure Bastion host."
-  type        = bool
-  default     = false
-}
-
-variable "bastion_subnet_key" {
-  description = "Key of the subnet reserved for the Bastion host."
-  type        = string
-  default     = null
-}
-
-# -------------------------
-# Networking
-# -------------------------
-variable "vnet_address_space" {
-  description = "Address space assigned to the virtual network."
-  type        = list(string)
-}
-
-variable "vnet_dns_servers" {
-  description = "Optional custom DNS servers applied to the virtual network."
-  type        = list(string)
-  default     = []
-}
-
-variable "subnets" {
-  description = "Map of subnet definitions keyed by subnet name."
-  type = map(object({
-    address_prefixes  = list(string)
-    service_endpoints = optional(list(string), [])
-    delegations = optional(list(object({
-      name = string
-      service_delegation = object({
-        name    = string
-        actions = list(string)
-      })
-    })), [])
-  }))
-}
-
-variable "subnet_network_security_rules" {
-  description = <<-DOC
-  Map of network security rule sets keyed by subnet name. Each entry should
-  match the `security_rules` input for the `network-security-group` module and
-  defaults to an empty map, resulting in only the built-in Azure NSG rules.
-  DOC
-  type = map(map(object({
-    priority                     = number
-    direction                    = optional(string, "Inbound")
-    access                       = optional(string, "Allow")
-    protocol                     = optional(string, "*")
-    source_port_range            = optional(string)
-    source_port_ranges           = optional(list(string))
-    destination_port_range       = optional(string)
-    destination_port_ranges      = optional(list(string))
-    source_address_prefix        = optional(string)
-    source_address_prefixes      = optional(list(string))
-    destination_address_prefix   = optional(string)
-    destination_address_prefixes = optional(list(string))
-    description                  = optional(string)
-  })))
-  default = {}
 }
 
 variable "nat_gateway_configuration" {
@@ -154,6 +96,17 @@ variable "nat_gateway_configuration" {
   validation {
     condition     = var.nat_gateway_configuration == null ? true : length(var.nat_gateway_configuration.subnet_keys) > 0
     error_message = "At least one subnet key must be provided to associate the NAT Gateway."
+  }
+}
+
+variable "enable_vpn_gateway" {
+  description = "Flag to deploy a virtual network gateway for hybrid connectivity."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = var.enable_vpn_gateway == false || var.vpn_gateway_configuration != null
+    error_message = "vpn_gateway_configuration must be provided when enable_vpn_gateway is true."
   }
 }
 
@@ -220,7 +173,6 @@ variable "vpn_gateway_configuration" {
 # -------------------------
 # Key Vault
 # -------------------------
-
 variable "kv_public_network_access" {
   description = "Allow public network access to the Key Vault."
   type        = bool
@@ -228,7 +180,7 @@ variable "kv_public_network_access" {
 }
 
 variable "kv_network_acls" {
-  description = "Network ACL configuration applied to the Key Vault."
+  description = "Optional network ACL configuration for the Key Vault."
   type = object({
     bypass                     = optional(string)
     default_action             = optional(string)
@@ -245,13 +197,7 @@ variable "enable_kv_private_endpoint" {
 }
 
 variable "kv_private_endpoint_subnet_key" {
-  description = "Key of the subnet used when creating the Key Vault private endpoint."
-  type        = string
-  default     = null
-}
-
-variable "kv_private_endpoint_resource_id" {
-  description = "Optional override for the Key Vault resource ID used by the private endpoint module."
+  description = "Subnet key used when creating the Key Vault private endpoint."
   type        = string
   default     = null
 }
@@ -262,10 +208,15 @@ variable "kv_private_dns_zone_ids" {
   default     = []
 }
 
+variable "kv_private_endpoint_resource_id" {
+  description = "Override resource ID supplied to the Key Vault private endpoint module."
+  type        = string
+  default     = null
+}
+
 # -------------------------
 # Storage
 # -------------------------
-
 variable "enable_storage_private_endpoint" {
   description = "Toggle creation of a private endpoint for the storage account."
   type        = bool
@@ -273,15 +224,15 @@ variable "enable_storage_private_endpoint" {
 }
 
 variable "storage_private_endpoint_subnet_key" {
-  description = "Key of the subnet used when creating the storage account private endpoint."
+  description = "Subnet key used when creating the storage account private endpoint."
   type        = string
   default     = null
 }
 
-variable "storage_account_private_connection_resource_id" {
-  description = "Resource ID used by the storage account private endpoint connection."
-  type        = string
-  default     = null
+variable "storage_private_dns_zone_ids" {
+  description = "Private DNS zone IDs linked to the storage account private endpoint."
+  type        = list(string)
+  default     = []
 }
 
 variable "storage_private_endpoint_subresource_names" {
@@ -290,8 +241,61 @@ variable "storage_private_endpoint_subresource_names" {
   default     = ["blob"]
 }
 
-variable "storage_private_dns_zone_ids" {
-  description = "Private DNS zone IDs linked to the storage account private endpoint."
+variable "storage_account_private_connection_resource_id" {
+  description = "Resource ID used by the storage account private endpoint connection."
+  type        = string
+  default     = null
+}
+
+# -------------------------
+# Networking
+# -------------------------
+variable "vnet_address_space" {
+  description = "Address space assigned to the virtual network."
+  type        = list(string)
+}
+
+variable "vnet_dns_servers" {
+  description = "Optional custom DNS servers applied to the virtual network."
   type        = list(string)
   default     = []
+}
+
+variable "subnets" {
+  description = "Map of subnet definitions keyed by subnet name."
+  type = map(object({
+    address_prefixes  = list(string)
+    service_endpoints = optional(list(string), [])
+    delegations = optional(list(object({
+      name = string
+      service_delegation = object({
+        name    = string
+        actions = list(string)
+      })
+    })), [])
+  }))
+}
+
+variable "subnet_network_security_rules" {
+  description = <<-DOC
+  Map of network security rule sets keyed by subnet name. Each entry should
+  match the `security_rules` input for the `network-security-group` module and
+  defaults to an empty map, resulting in only the built-in Azure NSG rules.
+  DOC
+  type = map(map(object({
+    priority                     = number
+    direction                    = optional(string, "Inbound")
+    access                       = optional(string, "Allow")
+    protocol                     = optional(string, "*")
+    source_port_range            = optional(string)
+    source_port_ranges           = optional(list(string))
+    destination_port_range       = optional(string)
+    destination_port_ranges      = optional(list(string))
+    source_address_prefix        = optional(string)
+    source_address_prefixes      = optional(list(string))
+    destination_address_prefix   = optional(string)
+    destination_address_prefixes = optional(list(string))
+    description                  = optional(string)
+  })))
+  default = {}
 }

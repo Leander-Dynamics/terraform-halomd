@@ -119,6 +119,26 @@ variable "vpn_gateway_configuration" {
 }
 
 # -------------------------
+# Bastion
+# -------------------------
+variable "enable_bastion" {
+  description = "Flag to deploy an Azure Bastion host."
+  type        = bool
+  default     = false
+}
+
+variable "bastion_subnet_key" {
+  description = "Key referencing the AzureBastionSubnet entry in the `subnets` map."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.enable_bastion == false || try(trimspace(var.bastion_subnet_key), "") != ""
+    error_message = "bastion_subnet_key must be provided when enable_bastion is true."
+  }
+}
+
+# -------------------------
 # Networking
 # -------------------------
 variable "vnet_address_space" {
@@ -169,4 +189,78 @@ variable "subnet_network_security_rules" {
     description                  = optional(string)
   })))
   default = {}
+}
+
+# -------------------------
+# Key Vault & Storage networking
+# -------------------------
+variable "kv_public_network_access" {
+  description = "Allow public network access to the Key Vault."
+  type        = bool
+  default     = true
+}
+
+variable "kv_network_acls" {
+  description = "Optional network ACL configuration for the Key Vault."
+  type = object({
+    bypass                     = optional(string)
+    default_action             = optional(string)
+    ip_rules                   = optional(list(string))
+    virtual_network_subnet_ids = optional(list(string))
+  })
+  default = null
+}
+
+variable "enable_kv_private_endpoint" {
+  description = "Toggle creation of a private endpoint for the Key Vault."
+  type        = bool
+  default     = false
+}
+
+variable "kv_private_endpoint_subnet_key" {
+  description = "Subnet key used when creating the Key Vault private endpoint."
+  type        = string
+  default     = null
+}
+
+variable "kv_private_dns_zone_ids" {
+  description = "Private DNS zone IDs linked to the Key Vault private endpoint."
+  type        = list(string)
+  default     = []
+}
+
+variable "kv_private_endpoint_resource_id" {
+  description = "Override resource ID supplied to the Key Vault private endpoint module."
+  type        = string
+  default     = null
+}
+
+variable "enable_storage_private_endpoint" {
+  description = "Toggle creation of a private endpoint for the storage account."
+  type        = bool
+  default     = false
+}
+
+variable "storage_private_endpoint_subnet_key" {
+  description = "Subnet key used when creating the storage account private endpoint."
+  type        = string
+  default     = null
+}
+
+variable "storage_private_dns_zone_ids" {
+  description = "Private DNS zone IDs linked to the storage account private endpoint."
+  type        = list(string)
+  default     = []
+}
+
+variable "storage_private_endpoint_subresource_names" {
+  description = "Subresource names exposed through the storage account private endpoint."
+  type        = list(string)
+  default     = ["blob"]
+}
+
+variable "storage_account_private_connection_resource_id" {
+  description = "Resource ID used by the storage account private endpoint connection."
+  type        = string
+  default     = null
 }
