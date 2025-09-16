@@ -21,6 +21,16 @@ resource "azurerm_linux_web_app" "app" {
     "APPINSIGHTS_CONNECTION_STRING" = var.app_insights_connection_string
     "WEBSITE_RUN_FROM_PACKAGE"      = "1"
   }, var.app_settings)
+
+  dynamic "connection_string" {
+    for_each = var.connection_strings
+    content {
+      name  = connection_string.key
+      type  = connection_string.value.type
+      value = connection_string.value.value
+    }
+  }
+
   tags = var.tags
 }
 

@@ -126,52 +126,45 @@ module "network_security_groups" {
   subnet_ids          = toset([module.network.subnet_ids[each.key]])
 }
 
-module "kv_private_endpoint" {
-  count = var.enable_kv_private_endpoint && local.kv_private_endpoint_subnet_id != null && var.kv_private_endpoint_resource_id != null ? 1 : 0
-  source              = "../../Azure/modules/private-endpoint"
-  name                = local.kv_private_endpoint_name
+# App Services
+module "app_service_web" {
+  source = "../../Azure/modules/app-service-web"
+
+  name                = local.web_name
+  plan_name           = local.web_plan
+  plan_sku            = var.app_service_plan_sku
   resource_group_name = module.resource_group.name
   location            = var.location
-  subnet_id           = local.kv_private_endpoint_subnet_id
-  tags                = var.tags
 
-  private_service_connection = {
-    name                           = "kv-${var.project_name}-${var.env_name}"
-    private_connection_resource_id = var.kv_private_endpoint_resource_id
-    subresource_names              = ["vault"]
-  }
-
-  private_dns_zone_groups = length(var.kv_private_dns_zone_ids) > 0 ? [
-    {
-      name                 = "default"
-      private_dns_zone_ids = var.kv_private_dns_zone_ids
-    }
-  ] : []
+  dotnet_version                  = var.app_service_dotnet_version
+  app_insights_connection_string = var.app_service_app_insights_connection_string
+  log_analytics_workspace_id     = var.app_service_log_analytics_workspace_id
+  app_settings                   = var.app_service_app_settings
+  connection_strings             = var.app_service_connection_strings
+  tags                           = var.tags
 }
 
-module "storage_private_endpoint" {
-  count = var.enable_storage_private_endpoint && local.storage_private_endpoint_subnet_id != null && var.storage_account_private_connection_resource_id != null ? 1 : 0
-  source              = "../../Azure/modules/private-endpoint"
-  name                = local.storage_private_endpoint_name
+module "app_service_arbitration" {
+  count = var.enable_arbitration_app_service ? 1 : 0
+  source = "../../Azure/modules/app-service-arbitration"
+
+  name                = local.arbitration_name
+  plan_name           = local.arbitration_plan
+  plan_sku            = var.arbitration_app_plan_sku != null && trimspace(var.arbitration_app_plan_sku) != "" ? var.arbitration_app_plan_sku : var.app_service_plan_sku
   resource_group_name = module.resource_group.name
   location            = var.location
-  subnet_id           = local.storage_private_endpoint_subnet_id
-  tags                = var.tags
 
-  private_service_connection = {
-    name                           = "st-${var.project_name}-${var.env_name}"
-    private_connection_resource_id = var.storage_account_private_connection_resource_id
-    subresource_names              = var.storage_private_endpoint_subresource_names
-  }
-
-  private_dns_zone_groups = length(var.storage_private_dns_zone_ids) > 0 ? [
-    {
-      name                 = "default"
-      private_dns_zone_ids = var.storage_private_dns_zone_ids
-    }
-  ] : []
+  runtime_stack                  = var.arbitration_runtime_stack
+  runtime_version                = var.arbitration_runtime_version
+  app_insights_connection_string = var.arbitration_app_insights_connection_string != null && trimspace(var.arbitration_app_insights_connection_string) != "" ? var.arbitration_app_insights_connection_string : var.app_service_app_insights_connection_string
+  log_analytics_workspace_id     = var.arbitration_log_analytics_workspace_id != null && trimspace(var.arbitration_log_analytics_workspace_id) != "" ? var.arbitration_log_analytics_workspace_id : var.app_service_log_analytics_workspace_id
+  connection_strings             = var.arbitration_connection_strings
+  app_settings                   = var.arbitration_app_settings
+  run_from_package               = var.arbitration_run_from_package
+  tags                           = var.tags
 }
 
+# NAT Gateway
 module "nat_gateway" {
   for_each = local.nat_gateway_settings == null ? {} : { default = local.nat_gateway_settings }
   source                  = "../../Azure/modules/nat-gateway"

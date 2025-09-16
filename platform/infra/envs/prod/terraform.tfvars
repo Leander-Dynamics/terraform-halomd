@@ -83,6 +83,7 @@ dns_cname_records = {
 # -------------------------
 app_service_plan_sku    = "P2v3"
 app_service_fqdn_prefix = "app-arbit-prod"
+app_service_app_insights_connection_string = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/app-service-appinsights-connection-string)"
 app_service_app_settings = {
   "WEBSITE_RUN_FROM_PACKAGE" = "0"
 }
@@ -96,10 +97,12 @@ app_service_connection_strings = {
 # -------------------------
 # Arbitration App
 # -------------------------
+enable_arbitration_app_service = true
 arbitration_app_settings = {
   "Storage__Connection" = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-storage-connection)"
   "Storage__Container"  = "arbitration-calculator"
 }
+arbitration_app_insights_connection_string = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-appinsights-connection-string)"
 
 # -------------------------
 # SQL Database
