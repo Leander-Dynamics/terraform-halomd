@@ -6,8 +6,14 @@ ENV ASPNETCORE_URLS=http://+:80
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 
+ARG NODE_VERSION=18.19.1
+
+# Install build tooling and the Node.js 18.19.1 LTS release for the Angular frontend build
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential nodejs npm \
+    && apt-get install -y --no-install-recommends build-essential ca-certificates curl xz-utils \
+    && curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+    && tar -xJf "node-v${NODE_VERSION}-linux-x64.tar.xz" -C /usr/local --strip-components=1 \
+    && rm "node-v${NODE_VERSION}-linux-x64.tar.xz" \
     && rm -rf /var/lib/apt/lists/*
 RUN npm --version
 
