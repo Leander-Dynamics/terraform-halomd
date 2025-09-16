@@ -169,3 +169,17 @@ variable "vpn_gateway_configuration" {
     error_message = "Either a public_ip definition or public_ip_id must be supplied for the virtual network gateway."
   }
 }
+
+# -------------------------
+# IAM / RBAC
+# -------------------------
+variable "kv_cicd_principal_id" {
+  description = "Object ID of the CI/CD principal that requires Key Vault access."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.kv_cicd_principal_id == null ? true : trimspace(var.kv_cicd_principal_id) != ""
+    error_message = "kv_cicd_principal_id cannot be empty when provided."
+  }
+}
