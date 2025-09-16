@@ -481,3 +481,69 @@ variable "storage_account_private_connection_resource_id" {
   type        = string
   default     = null
 }
+
+# -------------------------
+# SQL Database
+# -------------------------
+variable "sql_database_name" {
+  description = "Optional override for the SQL database name. Defaults to <project>-<env> when blank."
+  type        = string
+  default     = ""
+}
+
+variable "sql_admin_login" {
+  description = "Administrator login for the SQL server. Supply via secure pipeline variables or Key Vault."
+  type        = string
+}
+
+variable "sql_admin_password" {
+  description = "Administrator password for the SQL server. Supply via secure pipeline variables or Key Vault."
+  type        = string
+  sensitive   = true
+}
+
+variable "sql_sku_name" {
+  description = "SKU name for the serverless SQL database (for example GP_S_Gen5_2)."
+  type        = string
+  default     = "GP_S_Gen5_2"
+}
+
+variable "sql_max_size_gb" {
+  description = "Maximum size of the SQL database in gigabytes."
+  type        = number
+  default     = 75
+}
+
+variable "sql_auto_pause_delay" {
+  description = "Number of minutes before the serverless database auto pauses. Use -1 to disable."
+  type        = number
+  default     = 60
+}
+
+variable "sql_min_capacity" {
+  description = "Minimum vCore capacity for the serverless database."
+  type        = number
+  default     = 0.5
+}
+
+variable "sql_max_capacity" {
+  description = "Maximum vCore capacity for the serverless database."
+  type        = number
+  default     = 4
+}
+
+variable "sql_public_network_access" {
+  description = "Whether public network access is enabled for the SQL server."
+  type        = bool
+  default     = true
+}
+
+variable "sql_firewall_rules" {
+  description = "List of firewall rules to apply to the SQL server."
+  type = list(object({
+    name             = string
+    start_ip_address = string
+    end_ip_address   = string
+  }))
+  default = []
+}
