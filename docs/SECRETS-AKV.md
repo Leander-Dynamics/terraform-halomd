@@ -70,6 +70,34 @@ Create these secrets **in each environment’s Key Vault** (names configurable v
 - `arbitration-idr-connection`
 - `arbitration-storage-connection`
 
+### Arbitration web app configuration maps
+
+Populate the following keys in each environment's Terraform inputs so the arbitration App Service has storage and database connectivity:
+
+#### dev
+- `arbitration_app_settings`
+  - `Storage__Connection` → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/arbitration-storage-connection)`
+  - `Storage__Container`  → `arbitration-calculator`
+- `arbitration_connection_strings`
+  - `ConnStr`     → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/arbitration-primary-connection)`
+  - `IDRConnStr`  → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/arbitration-idr-connection)`
+
+#### stage
+- `arbitration_app_settings`
+  - `Storage__Connection` → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-storage-connection)`
+  - `Storage__Container`  → `arbitration-calculator`
+- `arbitration_connection_strings`
+  - `ConnStr`     → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-primary-connection)`
+  - `IDRConnStr`  → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-idr-connection)`
+
+#### prod
+- `arbitration_app_settings`
+  - `Storage__Connection` → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-storage-connection)`
+  - `Storage__Container`  → `arbitration-calculator`
+- `arbitration_connection_strings`
+  - `ConnStr`     → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-primary-connection)`
+  - `IDRConnStr`  → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-idr-connection)`
+
 You can add more (e.g., `webapp-client-secret`) and extend the YAML similarly.
 
 > App Service / Function apps must have managed identities with **Key Vault Secrets User** access so the runtime can resolve `@Microsoft.KeyVault(...)` references configured in Terraform.
