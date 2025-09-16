@@ -1,14 +1,16 @@
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
 EXPOSE 80
+#EXPOSE 443
 ENV ASPNETCORE_URLS=http://+:80
+#ENV ASPNETCORE_URLS=http://+:80;https://+:443
 
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 
 ARG NODE_VERSION=18.19.1
 
-# Install build tooling and the Node.js 18.19.1 LTS release for the Angular frontend build
+# Install build tooling and pinned Node.js version for Angular frontend build
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential ca-certificates curl xz-utils \
     && curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
@@ -35,7 +37,10 @@ RUN mkdir -p /app/publish/ClientApp/dist \
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Run as non-root user for security
 RUN useradd -m appuser \
     && chown -R appuser /app
 USER appuser
+
 ENTRYPOINT ["dotnet", "MPArbitration.dll"]
