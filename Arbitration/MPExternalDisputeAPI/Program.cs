@@ -13,6 +13,8 @@ internal class Program
 {
     private static void Main(string[] args)
     {
+        const string corsPolicyName = "CorsPolicy";
+
         var builder = WebApplication.CreateBuilder(args);
         // The following line enables Application Insights telemetry collection.
 //        builder.Services.AddApplicationInsightsTelemetry();
@@ -36,6 +38,16 @@ internal class Program
             o.BufferBody = true;
             o.ValueCountLimit = int.MaxValue;
         });
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy(corsPolicyName, policy =>
+            {
+                policy.AllowAnyOrigin();
+                policy.AllowAnyMethod();
+                policy.AllowAnyHeader();
+            });
+        });
+
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
         builder.Services.AddSwaggerGen(opt =>
@@ -146,7 +158,7 @@ internal class Program
             app.UseHsts();
         }
         app.MapSwagger().RequireAuthorization();
-        app.UseCors();
+        app.UseCors(corsPolicyName);
         app.UseHttpsRedirection();
         app.UseStaticFiles();
         app.UseRouting();
