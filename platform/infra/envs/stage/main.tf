@@ -13,8 +13,19 @@ locals {
   web_name         = "app-halomdweb-${var.env_name}"
   app_gateway_name = "agw-${var.project_name}-${var.env_name}"
   bastion_name     = "bas-${var.project_name}-${var.env_name}"
-  arbitration_plan = "asp-${var.project_name}-arb-${var.env_name}-${var.location}"
-  arbitration_name = "app-${var.project_name}-arb-${var.env_name}"
+  arbitration_plan_name = "asp-${var.project_name}-arb-${var.env_name}-${var.location}"
+  arbitration_app_name  = "app-${var.project_name}-arb-${var.env_name}"
+  arbitration_plan_sku  = try(trimspace(var.arbitration_app_plan_sku), "") != "" ? var.arbitration_app_plan_sku : var.app_service_plan_sku
+  arbitration_app_insights_connection_string = try(trimspace(var.arbitration_app_insights_connection_string), "") != "" ? var.arbitration_app_insights_connection_string : var.app_service_app_insights_connection_string
+  arbitration_log_analytics_workspace_id     = try(trimspace(var.arbitration_log_analytics_workspace_id), "") != "" ? var.arbitration_log_analytics_workspace_id : var.app_service_log_analytics_workspace_id
+  arbitration_app_settings = merge(
+    {
+      APPINSIGHTS_CONNECTION_STRING = local.arbitration_app_insights_connection_string
+      APPINSIGHTS_CONNECTIONSTRING  = local.arbitration_app_insights_connection_string
+    },
+    var.arbitration_run_from_package ? { WEBSITE_RUN_FROM_PACKAGE = "1" } : {},
+    var.arbitration_app_settings
+  )
 
   func_external_plan = "asp-external-${var.env_name}-${var.location}"
   func_external_name = "func-external-${var.env_name}"
@@ -144,24 +155,24 @@ module "app_service_web" {
   tags                           = var.tags
 }
 
-module "app_service_arbitration" {
-  count = var.enable_arbitration_app_service ? 1 : 0
-  source = "../../Azure/modules/app-service-arbitration"
+# Arbitration App Service uses the shared web-app module to mirror the dev configuration.
+module "web_app_arbitration" {
+  count  = var.enable_arbitration_app_service ? 1 : 0
+  source = "../../Azure/modules/web-app"
 
-  name                = local.arbitration_name
-  plan_name           = local.arbitration_plan
-  plan_sku            = var.arbitration_app_plan_sku != null && trimspace(var.arbitration_app_plan_sku) != "" ? var.arbitration_app_plan_sku : var.app_service_plan_sku
+  plan_name           = local.arbitration_plan_name
+  plan_sku            = local.arbitration_plan_sku
+  app_name            = local.arbitration_app_name
   resource_group_name = module.resource_group.name
   location            = var.location
 
-  runtime_stack                  = var.arbitration_runtime_stack
-  runtime_version                = var.arbitration_runtime_version
-  app_insights_connection_string = var.arbitration_app_insights_connection_string != null && trimspace(var.arbitration_app_insights_connection_string) != "" ? var.arbitration_app_insights_connection_string : var.app_service_app_insights_connection_string
-  log_analytics_workspace_id     = var.arbitration_log_analytics_workspace_id != null && trimspace(var.arbitration_log_analytics_workspace_id) != "" ? var.arbitration_log_analytics_workspace_id : var.app_service_log_analytics_workspace_id
-  connection_strings             = var.arbitration_connection_strings
-  app_settings                   = var.arbitration_app_settings
-  run_from_package               = var.arbitration_run_from_package
-  tags                           = var.tags
+  runtime_stack   = var.arbitration_runtime_stack
+  runtime_version = var.arbitration_runtime_version
+
+  app_settings               = local.arbitration_app_settings
+  connection_strings         = var.arbitration_connection_strings
+  log_analytics_workspace_id = local.arbitration_log_analytics_workspace_id
+  tags                       = var.tags
 }
 
 # NAT Gateway
