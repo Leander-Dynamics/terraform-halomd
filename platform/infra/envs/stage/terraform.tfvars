@@ -14,6 +14,16 @@ tags = {
 }
 
 # -------------------------
+# Containers
+# -------------------------
+enable_container_registry = true
+container_registry_sku    = "Standard"
+
+enable_kubernetes_cluster = true
+kubernetes_node_count     = 2
+kubernetes_identity_type  = "SystemAssigned"
+
+# -------------------------
 # Networking
 # -------------------------
 vnet_address_space = ["10.30.0.0/16"]

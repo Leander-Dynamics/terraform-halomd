@@ -11,7 +11,8 @@ resource "azurerm_kubernetes_cluster" "this" {
   }
 
   identity {
-    type = "SystemAssigned"
+    type         = var.identity_type
+    identity_ids = can(regex("UserAssigned", var.identity_type)) ? var.identity_ids : null
   }
 
   dynamic "oms_agent" {

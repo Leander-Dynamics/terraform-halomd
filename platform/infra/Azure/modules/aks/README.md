@@ -13,8 +13,9 @@ module "aks" {
   location            = azurerm_resource_group.example.location
   dns_prefix          = "aks-example"
 
-  node_count = 2
-  vm_size    = "Standard_DS2_v2"
+  node_count    = 2
+  vm_size       = "Standard_DS2_v2"
+  identity_type = "SystemAssigned"
   tags = {
     Environment = "example"
   }
@@ -22,3 +23,8 @@ module "aks" {
 ```
 
 The `dns_prefix` input is required and sets the prefix that Azure uses when creating DNS entries for the cluster's API server endpoint.
+
+Optional identity inputs allow configuring either a system-assigned or user-assigned managed identity for the cluster:
+
+- `identity_type` defaults to `SystemAssigned` but also supports `UserAssigned` and `SystemAssigned,UserAssigned`.
+- `identity_ids` supplies the list of user-assigned identity resource IDs when `identity_type` includes `UserAssigned`.

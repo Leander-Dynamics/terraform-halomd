@@ -1,4 +1,61 @@
 # -------------------------
+# Container platform
+# -------------------------
+
+variable "enable_container_registry" {
+  description = "Toggle creation of the Azure Container Registry."
+  type        = bool
+  default     = false
+}
+
+variable "container_registry_sku" {
+  description = "SKU tier assigned to the Azure Container Registry."
+  type        = string
+  default     = "Standard"
+}
+
+variable "enable_kubernetes_cluster" {
+  description = "Toggle creation of the Azure Kubernetes Service cluster."
+  type        = bool
+  default     = false
+}
+
+variable "kubernetes_node_count" {
+  description = "Number of nodes provisioned in the default AKS node pool."
+  type        = number
+  default     = 1
+}
+
+variable "kubernetes_identity_type" {
+  description = "Managed identity configuration applied to the AKS cluster."
+  type        = string
+  default     = "SystemAssigned"
+
+  validation {
+    condition = contains([
+      "SystemAssigned",
+      "UserAssigned",
+      "SystemAssigned,UserAssigned",
+    ], var.kubernetes_identity_type)
+    error_message = "kubernetes_identity_type must be one of SystemAssigned, UserAssigned, or SystemAssigned,UserAssigned."
+  }
+}
+
+variable "kubernetes_identity_ids" {
+  description = "User-assigned identity resource IDs associated with the AKS cluster when required."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition = contains([
+      "UserAssigned",
+      "SystemAssigned,UserAssigned",
+    ], var.kubernetes_identity_type) ? length(var.kubernetes_identity_ids) > 0 : true
+    error_message = "Provide at least one identity ID when using a UserAssigned identity type."
+  }
+}
+
+# -------------------------
 # Connectivity
 # -------------------------
 

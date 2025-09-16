@@ -8,6 +8,7 @@ locals {
 
   acr_name         = lower(replace("acr${var.project_name}${var.env_name}", "-", ""))
   aks_name         = "aks-${var.project_name}-${var.env_name}-${var.location}"
+  aks_dns_prefix   = replace(local.aks_name, "-", "")
 
   web_plan         = "asp-halomdweb-${var.env_name}-${var.location}"
   web_name         = "app-halomdweb-${var.env_name}"
@@ -111,6 +112,32 @@ module "network_security_groups" {
   location            = var.location
   security_rules      = each.value.security_rules
   subnet_ids          = toset([module.network.subnet_ids[each.key]])
+}
+
+# -------------------------
+# Container platform
+# -------------------------
+module "container_registry" {
+  count               = var.enable_container_registry ? 1 : 0
+  source              = "../../Azure/modules/acr"
+  name                = local.acr_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  sku                 = var.container_registry_sku
+  tags                = var.tags
+}
+
+module "kubernetes_cluster" {
+  count               = var.enable_kubernetes_cluster ? 1 : 0
+  source              = "../../Azure/modules/aks"
+  name                = local.aks_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  dns_prefix          = local.aks_dns_prefix
+  node_count          = var.kubernetes_node_count
+  tags                = var.tags
+  identity_type       = var.kubernetes_identity_type
+  identity_ids        = var.kubernetes_identity_ids
 }
 
 # Private Endpoints
