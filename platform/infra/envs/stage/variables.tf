@@ -81,6 +81,30 @@ variable "subnets" {
   }))
 }
 
+variable "subnet_network_security_rules" {
+  description = <<-DOC
+  Map of network security rule sets keyed by subnet name. Each entry should
+  match the `security_rules` input for the `network-security-group` module and
+  defaults to an empty map, resulting in only the built-in Azure NSG rules.
+  DOC
+  type = map(map(object({
+    priority                     = number
+    direction                    = optional(string, "Inbound")
+    access                       = optional(string, "Allow")
+    protocol                     = optional(string, "*")
+    source_port_range            = optional(string)
+    source_port_ranges           = optional(list(string))
+    destination_port_range       = optional(string)
+    destination_port_ranges      = optional(list(string))
+    source_address_prefix        = optional(string)
+    source_address_prefixes      = optional(list(string))
+    destination_address_prefix   = optional(string)
+    destination_address_prefixes = optional(list(string))
+    description                  = optional(string)
+  })))
+  default = {}
+}
+
 variable "app_gateway_subnet_key" {
   description = "Key of the subnet used for the Application Gateway."
   type        = string

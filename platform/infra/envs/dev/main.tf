@@ -20,6 +20,13 @@ locals {
   storage_data_name    = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
   sql_server_name      = "sql-${var.project_name}-${var.env_name}"
   aad_app_display      = "aad-${var.project_name}-${var.env_name}"
+  subnet_network_security_groups = {
+    for subnet_name in keys(var.subnets) :
+    subnet_name => {
+      name           = "nsg-${var.project_name}-${var.env_name}-${subnet_name}"
+      security_rules = lookup(var.subnet_network_security_rules, subnet_name, {})
+    }
+  }
 }
 
 module "resource_group" {
@@ -38,6 +45,16 @@ module "network" {
   dns_servers         = var.vnet_dns_servers
   subnets             = var.subnets
   tags                = var.tags
+}
+
+module "network_security_groups" {
+  for_each            = local.subnet_network_security_groups
+  source              = "../../Azure/modules/network-security-group"
+  name                = each.value.name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  security_rules      = each.value.security_rules
+  subnet_ids          = toset([module.network.subnet_ids[each.key]])
 }
 
 module "acr" {
