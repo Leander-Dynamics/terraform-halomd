@@ -96,14 +96,17 @@ jobs:
         fi
 
         cd platform/infra/envs/${{ parameters.envName }}
+        declare -a BACKEND_CONFIG_ARGS=(-backend-config=backend.tfvars)
         if [[ -n "${AZ_SUBSCRIPTION_ID:-}" ]]; then
           SUB_TENANT_VAR_FLAGS="${SUB_TENANT_VAR_FLAGS} -var \"subscription_id=${AZ_SUBSCRIPTION_ID}\""
+          BACKEND_CONFIG_ARGS+=(-backend-config="subscription_id=${AZ_SUBSCRIPTION_ID}")
         fi
         if [[ -n "${AZ_TENANT_ID:-}" ]]; then
           SUB_TENANT_VAR_FLAGS="${SUB_TENANT_VAR_FLAGS} -var \"tenant_id=${AZ_TENANT_ID}\""
+          BACKEND_CONFIG_ARGS+=(-backend-config="tenant_id=${AZ_TENANT_ID}")
         fi
 
-        terraform init -reconfigure -backend-config=backend.tfvars -lock-timeout='${{ parameters.lockTimeout }}'
+        terraform init -reconfigure "${BACKEND_CONFIG_ARGS[@]}" -lock-timeout='${{ parameters.lockTimeout }}'
         terraform plan -input=false -var-file=terraform.tfvars ${{ parameters.extraVarFlags }} ${SUB_TENANT_VAR_FLAGS} ${AKV_VAR_FLAGS} -out "$BUILD_SOURCESDIRECTORY/tfplan-${{ parameters.envName }}.tfplan"
   - task: PublishPipelineArtifact@1
     inputs:
