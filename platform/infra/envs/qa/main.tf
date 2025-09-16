@@ -201,4 +201,5 @@ module "app_service_web" {
   app_insights_connection_string = var.app_service_app_insights_connection_string
   log_analytics_workspace_id     = var.app_service_log_analytics_workspace_id
   app_settings                   = var.app_service_app_settings
-  connection_stri_
+  connection_strings             = var.app_service_connection_strings
+}
