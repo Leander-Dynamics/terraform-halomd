@@ -154,6 +154,12 @@ arbit-consolidated-infra-ado/
 - **Re-run failed stages:** Apply stages reuse the saved plan artifact to maintain integrity.
 - **Redeploy from Environments:** Trigger a redeploy of the last successful run for a given environment using the stored artifact.
 
+### Local Terraform helper script
+
+- Use [`scripts/run-terraform.sh`](scripts/run-terraform.sh) to execute a one-shot `terraform init` + `terraform apply` for a specific environment.
+- Syntax: `./scripts/run-terraform.sh <dev|qa|stage|prod>` (the script validates the environment and requires `terraform` in your `PATH`).
+- Run the script from any directory; it automatically changes to `platform/infra/envs/<env>`, loads `backend.tfvars`, and applies using `terraform.tfvars` with `-auto-approve`.
+
 ### Security and governance
 
 - Enforce least privilege by scoping service connections to the minimal subscription/resource group.
