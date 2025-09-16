@@ -12,6 +12,7 @@ locals {
   web_plan         = "asp-halomdweb-${var.env_name}-${var.location}"
   web_name         = "app-halomdweb-${var.env_name}"
   app_gateway_name = "agw-${var.project_name}-${var.env_name}"
+  bastion_name     = "bas-${var.project_name}-${var.env_name}"
   arbitration_plan = "asp-${var.project_name}-arb-${var.env_name}-${var.location}"
   arbitration_name = "app-${var.project_name}-arb-${var.env_name}"
 
@@ -45,6 +46,17 @@ module "network" {
   tags                = var.tags
   a_records           = var.dns_a_records
   cname_records       = var.dns_cname_records
+}
+
+module "bastion" {
+  count = var.enable_bastion ? 1 : 0
+
+  source              = "../../Azure/modules/bastion"
+  name                = local.bastion_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  subnet_id           = var.enable_bastion ? module.network.subnet_ids[var.bastion_subnet_key] : null
+  tags                = var.tags
 }
 
 module "app_service" {
@@ -155,6 +167,16 @@ output "app_gateway_public_ip_address" {
 output "app_gateway_public_fqdn" {
   description = "Public FQDN assigned to the Application Gateway."
   value       = module.app_gateway.public_ip_fqdn
+}
+
+output "bastion_host_id" {
+  description = "Resource ID of the Bastion host."
+  value       = var.enable_bastion ? module.bastion[0].id : null
+}
+
+output "bastion_public_ip_address" {
+  description = "Public IP address associated with the Bastion host."
+  value       = var.enable_bastion ? module.bastion[0].public_ip_address : null
 }
 
 output "sql_server_fqdn" {

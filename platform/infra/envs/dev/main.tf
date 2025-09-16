@@ -12,6 +12,7 @@ locals {
   func_external_name   = "func-ext-${var.project_name}-${var.env_name}"
   web_name             = "web-${var.project_name}-${var.env_name}"
   app_gateway_name     = "agw-${var.project_name}-${var.env_name}"
+  bastion_name         = "bas-${var.project_name}-${var.env_name}"
   arbitration_plan_name = "asp-${var.project_name}-${var.env_name}-arb"
   arbitration_app_name  = "web-${var.project_name}-${var.env_name}-arb"
   arbitration_plan_sku_effective       = coalesce(nullif(trimspace(coalesce(var.arbitration_plan_sku, "")), ""), "B1")
@@ -37,6 +38,17 @@ module "network" {
   address_space       = var.vnet_address_space
   dns_servers         = var.vnet_dns_servers
   subnets             = var.subnets
+  tags                = var.tags
+}
+
+module "bastion" {
+  count = var.enable_bastion ? 1 : 0
+
+  source              = "../../Azure/modules/bastion"
+  name                = local.bastion_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  subnet_id           = var.enable_bastion ? module.network.subnet_ids[var.bastion_subnet_key] : null
   tags                = var.tags
 }
 
@@ -218,6 +230,16 @@ output "app_gateway_public_ip_address" {
 output "app_gateway_public_fqdn" {
   description = "Public FQDN assigned to the Application Gateway."
   value       = module.app_gateway.public_ip_fqdn
+}
+
+output "bastion_host_id" {
+  description = "Resource ID of the Bastion host."
+  value       = var.enable_bastion ? module.bastion[0].id : null
+}
+
+output "bastion_public_ip_address" {
+  description = "Public IP address associated with the Bastion host."
+  value       = var.enable_bastion ? module.bastion[0].public_ip_address : null
 }
 
 output "sql_server_fqdn" {
