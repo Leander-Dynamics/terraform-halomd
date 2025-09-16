@@ -40,6 +40,82 @@ module "network" {
   tags                = var.tags
 }
 
+locals {
+  nat_gateway_settings = var.enable_nat_gateway && var.nat_gateway_configuration != null ? {
+    name                     = var.nat_gateway_configuration.name
+    sku_name                 = try(var.nat_gateway_configuration.sku_name, "Standard")
+    idle_timeout_in_minutes  = try(var.nat_gateway_configuration.idle_timeout_in_minutes, 4)
+    zones                    = try(var.nat_gateway_configuration.zones, [])
+    public_ip_configurations = try(var.nat_gateway_configuration.public_ip_configurations, [])
+    public_ip_ids            = try(var.nat_gateway_configuration.public_ip_ids, [])
+    subnet_keys              = var.nat_gateway_configuration.subnet_keys
+    tags                     = try(var.nat_gateway_configuration.tags, {})
+  } : null
+
+  nat_gateway_subnet_ids = local.nat_gateway_settings != null ? [
+    for key in local.nat_gateway_settings.subnet_keys : module.network.subnet_ids[key]
+  ] : []
+
+  vpn_gateway_settings = var.enable_vpn_gateway && var.vpn_gateway_configuration != null ? {
+    name                     = var.vpn_gateway_configuration.name
+    gateway_subnet_key       = var.vpn_gateway_configuration.gateway_subnet_key
+    sku                      = var.vpn_gateway_configuration.sku
+    gateway_type             = try(var.vpn_gateway_configuration.gateway_type, "Vpn")
+    vpn_type                 = try(var.vpn_gateway_configuration.vpn_type, "RouteBased")
+    active_active            = try(var.vpn_gateway_configuration.active_active, false)
+    enable_bgp               = try(var.vpn_gateway_configuration.enable_bgp, false)
+    generation               = try(var.vpn_gateway_configuration.generation, null)
+    ip_configuration_name    = try(var.vpn_gateway_configuration.ip_configuration_name, "default")
+    custom_routes            = try(var.vpn_gateway_configuration.custom_routes, [])
+    public_ip                = try(var.vpn_gateway_configuration.public_ip, null)
+    public_ip_id             = try(var.vpn_gateway_configuration.public_ip_id, null)
+    vpn_client_configuration = try(var.vpn_gateway_configuration.vpn_client_configuration, null)
+    bgp_settings             = try(var.vpn_gateway_configuration.bgp_settings, null)
+    tags                     = try(var.vpn_gateway_configuration.tags, {})
+  } : null
+
+  vpn_gateway_subnet_id = local.vpn_gateway_settings != null ? module.network.subnet_ids[local.vpn_gateway_settings.gateway_subnet_key] : null
+}
+
+module "nat_gateway" {
+  for_each = local.nat_gateway_settings == null ? {} : { default = local.nat_gateway_settings }
+
+  source              = "../../Azure/modules/nat-gateway"
+  name                = each.value.name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  sku_name            = each.value.sku_name
+  idle_timeout_in_minutes = each.value.idle_timeout_in_minutes
+  zones                   = each.value.zones
+  public_ip_configurations = each.value.public_ip_configurations
+  public_ip_ids            = each.value.public_ip_ids
+  subnet_ids               = local.nat_gateway_subnet_ids
+  tags                     = merge(var.tags, each.value.tags)
+}
+
+module "vpn_gateway" {
+  for_each = local.vpn_gateway_settings == null ? {} : { default = local.vpn_gateway_settings }
+
+  source              = "../../Azure/modules/vpn-gateway"
+  name                = each.value.name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  gateway_subnet_id   = local.vpn_gateway_subnet_id
+  gateway_type        = each.value.gateway_type
+  sku                 = each.value.sku
+  vpn_type            = each.value.vpn_type
+  active_active       = each.value.active_active
+  enable_bgp          = each.value.enable_bgp
+  generation          = each.value.generation
+  ip_configuration_name        = each.value.ip_configuration_name
+  custom_route_address_prefixes = each.value.custom_routes
+  public_ip_configuration      = each.value.public_ip
+  public_ip_id                 = each.value.public_ip_id
+  vpn_client_configuration     = each.value.vpn_client_configuration
+  bgp_settings                 = each.value.bgp_settings
+  tags                         = merge(var.tags, each.value.tags)
+}
+
 module "acr" {
   count               = var.enable_acr ? 1 : 0
   source              = "../../Azure/modules/acr"
@@ -218,6 +294,26 @@ output "app_gateway_public_ip_address" {
 output "app_gateway_public_fqdn" {
   description = "Public FQDN assigned to the Application Gateway."
   value       = module.app_gateway.public_ip_fqdn
+}
+
+output "nat_gateway_id" {
+  description = "Resource ID of the NAT Gateway when provisioned."
+  value       = try(module.nat_gateway["default"].id, null)
+}
+
+output "nat_gateway_public_ip_ids" {
+  description = "Public IP resource IDs attached to the NAT Gateway."
+  value       = try(module.nat_gateway["default"].public_ip_ids, [])
+}
+
+output "vpn_gateway_id" {
+  description = "Resource ID of the virtual network gateway when provisioned."
+  value       = try(module.vpn_gateway["default"].id, null)
+}
+
+output "vpn_gateway_public_ip_id" {
+  description = "Public IP resource ID associated with the virtual network gateway."
+  value       = try(module.vpn_gateway["default"].public_ip_id, null)
 }
 
 output "sql_server_fqdn" {
