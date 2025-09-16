@@ -138,6 +138,20 @@ variable "vpn_gateway_configuration" {
 }
 
 # -------------------------
+# IAM / RBAC
+# -------------------------
+variable "kv_cicd_principal_id" {
+  description = "Object ID of the CI/CD principal that requires Key Vault access."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.kv_cicd_principal_id == null ? true : trimspace(var.kv_cicd_principal_id) != ""
+    error_message = "kv_cicd_principal_id cannot be empty when provided."
+  }
+}
+
+# -------------------------
 # Key Vault & Storage networking
 # -------------------------
 variable "kv_public_network_access" {
