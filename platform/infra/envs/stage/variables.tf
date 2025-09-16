@@ -1,4 +1,49 @@
 # -------------------------
+# Application Gateway
+# -------------------------
+
+variable "app_gateway_subnet_key" {
+  description = "Key of the subnet reserved for the Application Gateway."
+  type        = string
+
+  validation {
+    condition     = try(trimspace(var.app_gateway_subnet_key), "") != ""
+    error_message = "app_gateway_subnet_key must not be empty."
+  }
+}
+
+variable "app_gateway_subnet_id" {
+  description = "Optional explicit subnet resource ID used for the Application Gateway when managed outside of this workspace."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.app_gateway_subnet_id == null || trimspace(var.app_gateway_subnet_id) != ""
+    error_message = "app_gateway_subnet_id cannot be an empty string; remove it instead."
+  }
+}
+
+variable "app_gateway_fqdn_prefix" {
+  description = "Domain name label applied to the Application Gateway public IP."
+  type        = string
+
+  validation {
+    condition     = try(trimspace(var.app_gateway_fqdn_prefix), "") != ""
+    error_message = "app_gateway_fqdn_prefix must not be empty."
+  }
+}
+
+variable "app_gateway_backend_fqdns" {
+  description = "List of backend hostnames routed through the Application Gateway."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.app_gateway_backend_fqdns) > 0
+    error_message = "At least one backend hostname must be provided for the Application Gateway."
+  }
+}
+
+# -------------------------
 # Connectivity
 # -------------------------
 

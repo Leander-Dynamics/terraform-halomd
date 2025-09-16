@@ -160,6 +160,18 @@ module "storage_private_endpoint" {
   ] : []
 }
 
+# Application Gateway
+module "app_gateway" {
+  source              = "../../Azure/modules/app-gateway"
+  name                = local.app_gateway_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  subnet_id = var.app_gateway_subnet_id != null && trimspace(var.app_gateway_subnet_id) != "" ? var.app_gateway_subnet_id : module.network.subnet_ids[var.app_gateway_subnet_key]
+  fqdn_prefix   = var.app_gateway_fqdn_prefix
+  backend_fqdns = var.app_gateway_backend_fqdns
+  tags          = var.tags
+}
+
 # NAT & VPN
 module "nat_gateway" {
   for_each = local.nat_gateway_settings == null ? {} : { default = local.nat_gateway_settings }

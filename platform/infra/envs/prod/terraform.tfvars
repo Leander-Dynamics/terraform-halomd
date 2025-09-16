@@ -24,10 +24,11 @@ subnets = {
   mgmt    = { address_prefixes = ["10.40.3.0/24"] }
 }
 
-# For module using subnet keys
-app_gateway_subnet_key  = "gateway"
-
-# For module using direct subnet id
+# -------------------------
+# Application Gateway
+# -------------------------
+app_gateway_subnet_key = "gateway"
+# Optional override when reusing an existing subnet
 app_gateway_subnet_id = "/subscriptions/930755b1-ef22-4721-a31a-1b6fbecf7da6/resourceGroups/rg-arbit-prod/providers/Microsoft.Network/virtualNetworks/vnet-arbit-prod/subnets/appgw"
 
 app_gateway_fqdn_prefix   = "agw-arbit-prod"

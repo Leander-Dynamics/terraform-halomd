@@ -24,6 +24,16 @@ subnets = {
   mgmt    = { address_prefixes = ["10.20.3.0/24"] }
 }
 
+# -------------------------
+# Application Gateway
+# -------------------------
+app_gateway_subnet_key    = "gateway"
+app_gateway_fqdn_prefix   = "agw-arbit-dev"
+app_gateway_backend_fqdns = [
+  "app-halomdweb-dev.azurewebsites.net",
+  "app-arbit-arb-dev.azurewebsites.net",
+]
+
 # Subnet references for optional modules
 bastion_subnet_key                  = "mgmt"
 kv_private_endpoint_subnet_key      = "data"

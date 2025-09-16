@@ -3,6 +3,7 @@
 locals {
   rg_name                      = "rg-${var.project_name}-${var.env_name}"
   kv_name                      = "kv-${var.project_name}-${var.env_name}"
+  app_gateway_name             = "agw-${var.project_name}-${var.env_name}"
   bastion_name                 = "bas-${var.project_name}-${var.env_name}"
   kv_private_endpoint_name     = "pep-${var.project_name}-${var.env_name}-kv"
   storage_private_endpoint_name = "pep-${var.project_name}-${var.env_name}-st"
@@ -133,6 +134,18 @@ module "vpn_gateway" {
   vpn_client_configuration     = each.value.vpn_client_configuration
   bgp_settings                 = each.value.bgp_settings
   tags                         = merge(var.tags, each.value.tags)
+}
+
+# Application Gateway
+module "app_gateway" {
+  source              = "../../Azure/modules/app-gateway"
+  name                = local.app_gateway_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  subnet_id = var.app_gateway_subnet_id != null && trimspace(var.app_gateway_subnet_id) != "" ? var.app_gateway_subnet_id : module.network.subnet_ids[var.app_gateway_subnet_key]
+  fqdn_prefix   = var.app_gateway_fqdn_prefix
+  backend_fqdns = var.app_gateway_backend_fqdns
+  tags          = var.tags
 }
 
 # Bastion
