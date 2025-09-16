@@ -12,6 +12,7 @@ locals {
   web_plan         = "asp-halomdweb-${var.env_name}-${var.location}"
   web_name         = "app-halomdweb-${var.env_name}"
   app_gateway_name = "agw-${var.project_name}-${var.env_name}"
+  bastion_name     = "bas-${var.project_name}-${var.env_name}"
   arbitration_plan = "asp-${var.project_name}-arb-${var.env_name}-${var.location}"
   arbitration_name = "app-${var.project_name}-arb-${var.env_name}"
 
@@ -22,30 +23,7 @@ locals {
 
   sql_server_name   = "sql-${var.project_name}-${var.env_name}"
   sql_database_name = var.sql_database_name != "" ? var.sql_database_name : "${var.project_name}-${var.env_name}"
-}
 
-# -------------------------
-# Core modules
-# -------------------------
-module "resource_group" {
-  source   = "../../Azure/modules/resource-group"
-  name     = local.rg_name
-  location = var.location
-  tags     = var.tags
-}
-
-module "network" {
-  source              = "../../Azure/modules/network"
-  name                = "vnet-${var.project_name}-${var.env_name}"
-  resource_group_name = module.resource_group.name
-  location            = var.location
-  address_space       = var.vnet_address_space
-  dns_servers         = var.vnet_dns_servers
-  subnets             = var.subnets
-  tags                = var.tags
-}
-
-locals {
   nat_gateway_settings = var.enable_nat_gateway && var.nat_gateway_configuration != null ? {
     name                     = var.nat_gateway_configuration.name
     sku_name                 = try(var.nat_gateway_configuration.sku_name, "Standard")
@@ -82,14 +60,35 @@ locals {
   vpn_gateway_subnet_id = local.vpn_gateway_settings != null ? module.network.subnet_ids[local.vpn_gateway_settings.gateway_subnet_key] : null
 }
 
+# -------------------------
+# Core modules
+# -------------------------
+module "resource_group" {
+  source   = "../../Azure/modules/resource-group"
+  name     = local.rg_name
+  location = var.location
+  tags     = var.tags
+}
+
+module "network" {
+  source              = "../../Azure/modules/network"
+  name                = "vnet-${var.project_name}-${var.env_name}"
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  address_space       = var.vnet_address_space
+  dns_servers         = var.vnet_dns_servers
+  subnets             = var.subnets
+  tags                = var.tags
+}
+
 module "nat_gateway" {
   for_each = local.nat_gateway_settings == null ? {} : { default = local.nat_gateway_settings }
 
-  source              = "../../Azure/modules/nat-gateway"
-  name                = each.value.name
-  resource_group_name = module.resource_group.name
-  location            = var.location
-  sku_name            = each.value.sku_name
+  source                  = "../../Azure/modules/nat-gateway"
+  name                    = each.value.name
+  resource_group_name     = module.resource_group.name
+  location                = var.location
+  sku_name                = each.value.sku_name
   idle_timeout_in_minutes = each.value.idle_timeout_in_minutes
   zones                   = each.value.zones
   public_ip_configurations = each.value.public_ip_configurations
@@ -101,18 +100,18 @@ module "nat_gateway" {
 module "vpn_gateway" {
   for_each = local.vpn_gateway_settings == null ? {} : { default = local.vpn_gateway_settings }
 
-  source              = "../../Azure/modules/vpn-gateway"
-  name                = each.value.name
-  resource_group_name = module.resource_group.name
-  location            = var.location
-  gateway_subnet_id   = local.vpn_gateway_subnet_id
-  gateway_type        = each.value.gateway_type
-  sku                 = each.value.sku
-  vpn_type            = each.value.vpn_type
-  active_active       = each.value.active_active
-  enable_bgp          = each.value.enable_bgp
-  generation          = each.value.generation
-  ip_configuration_name        = each.value.ip_configuration_name
+  source                  = "../../Azure/modules/vpn-gateway"
+  name                    = each.value.name
+  resource_group_name     = module.resource_group.name
+  location                = var.location
+  gateway_subnet_id       = local.vpn_gateway_subnet_id
+  gateway_type            = each.value.gateway_type
+  sku                     = each.value.sku
+  vpn_type                = each.value.vpn_type
+  active_active           = each.value.active_active
+  enable_bgp              = each.value.enable_bgp
+  generation              = each.value.generation
+  ip_configuration_name   = each.value.ip_configuration_name
   custom_route_address_prefixes = each.value.custom_routes
   public_ip_configuration      = each.value.public_ip
   public_ip_id                 = each.value.public_ip_id
@@ -121,162 +120,4 @@ module "vpn_gateway" {
   tags                         = merge(var.tags, each.value.tags)
 }
 
-module "app_service" {
-  source              = "../../Azure/modules/app-service"
-  plan_name           = local.web_plan
-  plan_sku            = var.app_service_plan_sku
-  plan_os_type        = var.app_service_plan_os_type
-  app_name            = var.app_service_fqdn_prefix
-  resource_group_name = module.resource_group.name
-  location            = var.location
-  https_only          = var.app_service_https_only
-  always_on           = var.app_service_always_on
-  app_settings        = var.app_service_app_settings
-  connection_strings  = var.app_service_connection_strings
-  tags                = var.tags
-}
-
-module "app_gateway" {
-  source              = "../../Azure/modules/app-gateway"
-  name                = local.app_gateway_name
-  resource_group_name = module.resource_group.name
-  location            = var.location
-  subnet_id           = module.network.subnet_ids[var.app_gateway_subnet_key]
-  fqdn_prefix         = var.app_gateway_fqdn_prefix
-  backend_fqdns       = distinct(concat(var.app_gateway_backend_fqdns, [module.app_service.default_hostname]))
-  backend_port        = var.app_gateway_backend_port
-  backend_protocol    = var.app_gateway_backend_protocol
-  frontend_port       = var.app_gateway_frontend_port
-  listener_protocol   = var.app_gateway_listener_protocol
-  sku_name            = var.app_gateway_sku_name
-  sku_tier            = var.app_gateway_sku_tier
-  sku_capacity        = var.app_gateway_capacity
-  enable_http2        = var.app_gateway_enable_http2
-  backend_request_timeout          = var.app_gateway_backend_request_timeout
-  pick_host_name_from_backend_address = var.app_gateway_pick_host_name
-  tags                = var.tags
-}
-
-module "sql" {
-  count                         = var.enable_sql ? 1 : 0
-  source                        = "../../Azure/modules/sql-serverless"
-  server_name                   = local.sql_server_name
-  database_name                 = local.sql_database_name
-  resource_group_name           = module.resource_group.name
-  location                      = var.location
-  administrator_login           = var.sql_admin_login
-  administrator_password        = var.sql_admin_password
-  public_network_access_enabled = var.sql_public_network_access
-  minimum_tls_version           = var.sql_minimum_tls_version
-  sku_name                      = var.sql_sku_name
-  auto_pause_delay_in_minutes   = var.sql_auto_pause_delay
-  max_size_gb                   = var.sql_max_size_gb
-  min_capacity                  = var.sql_min_capacity
-  max_capacity                  = var.sql_max_capacity
-  read_scale                    = var.sql_read_scale
-  zone_redundant                = var.sql_zone_redundant
-  collation                     = var.sql_collation
-  firewall_rules                = var.sql_firewall_rules
-  tags                          = var.tags
-}
-
-module "dns_zone" {
-  source              = "../../Azure/modules/dns-zone"
-  zone_name           = var.dns_zone_name
-  resource_group_name = module.resource_group.name
-  tags                = var.tags
-  a_records           = var.dns_a_records
-  cname_records       = var.dns_cname_records
-}
-
-module "app_insights" {
-  source                       = "../../Azure/modules/app-insights"
-  resource_group_name          = coalesce(var.app_insights_resource_group_name, module.resource_group.name)
-  location                     = var.location
-  log_analytics_workspace_name = local.log_name
-  application_insights_name    = local.appi_name
-  tags                         = var.tags
-}
-
-# -------------------------
-# Outputs
-# -------------------------
-output "resource_group_name" {
-  description = "Resource group provisioned for the environment."
-  value       = module.resource_group.name
-}
-
-output "virtual_network_id" {
-  description = "ID of the deployed virtual network."
-  value       = module.network.virtual_network_id
-}
-
-output "app_service_default_hostname" {
-  description = "Default hostname assigned to the App Service."
-  value       = module.app_service.default_hostname
-}
-
-output "app_gateway_id" {
-  description = "ID of the Application Gateway."
-  value       = module.app_gateway.id
-}
-
-output "app_gateway_public_ip_address" {
-  description = "Allocated public IP address of the Application Gateway."
-  value       = module.app_gateway.public_ip_address
-}
-
-output "app_gateway_public_fqdn" {
-  description = "Public FQDN assigned to the Application Gateway."
-  value       = module.app_gateway.public_ip_fqdn
-}
-
-output "nat_gateway_id" {
-  description = "Resource ID of the NAT Gateway when provisioned."
-  value       = try(module.nat_gateway["default"].id, null)
-}
-
-output "nat_gateway_public_ip_ids" {
-  description = "Public IP resource IDs attached to the NAT Gateway."
-  value       = try(module.nat_gateway["default"].public_ip_ids, [])
-}
-
-output "vpn_gateway_id" {
-  description = "Resource ID of the virtual network gateway when provisioned."
-  value       = try(module.vpn_gateway["default"].id, null)
-}
-
-output "vpn_gateway_public_ip_id" {
-  description = "Public IP resource ID associated with the virtual network gateway."
-  value       = try(module.vpn_gateway["default"].public_ip_id, null)
-}
-
-output "sql_server_fqdn" {
-  description = "Fully qualified domain name of the SQL Server."
-  value       = var.enable_sql ? module.sql[0].server_fqdn : null
-}
-
-output "sql_database_id" {
-  description = "Database resource ID."
-  value       = var.enable_sql ? module.sql[0].database_id : null
-}
-
-output "sql_server_name" {
-  description = "SQL Server name."
-  value       = var.enable_sql ? module.sql[0].server_name : null
-}
-
-output "app_insights_connection_string" {
-  description = "Application Insights connection string."
-  value       = module.app_insights.application_insights_connection_string
-}
-
-output "app_insights_instrumentation_key" {
-  description = "Application Insights instrumentation key."
-  value       = module.app_insights.application_insights_instrumentation_key
-}
-
-output "log_analytics_workspace_id" {
-  description = "Log Analytics workspace ID."
-  value       = module.app_insights.log_analytics_workspace_id
-}
+modul

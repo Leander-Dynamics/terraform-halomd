@@ -12,6 +12,7 @@ locals {
   web_plan         = "asp-halomdweb-${var.env_name}-${var.location}"
   web_name         = "app-halomdweb-${var.env_name}"
   app_gateway_name = "agw-${var.project_name}-${var.env_name}"
+  bastion_name     = "bas-${var.project_name}-${var.env_name}"
   arbitration_plan = "asp-${var.project_name}-arb-${var.env_name}-${var.location}"
   arbitration_name = "app-${var.project_name}-arb-${var.env_name}"
 
@@ -22,32 +23,7 @@ locals {
 
   sql_server_name   = "sql-${var.project_name}-${var.env_name}"
   sql_database_name = var.sql_database_name != "" ? var.sql_database_name : "${var.project_name}-${var.env_name}"
-}
 
-# -------------------------
-# Core modules
-# -------------------------
-module "resource_group" {
-  source   = "../../Azure/modules/resource-group"
-  name     = local.rg_name
-  location = var.location
-  tags     = var.tags
-}
-
-module "network" {
-  source              = "../../Azure/modules/network"
-  name                = "vnet-${var.project_name}-${var.env_name}"
-  resource_group_name = module.resource_group.name
-  location            = var.location
-  address_space       = var.vnet_address_space
-  dns_servers         = var.vnet_dns_servers
-  subnets             = var.subnets
-  tags                = var.tags
-  a_records           = var.dns_a_records
-  cname_records       = var.dns_cname_records
-}
-
-locals {
   nat_gateway_settings = var.enable_nat_gateway && var.nat_gateway_configuration != null ? {
     name                     = var.nat_gateway_configuration.name
     sku_name                 = try(var.nat_gateway_configuration.sku_name, "Standard")
@@ -84,14 +60,37 @@ locals {
   vpn_gateway_subnet_id = local.vpn_gateway_settings != null ? module.network.subnet_ids[local.vpn_gateway_settings.gateway_subnet_key] : null
 }
 
+# -------------------------
+# Core modules
+# -------------------------
+module "resource_group" {
+  source   = "../../Azure/modules/resource-group"
+  name     = local.rg_name
+  location = var.location
+  tags     = var.tags
+}
+
+module "network" {
+  source              = "../../Azure/modules/network"
+  name                = "vnet-${var.project_name}-${var.env_name}"
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  address_space       = var.vnet_address_space
+  dns_servers         = var.vnet_dns_servers
+  subnets             = var.subnets
+  tags                = var.tags
+  a_records           = var.dns_a_records
+  cname_records       = var.dns_cname_records
+}
+
 module "nat_gateway" {
   for_each = local.nat_gateway_settings == null ? {} : { default = local.nat_gateway_settings }
 
-  source              = "../../Azure/modules/nat-gateway"
-  name                = each.value.name
-  resource_group_name = module.resource_group.name
-  location            = var.location
-  sku_name            = each.value.sku_name
+  source                  = "../../Azure/modules/nat-gateway"
+  name                    = each.value.name
+  resource_group_name     = module.resource_group.name
+  location                = var.location
+  sku_name                = each.value.sku_name
   idle_timeout_in_minutes = each.value.idle_timeout_in_minutes
   zones                   = each.value.zones
   public_ip_configurations = each.value.public_ip_configurations
@@ -103,24 +102,34 @@ module "nat_gateway" {
 module "vpn_gateway" {
   for_each = local.vpn_gateway_settings == null ? {} : { default = local.vpn_gateway_settings }
 
-  source              = "../../Azure/modules/vpn-gateway"
-  name                = each.value.name
-  resource_group_name = module.resource_group.name
-  location            = var.location
-  gateway_subnet_id   = local.vpn_gateway_subnet_id
-  gateway_type        = each.value.gateway_type
-  sku                 = each.value.sku
-  vpn_type            = each.value.vpn_type
-  active_active       = each.value.active_active
-  enable_bgp          = each.value.enable_bgp
-  generation          = each.value.generation
-  ip_configuration_name        = each.value.ip_configuration_name
+  source                  = "../../Azure/modules/vpn-gateway"
+  name                    = each.value.name
+  resource_group_name     = module.resource_group.name
+  location                = var.location
+  gateway_subnet_id       = local.vpn_gateway_subnet_id
+  gateway_type            = each.value.gateway_type
+  sku                     = each.value.sku
+  vpn_type                = each.value.vpn_type
+  active_active           = each.value.active_active
+  enable_bgp              = each.value.enable_bgp
+  generation              = each.value.generation
+  ip_configuration_name   = each.value.ip_configuration_name
   custom_route_address_prefixes = each.value.custom_routes
   public_ip_configuration      = each.value.public_ip
   public_ip_id                 = each.value.public_ip_id
   vpn_client_configuration     = each.value.vpn_client_configuration
   bgp_settings                 = each.value.bgp_settings
   tags                         = merge(var.tags, each.value.tags)
+}
+
+module "bastion" {
+  count               = var.enable_bastion ? 1 : 0
+  source              = "../../Azure/modules/bastion"
+  name                = local.bastion_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  subnet_id           = var.enable_bastion ? module.network.subnet_ids[var.bastion_subnet_key] : null
+  tags                = var.tags
 }
 
 module "app_service" {
@@ -251,6 +260,16 @@ output "vpn_gateway_id" {
 output "vpn_gateway_public_ip_id" {
   description = "Public IP resource ID associated with the virtual network gateway."
   value       = try(module.vpn_gateway["default"].public_ip_id, null)
+}
+
+output "bastion_host_id" {
+  description = "Resource ID of the Bastion host."
+  value       = var.enable_bastion ? module.bastion[0].id : null
+}
+
+output "bastion_public_ip_address" {
+  description = "Public IP address associated with the Bastion host."
+  value       = var.enable_bastion ? module.bastion[0].public_ip_address : null
 }
 
 output "sql_server_fqdn" {
