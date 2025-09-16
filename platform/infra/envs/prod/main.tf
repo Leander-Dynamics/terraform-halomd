@@ -24,6 +24,10 @@ locals {
   sql_server_name   = "sql-${var.project_name}-${var.env_name}"
   sql_database_name = var.sql_database_name != "" ? var.sql_database_name : "${var.project_name}-${var.env_name}"
 
+  kv_private_endpoint_name      = "pep-${var.project_name}-${var.env_name}-kv"
+  storage_private_endpoint_name = "pep-${var.project_name}-${var.env_name}-st"
+
+  # NAT Gateway locals
   nat_gateway_settings = var.enable_nat_gateway && var.nat_gateway_configuration != null ? {
     name                     = var.nat_gateway_configuration.name
     sku_name                 = try(var.nat_gateway_configuration.sku_name, "Standard")
@@ -39,6 +43,7 @@ locals {
     for key in local.nat_gateway_settings.subnet_keys : module.network.subnet_ids[key]
   ] : []
 
+  # VPN Gateway locals
   vpn_gateway_settings = var.enable_vpn_gateway && var.vpn_gateway_configuration != null ? {
     name                     = var.vpn_gateway_configuration.name
     gateway_subnet_key       = var.vpn_gateway_configuration.gateway_subnet_key
@@ -58,6 +63,10 @@ locals {
   } : null
 
   vpn_gateway_subnet_id = local.vpn_gateway_settings != null ? module.network.subnet_ids[local.vpn_gateway_settings.gateway_subnet_key] : null
+
+  # Private Endpoint locals
+  kv_private_endpoint_subnet_id = var.enable_kv_private_endpoint && var.kv_private_endpoint_subnet_key != null && var.kv_private_endpoint_subnet_key != "" ? lookup(module.network.subnet_ids, var.kv_private_endpoint_subnet_key, null) : null
+  storage_private_endpoint_subnet_id = var.enable_storage_private_endpoint && var.storage_private_endpoint_subnet_key != null && var.storage_private_endpoint_subnet_key != "" ? lookup(module.network.subnet_ids, var.storage_private_endpoint_subnet_key, null) : null
 }
 
 # -------------------------
@@ -81,9 +90,54 @@ module "network" {
   tags                = var.tags
 }
 
+module "kv_private_endpoint" {
+  count = var.enable_kv_private_endpoint && local.kv_private_endpoint_subnet_id != null && var.kv_private_endpoint_resource_id != null ? 1 : 0
+  source              = "../../Azure/modules/private-endpoint"
+  name                = local.kv_private_endpoint_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  subnet_id           = local.kv_private_endpoint_subnet_id
+  tags                = var.tags
+
+  private_service_connection = {
+    name                           = "kv-${var.project_name}-${var.env_name}"
+    private_connection_resource_id = var.kv_private_endpoint_resource_id
+    subresource_names              = ["vault"]
+  }
+
+  private_dns_zone_groups = length(var.kv_private_dns_zone_ids) > 0 ? [
+    {
+      name                 = "default"
+      private_dns_zone_ids = var.kv_private_dns_zone_ids
+    }
+  ] : []
+}
+
+module "storage_private_endpoint" {
+  count = var.enable_storage_private_endpoint && local.storage_private_endpoint_subnet_id != null && var.storage_account_private_connection_resource_id != null ? 1 : 0
+  source              = "../../Azure/modules/private-endpoint"
+  name                = local.storage_private_endpoint_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  subnet_id           = local.storage_private_endpoint_subnet_id
+  tags                = var.tags
+
+  private_service_connection = {
+    name                           = "st-${var.project_name}-${var.env_name}"
+    private_connection_resource_id = var.storage_account_private_connection_resource_id
+    subresource_names              = var.storage_private_endpoint_subresource_names
+  }
+
+  private_dns_zone_groups = length(var.storage_private_dns_zone_ids) > 0 ? [
+    {
+      name                 = "default"
+      private_dns_zone_ids = var.storage_private_dns_zone_ids
+    }
+  ] : []
+}
+
 module "nat_gateway" {
   for_each = local.nat_gateway_settings == null ? {} : { default = local.nat_gateway_settings }
-
   source                  = "../../Azure/modules/nat-gateway"
   name                    = each.value.name
   resource_group_name     = module.resource_group.name
@@ -99,7 +153,6 @@ module "nat_gateway" {
 
 module "vpn_gateway" {
   for_each = local.vpn_gateway_settings == null ? {} : { default = local.vpn_gateway_settings }
-
   source                  = "../../Azure/modules/vpn-gateway"
   name                    = each.value.name
   resource_group_name     = module.resource_group.name
@@ -120,4 +173,25 @@ module "vpn_gateway" {
   tags                         = merge(var.tags, each.value.tags)
 }
 
-modul
+# -------------------------
+# Outputs
+# -------------------------
+output "kv_private_endpoint_id" {
+  description = "Resource ID of the Key Vault private endpoint."
+  value       = try(module.kv_private_endpoint[0].id, null)
+}
+
+output "storage_private_endpoint_id" {
+  description = "Resource ID of the Storage private endpoint."
+  value       = try(module.storage_private_endpoint[0].id, null)
+}
+
+output "nat_gateway_id" {
+  description = "Resource ID of the NAT Gateway when provisioned."
+  value       = try(module.nat_gateway["default"].id, null)
+}
+
+output "vpn_gateway_id" {
+  description = "Resource ID of the virtual network gateway when provisioned."
+  value       = try(module.vpn_gateway["default"].id, null)
+}
