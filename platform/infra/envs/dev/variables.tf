@@ -41,6 +41,154 @@ variable "tenant_id" {
 }
 
 # -------------------------
+# Application Gateway
+# -------------------------
+variable "app_gateway_subnet_key" {
+  description = "Key referencing the subnet used by the Application Gateway when selecting from the virtual network map."
+  type        = string
+  default     = null
+}
+
+variable "app_gateway_subnet_id" {
+  description = "Resource ID of the subnet used by the Application Gateway when referencing an existing subnet directly."
+  type        = string
+  default     = null
+}
+
+variable "app_gateway_fqdn_prefix" {
+  description = "Prefix applied to DNS names associated with the Application Gateway."
+  type        = string
+  default     = null
+}
+
+variable "app_gateway_backend_fqdns" {
+  description = "List of backend FQDNs configured on the Application Gateway."
+  type        = list(string)
+  default     = []
+}
+
+# -------------------------
+# DNS
+# -------------------------
+variable "dns_zone_name" {
+  description = "Name of the DNS zone hosting environment-specific records."
+  type        = string
+  default     = null
+}
+
+variable "dns_a_records" {
+  description = "Map of DNS A record definitions keyed by record name."
+  type = map(object({
+    ttl     = number
+    records = list(string)
+  }))
+  default = {}
+}
+
+variable "dns_cname_records" {
+  description = "Map of DNS CNAME record definitions keyed by record name."
+  type = map(object({
+    ttl    = number
+    record = string
+  }))
+  default = {}
+}
+
+# -------------------------
+# App Service
+# -------------------------
+variable "app_service_plan_sku" {
+  description = "SKU assigned to the App Service plan hosting the web applications."
+  type        = string
+  default     = null
+}
+
+variable "app_service_fqdn_prefix" {
+  description = "Prefix used when composing the primary hostname for the web application."
+  type        = string
+  default     = null
+}
+
+variable "app_service_app_settings" {
+  description = "Application settings applied to the App Service instance."
+  type        = map(string)
+  default     = {}
+}
+
+variable "app_service_connection_strings" {
+  description = "Connection string definitions applied to the App Service instance."
+  type = map(object({
+    type  = string
+    value = string
+  }))
+  default = {}
+}
+
+# -------------------------
+# Arbitration App
+# -------------------------
+variable "arbitration_app_settings" {
+  description = "Application settings applied to the arbitration App Service instance."
+  type        = map(string)
+  default     = {}
+}
+
+# -------------------------
+# SQL Database
+# -------------------------
+variable "sql_database_name" {
+  description = "Name of the SQL database to deploy or reference."
+  type        = string
+  default     = ""
+}
+
+variable "sql_sku_name" {
+  description = "SKU name applied to the SQL database or elastic pool."
+  type        = string
+  default     = null
+}
+
+variable "sql_max_size_gb" {
+  description = "Maximum size in gigabytes allocated to the SQL database."
+  type        = number
+  default     = null
+}
+
+variable "sql_auto_pause_delay" {
+  description = "Auto-pause delay in minutes for serverless SQL configurations."
+  type        = number
+  default     = null
+}
+
+variable "sql_min_capacity" {
+  description = "Minimum compute capacity (vCores) allocated for serverless SQL databases."
+  type        = number
+  default     = null
+}
+
+variable "sql_max_capacity" {
+  description = "Maximum compute capacity (vCores) allocated for serverless SQL databases."
+  type        = number
+  default     = null
+}
+
+variable "sql_public_network_access" {
+  description = "Flag controlling public network access to the SQL server."
+  type        = bool
+  default     = true
+}
+
+variable "sql_firewall_rules" {
+  description = "List of firewall rule definitions to apply to the SQL server."
+  type = list(object({
+    name             = string
+    start_ip_address = string
+    end_ip_address   = string
+  }))
+  default = []
+}
+
+# -------------------------
 # Bastion
 # -------------------------
 variable "enable_bastion" {
