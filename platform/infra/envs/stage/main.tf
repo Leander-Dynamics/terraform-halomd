@@ -198,6 +198,7 @@ module "vpn_gateway" {
   tags                         = merge(var.tags, each.value.tags)
 }
 
+# Bastion
 module "bastion" {
   count               = var.enable_bastion ? 1 : 0
   source              = "../../Azure/modules/bastion"
