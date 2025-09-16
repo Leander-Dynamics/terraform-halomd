@@ -24,10 +24,20 @@ locals {
   sql_server_name   = "sql-${var.project_name}-${var.env_name}"
   sql_database_name = var.sql_database_name != "" ? var.sql_database_name : "${var.project_name}-${var.env_name}"
 
+  # NSGs per subnet
+  subnet_network_security_groups = {
+    for subnet_name in keys(var.subnets) :
+    subnet_name => {
+      name           = "nsg-${var.project_name}-${var.env_name}-${subnet_name}"
+      security_rules = lookup(var.subnet_network_security_rules, subnet_name, {})
+    }
+  }
+
+  # Private Endpoints
   kv_private_endpoint_name      = "pep-${var.project_name}-${var.env_name}-kv"
   storage_private_endpoint_name = "pep-${var.project_name}-${var.env_name}-st"
 
-  # NAT Gateway locals
+  # NAT Gateway
   nat_gateway_settings = var.enable_nat_gateway && var.nat_gateway_configuration != null ? {
     name                     = var.nat_gateway_configuration.name
     sku_name                 = try(var.nat_gateway_configuration.sku_name, "Standard")
@@ -43,7 +53,7 @@ locals {
     for key in local.nat_gateway_settings.subnet_keys : module.network.subnet_ids[key]
   ] : []
 
-  # VPN Gateway locals
+  # VPN Gateway
   vpn_gateway_settings = var.enable_vpn_gateway && var.vpn_gateway_configuration != null ? {
     name                     = var.vpn_gateway_configuration.name
     gateway_subnet_key       = var.vpn_gateway_configuration.gateway_subnet_key
@@ -64,7 +74,7 @@ locals {
 
   vpn_gateway_subnet_id = local.vpn_gateway_settings != null ? module.network.subnet_ids[local.vpn_gateway_settings.gateway_subnet_key] : null
 
-  # Private Endpoint locals
+  # Private Endpoint lookups
   kv_private_endpoint_subnet_id = var.enable_kv_private_endpoint && var.kv_private_endpoint_subnet_key != null && var.kv_private_endpoint_subnet_key != "" ? lookup(module.network.subnet_ids, var.kv_private_endpoint_subnet_key, null) : null
   storage_private_endpoint_subnet_id = var.enable_storage_private_endpoint && var.storage_private_endpoint_subnet_key != null && var.storage_private_endpoint_subnet_key != "" ? lookup(module.network.subnet_ids, var.storage_private_endpoint_subnet_key, null) : null
 }
@@ -90,6 +100,18 @@ module "network" {
   tags                = var.tags
 }
 
+# NSGs
+module "network_security_groups" {
+  for_each            = local.subnet_network_security_groups
+  source              = "../../Azure/modules/network-security-group"
+  name                = each.value.name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  security_rules      = each.value.security_rules
+  subnet_ids          = toset([module.network.subnet_ids[each.key]])
+}
+
+# Private Endpoints
 module "kv_private_endpoint" {
   count = var.enable_kv_private_endpoint && local.kv_private_endpoint_subnet_id != null && var.kv_private_endpoint_resource_id != null ? 1 : 0
   source              = "../../Azure/modules/private-endpoint"
@@ -136,6 +158,7 @@ module "storage_private_endpoint" {
   ] : []
 }
 
+# NAT Gateway
 module "nat_gateway" {
   for_each = local.nat_gateway_settings == null ? {} : { default = local.nat_gateway_settings }
   source                  = "../../Azure/modules/nat-gateway"
@@ -151,6 +174,7 @@ module "nat_gateway" {
   tags                     = merge(var.tags, each.value.tags)
 }
 
+# VPN Gateway
 module "vpn_gateway" {
   for_each = local.vpn_gateway_settings == null ? {} : { default = local.vpn_gateway_settings }
   source                  = "../../Azure/modules/vpn-gateway"
@@ -176,6 +200,11 @@ module "vpn_gateway" {
 # -------------------------
 # Outputs
 # -------------------------
+output "nsg_ids" {
+  description = "IDs of deployed Network Security Groups."
+  value       = { for k, v in module.network_security_groups : k => v.id }
+}
+
 output "kv_private_endpoint_id" {
   description = "Resource ID of the Key Vault private endpoint."
   value       = try(module.kv_private_endpoint[0].id, null)

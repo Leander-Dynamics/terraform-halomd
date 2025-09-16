@@ -21,10 +21,21 @@ locals {
   storage_data_name    = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
   sql_server_name      = "sql-${var.project_name}-${var.env_name}"
   aad_app_display      = "aad-${var.project_name}-${var.env_name}"
+
+  # NSG locals
+  subnet_network_security_groups = {
+    for subnet_name in keys(var.subnets) :
+    subnet_name => {
+      name           = "nsg-${var.project_name}-${var.env_name}-${subnet_name}"
+      security_rules = lookup(var.subnet_network_security_rules, subnet_name, {})
+    }
+  }
+
+  # Private Endpoints
   kv_private_endpoint_name      = "pep-${var.project_name}-${var.env_name}-kv"
   storage_private_endpoint_name = "pep-${var.project_name}-${var.env_name}-st"
 
-  # NAT Gateway locals
+  # NAT Gateway
   nat_gateway_settings = var.enable_nat_gateway && var.nat_gateway_configuration != null ? {
     name                     = var.nat_gateway_configuration.name
     sku_name                 = try(var.nat_gateway_configuration.sku_name, "Standard")
@@ -40,7 +51,7 @@ locals {
     for key in local.nat_gateway_settings.subnet_keys : module.network.subnet_ids[key]
   ] : []
 
-  # VPN Gateway locals
+  # VPN Gateway
   vpn_gateway_settings = var.enable_vpn_gateway && var.vpn_gateway_configuration != null ? {
     name                     = var.vpn_gateway_configuration.name
     gateway_subnet_key       = var.vpn_gateway_configuration.gateway_subnet_key
@@ -61,7 +72,7 @@ locals {
 
   vpn_gateway_subnet_id = local.vpn_gateway_settings != null ? module.network.subnet_ids[local.vpn_gateway_settings.gateway_subnet_key] : null
 
-  # Private Endpoint locals
+  # Private Endpoint subnet lookups
   kv_private_endpoint_subnet_id = var.enable_kv_private_endpoint && var.kv_private_endpoint_subnet_key != null && var.kv_private_endpoint_subnet_key != "" ? lookup(module.network.subnet_ids, var.kv_private_endpoint_subnet_key, null) : null
   kv_private_endpoints = local.kv_private_endpoint_subnet_id != null ? [
     { subnet_id = local.kv_private_endpoint_subnet_id }
@@ -94,6 +105,18 @@ module "network" {
   tags                = var.tags
 }
 
+# NSGs
+module "network_security_groups" {
+  for_each            = local.subnet_network_security_groups
+  source              = "../../Azure/modules/network-security-group"
+  name                = each.value.name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  security_rules      = each.value.security_rules
+  subnet_ids          = toset([module.network.subnet_ids[each.key]])
+}
+
+# NAT & VPN
 module "nat_gateway" {
   for_each = local.nat_gateway_settings == null ? {} : { default = local.nat_gateway_settings }
   source                  = "../../Azure/modules/nat-gateway"
@@ -131,6 +154,7 @@ module "vpn_gateway" {
   tags                         = merge(var.tags, each.value.tags)
 }
 
+# Bastion
 module "bastion" {
   count               = var.enable_bastion ? 1 : 0
   source              = "../../Azure/modules/bastion"
@@ -141,9 +165,7 @@ module "bastion" {
   tags                = var.tags
 }
 
-# -------------------------
 # Private Endpoints
-# -------------------------
 module "kv" {
   source                        = "../../Azure/modules/key-vault"
   name                          = local.kv_name
@@ -205,26 +227,26 @@ module "storage_private_endpoint" {
 # Outputs
 # -------------------------
 output "nat_gateway_id" {
-  description = "Resource ID of the NAT Gateway when provisioned."
   value       = try(module.nat_gateway["default"].id, null)
+  description = "Resource ID of the NAT Gateway when provisioned."
 }
 
 output "vpn_gateway_id" {
-  description = "Resource ID of the virtual network gateway when provisioned."
   value       = try(module.vpn_gateway["default"].id, null)
+  description = "Resource ID of the virtual network gateway when provisioned."
 }
 
 output "bastion_host_id" {
-  description = "Resource ID of the Bastion host."
   value       = var.enable_bastion ? module.bastion[0].id : null
+  description = "Resource ID of the Bastion host."
 }
 
 output "kv_private_endpoint_id" {
-  description = "Resource ID of the Key Vault private endpoint."
   value       = try(module.kv_private_endpoint[0].id, null)
+  description = "Resource ID of the Key Vault private endpoint."
 }
 
 output "storage_private_endpoint_id" {
-  description = "Resource ID of the Storage private endpoint."
   value       = try(module.storage_private_endpoint[0].id, null)
+  description = "Resource ID of the Storage private endpoint."
 }
