@@ -23,3 +23,9 @@ variable "sku" {
 variable "public_ip_id" {
   type = string
 }
+
+variable "tags" {
+  description = "Optional tags to apply to the load balancer."
+  type        = map(string)
+  default     = {}
+}

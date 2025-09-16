@@ -6,6 +6,7 @@ resource "azurerm_linux_virtual_machine" "this" {
   # admin_username      = var.admin_username
 
   network_interface_ids = [var.nic_id]
+  tags                  = var.tags
 
   os_disk {
     caching              = "ReadWrite"

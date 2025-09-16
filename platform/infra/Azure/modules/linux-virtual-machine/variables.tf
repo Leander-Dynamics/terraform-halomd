@@ -29,3 +29,9 @@ variable "nic_id" {
     error_message = "nic_id must be empty or a valid Azure resource ID for a network interface."
   }
 }
+
+variable "tags" {
+  description = "Optional tags to apply to the virtual machine."
+  type        = map(string)
+  default     = {}
+}
