@@ -106,8 +106,8 @@ sql_max_capacity         = 4
 sql_public_network_access = true
 sql_firewall_rules = [
   {
-    name             = "allow-all"
+    name             = "allow-azure-services"
     start_ip_address = "0.0.0.0"
-    end_ip_address   = "255.255.255.255"
+    end_ip_address   = "0.0.0.0"
   }
 ]

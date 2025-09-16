@@ -25,7 +25,7 @@ variable "storage_account_type" {
 }
 
 variable "tags" {
-  description = "Optional tags to apply to the managed disk."
+  description = "Optional map of tags to apply to the managed disk."
   type        = map(string)
   default     = {}
 }

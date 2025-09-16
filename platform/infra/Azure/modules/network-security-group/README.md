@@ -1,21 +1,19 @@
-# network-security-group module
+# Network Security Group Module
 
 Creates an Azure Network Security Group (NSG).
 
-## Example
+## Usage
 
 ```hcl
-module "nsg" {
-  source = "../modules/network-security-group"
+module "network_security_group" {
+  source = "../../Azure/modules/network-security-group"
 
   name                = "nsg-example"
-  location            = "eastus"
   resource_group_name = azurerm_resource_group.example.name
+  location            = azurerm_resource_group.example.location
 
   tags = {
     Environment = "test"
+    Project     = "example"
   }
 }
-```
-
-The `tags` variable is optional; supply a map of tags when you want them applied to the NSG.

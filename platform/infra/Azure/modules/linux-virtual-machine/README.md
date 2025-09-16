@@ -1,22 +1,31 @@
-# linux-virtual-machine module
+# Linux Virtual Machine Module
 
-Creates an Azure Linux virtual machine with a supplied network interface.
+This module provisions an Azure Linux virtual machine using an existing network interface.  
+Provide the VM sizing, administrator credentials, and image reference details via input variables.  
+You can also optionally apply tags.
 
-## Example
+## Example Usage
 
 ```hcl
 module "linux_vm" {
-  source = "../modules/linux-virtual-machine"
+  source = "../../modules/linux-virtual-machine"
 
-  name                = "vm-example-01"
-  location            = "eastus2"
+  name                = "example-vm"
+  location            = "eastus"
   resource_group_name = azurerm_resource_group.example.name
   nic_id              = azurerm_network_interface.example.id
 
+  size           = "Standard_B2s"
+  admin_username = "azureuser"
+
+  image_publisher = "Canonical"
+  image_offer     = "0001-com-ubuntu-server-jammy"
+  image_sku       = "22_04-lts"
+
+  ssh_key = file("~/.ssh/id_rsa.pub")
+
   tags = {
     Environment = "lab"
+    Project     = "example"
   }
 }
-```
-
-`tags` is optional. If omitted the VM is created without any custom tags.

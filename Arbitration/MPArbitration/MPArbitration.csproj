@@ -26,7 +26,6 @@
     <PackageReference Include="HtmlAgilityPack.NetCore" Version="1.5.0.1" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.22.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.1.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.AzureAD.UI" Version="6.0.6" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.6" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="6.0.6" />
@@ -42,7 +41,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" />
     <PackageReference Include="Microsoft.Identity.Web" Version="1.25.0" />
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.25.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.6" />
@@ -51,6 +50,7 @@
     <PackageReference Include="ObjectComparator" Version="3.5.7" />
     <PackageReference Include="SendGrid" Version="9.29.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
   </ItemGroup>
 
@@ -77,10 +77,14 @@
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
   </Target>
   
-  <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish" Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release'">
-    <!-- As part of publishing, ensure the JS resources are freshly built in production mode for Debug builds -->
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" Condition="'$(Configuration)' == 'Debug'" />
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build -- --prod=false --configuration development" Condition="'$(Configuration)' == 'Debug'" />
+  <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish" Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release' Or '$(Configuration)' == 'Stage'">
+    <!-- As part of publishing, ensure the JS resources are freshly built for the selected configuration -->
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" Condition="'$(Configuration)' == 'Debug'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build-dev" Condition="'$(Configuration)' == 'Debug'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" Condition="'$(Configuration)' == 'Stage'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build-stage" Condition="'$(Configuration)' == 'Stage'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" Condition="'$(Configuration)' == 'Release'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" Condition="'$(Configuration)' == 'Release'" />
 
     <!-- Include the newly-built files in the publish output -->
     <ItemGroup>
