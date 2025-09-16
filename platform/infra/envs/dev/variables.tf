@@ -1,18 +1,18 @@
 # -------------------------
-# General
+# General settings
 # -------------------------
 variable "project_name" {
-  description = "Project or application identifier used for naming."
+  description = "Short name of the project used when constructing resource names."
   type        = string
 }
 
 variable "env_name" {
-  description = "Environment name (e.g. dev, stage, prod)."
+  description = "Name of the deployment environment (e.g. dev, stage, prod)."
   type        = string
 }
 
 variable "location" {
-  description = "Azure region for resource deployment."
+  description = "Azure region where resources will be deployed."
   type        = string
 }
 
@@ -20,15 +20,6 @@ variable "tags" {
   description = "Common tags applied to all resources."
   type        = map(string)
   default     = {}
-}
-
-# -------------------------
-# Monitoring
-# -------------------------
-variable "app_insights_name" {
-  description = "Optional name override for the Application Insights resource."
-  type        = string
-  default     = ""
 }
 
 # -------------------------

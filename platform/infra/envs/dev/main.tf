@@ -1,26 +1,11 @@
 # Environment composition for the dev environment
 
 locals {
-  rg_name              = "rg-${var.project_name}-${var.env_name}"
-  acr_name             = lower(replace("acr${var.project_name}${var.env_name}", "-", ""))
-  aks_name             = "aks-${var.project_name}-${var.env_name}"
-  kv_name              = "kv-${var.project_name}-${var.env_name}"
-  log_name             = "log-${var.project_name}-${var.env_name}"
-  appi_name            = var.app_insights_name != "" ? var.app_insights_name : "appi-${var.project_name}-${var.env_name}"
-  plan_name            = "asp-${var.project_name}-${var.env_name}"
-  func_cron_name       = "func-cron-${var.project_name}-${var.env_name}"
-  func_external_name   = "func-ext-${var.project_name}-${var.env_name}"
-  web_name             = "web-${var.project_name}-${var.env_name}"
-  app_gateway_name     = "agw-${var.project_name}-${var.env_name}"
-  bastion_name         = "bas-${var.project_name}-${var.env_name}"
-  arbitration_plan_name = "asp-${var.project_name}-${var.env_name}-arb"
-  arbitration_app_name  = "web-${var.project_name}-${var.env_name}-arb"
-  arbitration_plan_sku_effective       = coalesce(nullif(trimspace(coalesce(var.arbitration_plan_sku, "")), ""), "B1")
-  arbitration_runtime_stack_effective  = coalesce(nullif(trimspace(coalesce(var.arbitration_runtime_stack, "")), ""), "dotnet")
-  arbitration_runtime_version_effective = coalesce(nullif(trimspace(coalesce(var.arbitration_runtime_version, "")), ""), "8.0")
-  storage_data_name    = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
-  sql_server_name      = "sql-${var.project_name}-${var.env_name}"
-  aad_app_display      = "aad-${var.project_name}-${var.env_name}"
+  rg_name                      = "rg-${var.project_name}-${var.env_name}"
+  kv_name                      = "kv-${var.project_name}-${var.env_name}"
+  bastion_name                 = "bas-${var.project_name}-${var.env_name}"
+  kv_private_endpoint_name     = "pep-${var.project_name}-${var.env_name}-kv"
+  storage_private_endpoint_name = "pep-${var.project_name}-${var.env_name}-st"
 
   # NSG locals
   subnet_network_security_groups = {
@@ -30,10 +15,6 @@ locals {
       security_rules = lookup(var.subnet_network_security_rules, subnet_name, {})
     }
   }
-
-  # Private Endpoints
-  kv_private_endpoint_name      = "pep-${var.project_name}-${var.env_name}-kv"
-  storage_private_endpoint_name = "pep-${var.project_name}-${var.env_name}-st"
 
   # NAT Gateway
   nat_gateway_settings = var.enable_nat_gateway && var.nat_gateway_configuration != null ? {
