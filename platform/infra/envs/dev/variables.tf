@@ -1,4 +1,29 @@
 # -------------------------
+# Connectivity
+# -------------------------
+variable "enable_nat_gateway" {
+  description = "Flag to deploy a NAT Gateway for outbound connectivity."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = var.enable_nat_gateway == false || var.nat_gateway_configuration != null
+    error_message = "nat_gateway_configuration must be provided when enable_nat_gateway is true."
+  }
+}
+
+variable "enable_vpn_gateway" {
+  description = "Flag to deploy a virtual network gateway for hybrid connectivity."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = var.enable_vpn_gateway == false || var.vpn_gateway_configuration != null
+    error_message = "vpn_gateway_configuration must be provided when enable_vpn_gateway is true."
+  }
+}
+
+# -------------------------
 # Networking
 # -------------------------
 variable "vnet_address_space" {
