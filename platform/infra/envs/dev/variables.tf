@@ -144,3 +144,77 @@ variable "vpn_gateway_configuration" {
     error_message = "Either a public_ip definition or public_ip_id must be supplied for the virtual network gateway."
   }
 }
+
+# -------------------------
+# Key Vault & Storage networking
+# -------------------------
+variable "kv_public_network_access" {
+  description = "Allow public network access to the Key Vault."
+  type        = bool
+  default     = true
+}
+
+variable "kv_network_acls" {
+  description = "Optional network ACL configuration for the Key Vault."
+  type = object({
+    bypass                     = optional(string)
+    default_action             = optional(string)
+    ip_rules                   = optional(list(string))
+    virtual_network_subnet_ids = optional(list(string))
+  })
+  default = null
+}
+
+variable "enable_kv_private_endpoint" {
+  description = "Toggle creation of a private endpoint for the Key Vault."
+  type        = bool
+  default     = false
+}
+
+variable "kv_private_endpoint_subnet_key" {
+  description = "Subnet key used when creating the Key Vault private endpoint."
+  type        = string
+  default     = null
+}
+
+variable "kv_private_dns_zone_ids" {
+  description = "Private DNS zone IDs linked to the Key Vault private endpoint."
+  type        = list(string)
+  default     = []
+}
+
+variable "kv_private_endpoint_resource_id" {
+  description = "Override resource ID supplied to the Key Vault private endpoint module."
+  type        = string
+  default     = null
+}
+
+variable "enable_storage_private_endpoint" {
+  description = "Toggle creation of a private endpoint for the storage account."
+  type        = bool
+  default     = false
+}
+
+variable "storage_private_endpoint_subnet_key" {
+  description = "Subnet key used when creating the storage account private endpoint."
+  type        = string
+  default     = null
+}
+
+variable "storage_private_dns_zone_ids" {
+  description = "Private DNS zone IDs linked to the storage account private endpoint."
+  type        = list(string)
+  default     = []
+}
+
+variable "storage_private_endpoint_subresource_names" {
+  description = "Subresource names exposed through the storage account private endpoint."
+  type        = list(string)
+  default     = ["blob"]
+}
+
+variable "storage_account_private_connection_resource_id" {
+  description = "Resource ID used by the storage account private endpoint connection."
+  type        = string
+  default     = null
+}
