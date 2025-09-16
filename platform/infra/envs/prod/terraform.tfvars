@@ -16,14 +16,12 @@ tags = {
 # -------------------------
 # Networking
 # -------------------------
-vnet_address_space = ["10.30.0.0/16"]
+vnet_address_space = ["10.40.0.0/16"]
 subnets = {
-  gateway = {
-    address_prefixes = ["10.30.0.0/24"]
-  }
-  web = {
-    address_prefixes = ["10.30.1.0/24"]
-  }
+  gateway = { address_prefixes = ["10.40.0.0/24"] }
+  web     = { address_prefixes = ["10.40.1.0/24"] }
+  data    = { address_prefixes = ["10.40.2.0/24"] }
+  mgmt    = { address_prefixes = ["10.40.3.0/24"] }
 }
 
 # For module using subnet keys
@@ -46,7 +44,7 @@ dns_zone_name = "az.halomd.com"
 dns_a_records = {
   "api-prod" = {
     ttl     = 3600
-    records = ["10.30.1.10"]
+    records = ["10.40.1.10"]
   }
 }
 
