@@ -4,6 +4,7 @@
 variables:
   - group: terraform-global-common
   - group: terraform-dev        # for Validate & Plan dev
+  - group: terraform-qa         # used during Plan_All and Apply_QA
   - group: terraform-stage      # used during Plan_All and Apply_Stage
   - group: terraform-prod       # used during Plan_All and Apply_Prod
   - name: nodeVersion
@@ -63,7 +64,7 @@ stages:
       dependsOn: build_arbitration
 
 - stage: Plan_All
-  displayName: Terraform Plan (dev, stage, prod)
+  displayName: Terraform Plan (dev, qa, stage, prod)
   dependsOn: Validate
   jobs:
   - template: .ado/templates/tf-plan.yml
@@ -77,6 +78,19 @@ stages:
       useAkv: '$(USE_AKV_FOR_SECRETS)'
       akvName: '$(KV_NAME_DEV)'
       akvEnableDynamicIp: '$(AKV_ENABLE_DYNAMIC_IP_DEV)'
+      akvSecretSqlAdminLoginName: '$(AKV_SECRET_SQL_ADMIN_LOGIN_NAME)'
+      akvSecretSqlAdminPasswordName: '$(AKV_SECRET_SQL_ADMIN_PASSWORD_NAME)'
+  - template: .ado/templates/tf-plan.yml
+    parameters:
+      envName: qa
+      serviceConnection: sc-azure-oidc-qa
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-qa
+      extraVarFlags: '-var "kv_cicd_principal_id=$(KV_CICD_PRINCIPAL_ID_QA)"'
+      useAkv: '$(USE_AKV_FOR_SECRETS)'
+      akvName: '$(KV_NAME_QA)'
+      akvEnableDynamicIp: '$(AKV_ENABLE_DYNAMIC_IP_QA)'
       akvSecretSqlAdminLoginName: '$(AKV_SECRET_SQL_ADMIN_LOGIN_NAME)'
       akvSecretSqlAdminPasswordName: '$(AKV_SECRET_SQL_ADMIN_PASSWORD_NAME)'
   - template: .ado/templates/tf-plan.yml
@@ -119,9 +133,22 @@ stages:
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
       variableGroup: terraform-dev
 
+- stage: Apply_QA
+  displayName: Terraform Apply (qa)
+  dependsOn: Apply_Dev
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - template: .ado/templates/tf-apply.yml
+    parameters:
+      envName: qa
+      serviceConnection: sc-azure-oidc-qa
+      tfVersion: ${{ variables.TF_VERSION }}
+      lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
+      variableGroup: terraform-qa
+
 - stage: Apply_Stage
   displayName: Terraform Apply (stage)
-  dependsOn: Apply_Dev
+  dependsOn: Apply_QA
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   jobs:
   - template: .ado/templates/tf-apply.yml

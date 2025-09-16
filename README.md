@@ -3,7 +3,7 @@
 ARBIT centralizes cloud infrastructure for development, staging, and production while automating deployments with Azure DevOps. This repository includes:
 
 - **Terraform modules** under `platform/infra/Azure/modules` for reusable building blocks (resource groups, Key Vault, App Service, Functions, Storage, SQL, and optional AKS/ACR).
-- **Per-environment Terraform roots** under `platform/infra/envs/{dev,stage,prod}` with independent remote state backends.
+- **Per-environment Terraform roots** under `platform/infra/envs/{dev,qa,stage,prod}` with independent remote state backends.
 - **Azure DevOps (ADO) multi-stage pipeline** definitions under `azure-pipelines.yml` and `.ado/templates/*`.
 - **Bootstrap scripts and documentation** that explain setup, networking posture, and ongoing operations (see `scripts/`, [`docs/`](docs/), and [`docs/network/`](docs/network/)).
 - **Angular client developers**: see [`Arbitration/MPArbitration/ClientApp/README.md`](Arbitration/MPArbitration/ClientApp/README.md) for project-specific guidance.
@@ -16,14 +16,14 @@ ARBIT centralizes cloud infrastructure for development, staging, and production 
 
 ### Repository scope
 
-- Manage infrastructure for three environments from a single codebase while keeping Terraform state isolated per environment.
+- Manage infrastructure for four environments from a single codebase while keeping Terraform state isolated per environment.
 - Enforce GitOps: changes flow through pull requests, plans are reviewed, and applies happen only from the main branch.
 - Integrate security controls such as OIDC-based service connections and ADO Environment approvals for stage and prod.
 
 ### Pipeline behavior
 
-- **Pull request to `main`** → Runs **Validate** and **Plan** for dev, stage, and prod (no applies).
-- **Merge/push to `main`** → Runs **Validate**, **Plan**, **Apply dev**, then waits for approvals to **Apply stage** and **Apply prod**.
+- **Pull request to `main`** → Runs **Validate** and **Plan** for dev, qa, stage, and prod (no applies).
+- **Merge/push to `main`** → Runs **Validate**, **Plan**, **Apply dev**, **Apply qa**, then waits for approvals to **Apply stage** and **Apply prod**.
 - Plans are published as pipeline artifacts and applies always use the previously reviewed `.tfplan` file.
 
 ---
@@ -32,11 +32,11 @@ ARBIT centralizes cloud infrastructure for development, staging, and production 
 
 ### Quick start checklist
 
-1. **Create ADO service connections (OIDC):** `sc-azure-oidc-dev`, `sc-azure-oidc-stage`, `sc-azure-oidc-prod` scoped to the target subscription/resource group with **Storage Blob Data Contributor** on the Terraform state storage account.
-2. **Create ADO environments:** `dev`, `stage`, `prod`. Require approvals for stage and prod (optionally add branch control or business-hours policies).
+1. **Create ADO service connections (OIDC):** `sc-azure-oidc-dev`, `sc-azure-oidc-qa`, `sc-azure-oidc-stage`, `sc-azure-oidc-prod` scoped to the target subscription/resource group with **Storage Blob Data Contributor** on the Terraform state storage account.
+2. **Create ADO environments:** `dev`, `qa`, `stage`, `prod`. Require approvals for stage and prod (optionally add branch control or business-hours policies).
 3. **Verify remote state backends:** Each `platform/infra/envs/<env>/backend.tfvars` is prefilled; keep `use_azuread_auth = true` and update resource names if they differ in your tenant. Storage containers now use the pattern `arbit-<env>` so that each environment isolates its state blob.
 4. **Import the pipeline:** Point Azure DevOps to the root `azure-pipelines.yml` multi-stage pipeline.
-5. **Open a test pull request:** Review the three plan artifacts, merge to trigger the dev apply, and approve stage/prod when ready.
+5. **Open a test pull request:** Review the four plan artifacts, merge to trigger the dev and qa applies, and approve stage/prod when ready.
 
 ### Azure DevOps policies
 
@@ -47,8 +47,8 @@ ARBIT centralizes cloud infrastructure for development, staging, and production 
 ### Recommended variables and secrets
 
 - Global pipeline variables: `TF_VERSION = 1.7.5`, `TF_LOCK_TIMEOUT = 20m`, `USE_AKV_FOR_SECRETS = true`, `AKV_SECRET_SQL_ADMIN_LOGIN_NAME`, `AKV_SECRET_SQL_ADMIN_PASSWORD_NAME`.
-- Per-environment variables: `KV_NAME_DEV|STAGE|PROD`, `AKV_ENABLE_DYNAMIC_IP_DEV|STAGE|PROD`.
-- Optional: `KV_CICD_PRINCIPAL_ID_DEV|STAGE|PROD` if Terraform should grant Key Vault access to the pipeline principal.
+- Per-environment variables: `KV_NAME_DEV|QA|STAGE|PROD`, `AKV_ENABLE_DYNAMIC_IP_DEV|QA|STAGE|PROD`.
+- Optional: `KV_CICD_PRINCIPAL_ID_DEV|QA|STAGE|PROD` if Terraform should grant Key Vault access to the pipeline principal.
 - Store secrets in Azure Key Vault and retrieve them at runtime; no credentials are committed to the repo.
 
 ### Key Vault network patterns
@@ -74,6 +74,7 @@ arbit-consolidated-infra-ado/
 │       │   └── modules/               # Terraform modules (RG, KV, App Service, Functions, Storage, SQL, etc.)
 │       └── envs/
 │           ├── dev/                   # Terraform root with dedicated backend & tfvars
+│           ├── qa/                    # Same structure as dev
 │           ├── stage/                 # Same structure as dev
 │           └── prod/                  # Same structure as dev
 ├── scripts/
@@ -111,17 +112,20 @@ arbit-consolidated-infra-ado/
    - Runs `terraform fmt -check -recursive` on `platform/infra`.
    - Executes `init -backend=false` and `validate` against the dev root to catch schema issues early.
 2. **Plan_All**
-   - Parallel jobs for dev, stage, and prod.
+   - Parallel jobs for dev, qa, stage, and prod.
    - Signs in with the environment-specific OIDC service connection.
    - Runs `terraform init -reconfigure -backend-config=backend.tfvars` and `terraform plan -var-file=terraform.tfvars -out tfplan-<env>.tfplan`.
    - Publishes each plan as a pipeline artifact (`tfplan-<env>`).
 3. **Apply_Dev**
    - Triggers automatically on merges to `main` (never on PRs).
    - Downloads and applies the previously published `tfplan-dev.tfplan`.
-4. **Apply_Stage**
+4. **Apply_QA**
+   - Runs automatically after the dev apply completes.
+   - Applies the saved `tfplan-qa.tfplan`.
+5. **Apply_Stage**
    - Requires approval in the `stage` ADO Environment before running.
    - Applies the saved `tfplan-stage.tfplan`.
-5. **Apply_Prod**
+6. **Apply_Prod**
    - Requires approval in the `prod` ADO Environment before running.
    - Applies the saved `tfplan-prod.tfplan`.
 
@@ -133,9 +137,9 @@ arbit-consolidated-infra-ado/
 
 ### Promotion flow
 
-1. Developer opens a PR → pipeline runs **Validate** and three **Plan** jobs.
+1. Developer opens a PR → pipeline runs **Validate** and four **Plan** jobs.
 2. Reviewers inspect the PR and the published plan artifacts; if approved, the PR merges to `main`.
-3. Merge triggers dev apply automatically. Stage/prod applies wait for Environment approvals; approvers review and approve within Azure DevOps to continue the run.
+3. Merge triggers dev and qa applies automatically. Stage/prod applies wait for Environment approvals; approvers review and approve within Azure DevOps to continue the run.
 
 ### Configuration knobs
 
