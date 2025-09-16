@@ -396,7 +396,17 @@ namespace MPArbitration.Controllers
                 if (allowedCustomerNames.Count() == 0)
                     return Unauthorized("Customer records are not available to the current account.");
             }
-            // TODO: The granular customer restrictions need to be implemented here
+            var arbCase = await _context.ArbitrationCases
+                .AsNoTracking()
+                .Where(d => !d.IsDeleted && d.Id == id)
+                .Select(d => new { d.Id, d.Customer })
+                .FirstOrDefaultAsync();
+
+            if (arbCase == null)
+                return NotFound();
+
+            if (!user.HasGlobalCaseRole && !allowedCustomerNames.Contains(arbCase.Customer))
+                return Unauthorized("Insufficient granular privileges for current user context");
             try
             {
                 return await _context.CaseArchives.AsNoTracking().Where(d => d.ArbitrationCaseId == id).ToArrayAsync();

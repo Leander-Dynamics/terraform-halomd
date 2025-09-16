@@ -36,6 +36,14 @@ stages:
       inputs:
         command: 'restore'
         projects: 'Arbitration/MPArbitration.sln'
+    - script: npm ci --prefix Arbitration/MPArbitration/ClientApp
+      displayName: Install Arbitration client dependencies
+    - script: |
+        cd Arbitration/MPArbitration/ClientApp
+        npm test
+      displayName: Run Arbitration client tests
+    - script: npm run build-dev --prefix Arbitration/MPArbitration/ClientApp
+      displayName: Build Arbitration client (dev)
     - task: DotNetCoreCLI@2
       displayName: Build MPArbitration.sln
       inputs:
@@ -65,9 +73,7 @@ stages:
       tfVersion: ${{ variables.TF_VERSION }}
       lockTimeout: ${{ variables.TF_LOCK_TIMEOUT }}
       variableGroup: terraform-dev
-      # Pass the CI/CD principal Object ID if provided (used to grant KV Secrets User via TF)
       extraVarFlags: '-var "kv_cicd_principal_id=$(KV_CICD_PRINCIPAL_ID_DEV)"'
-      # AKV integration (pull SQL secrets at plan time)
       useAkv: '$(USE_AKV_FOR_SECRETS)'
       akvName: '$(KV_NAME_DEV)'
       akvEnableDynamicIp: '$(AKV_ENABLE_DYNAMIC_IP_DEV)'

@@ -9,3 +9,9 @@ variable "server_id" {
 variable "sku_name" {
   type = string
 }
+
+variable "tags" {
+  description = "Optional tags to apply to the SQL database."
+  type        = map(string)
+  default     = {}
+}
