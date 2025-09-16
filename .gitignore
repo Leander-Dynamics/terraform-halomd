@@ -17,3 +17,6 @@ override.tf.json
 
 # OS metadata
 .DS_Store
+
+# Build outputs
+artifacts/
