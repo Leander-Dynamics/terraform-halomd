@@ -76,6 +76,9 @@ locals {
 
   # Private Endpoint subnet lookups
   kv_private_endpoint_subnet_id = var.enable_kv_private_endpoint && var.kv_private_endpoint_subnet_key != null && var.kv_private_endpoint_subnet_key != "" ? lookup(module.network.subnet_ids, var.kv_private_endpoint_subnet_key, null) : null
+  kv_private_endpoints = local.kv_private_endpoint_subnet_id != null ? [
+    { subnet_id = local.kv_private_endpoint_subnet_id }
+  ] : []
   storage_private_endpoint_subnet_id = var.enable_storage_private_endpoint && var.storage_private_endpoint_subnet_key != null && var.storage_private_endpoint_subnet_key != "" ? lookup(module.network.subnet_ids, var.storage_private_endpoint_subnet_key, null) : null
 }
 
@@ -113,9 +116,21 @@ module "network_security_groups" {
   subnet_ids          = toset([module.network.subnet_ids[each.key]])
 }
 
+# Key Vault
+module "kv" {
+  source                        = "../../Azure/modules/key-vault"
+  name                          = local.kv_name
+  resource_group_name           = module.resource_group.name
+  location                      = var.location
+  public_network_access_enabled = var.kv_public_network_access
+  network_acls                  = var.kv_network_acls
+  private_endpoints             = local.kv_private_endpoints
+  tags                          = var.tags
+}
+
 # Private Endpoints
 module "kv_private_endpoint" {
-  count = var.enable_kv_private_endpoint && local.kv_private_endpoint_subnet_id != null && var.kv_private_endpoint_resource_id != null ? 1 : 0
+  count = var.enable_kv_private_endpoint && local.kv_private_endpoint_subnet_id != null && coalesce(var.kv_private_endpoint_resource_id, module.kv.id) != null ? 1 : 0
   source              = "../../Azure/modules/private-endpoint"
   name                = local.kv_private_endpoint_name
   resource_group_name = module.resource_group.name
@@ -125,7 +140,7 @@ module "kv_private_endpoint" {
 
   private_service_connection = {
     name                           = "kv-${var.project_name}-${var.env_name}"
-    private_connection_resource_id = var.kv_private_endpoint_resource_id
+    private_connection_resource_id = coalesce(var.kv_private_endpoint_resource_id, module.kv.id)
     subresource_names              = ["vault"]
   }
 
