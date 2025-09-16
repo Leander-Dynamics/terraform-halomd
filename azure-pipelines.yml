@@ -21,10 +21,32 @@ stages:
 - stage: Validate
   displayName: Validate & Lint
   jobs:
+  - job: Build_Test_Arbitration
+    displayName: 'Build & Test Arbitration solution'
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore MPArbitration.sln'
+      inputs:
+        command: 'restore'
+        projects: 'Arbitration/MPArbitration.sln'
+    - task: DotNetCoreCLI@2
+      displayName: 'Build MPArbitration.sln'
+      inputs:
+        command: 'build'
+        projects: 'Arbitration/MPArbitration.sln'
+        arguments: '--configuration Release --no-restore'
+    - task: DotNetCoreCLI@2
+      displayName: 'Run arbitration tests'
+      inputs:
+        command: 'test'
+        projects: 'tests/**/*.csproj'
+        arguments: '--configuration Release --no-build'
   - template: .ado/templates/tf-validate.yml
     parameters:
       envName: dev
       tfVersion: ${{ variables.TF_VERSION }}
+      dependsOn:
+        - Build_Test_Arbitration
 
 - stage: Plan_All
   displayName: Terraform Plan (dev, stage, prod)
