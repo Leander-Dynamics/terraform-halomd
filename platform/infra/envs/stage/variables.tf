@@ -382,6 +382,33 @@ variable "subnet_network_security_rules" {
 }
 
 # -------------------------
+# DNS
+# -------------------------
+variable "dns_zone_name" {
+  description = "Name of the DNS zone to manage."
+  type        = string
+  default     = null
+}
+
+variable "dns_a_records" {
+  description = "Map of DNS A records to create within the zone keyed by record name."
+  type = map(object({
+    ttl     = number
+    records = list(string)
+  }))
+  default = {}
+}
+
+variable "dns_cname_records" {
+  description = "Map of DNS CNAME records to create within the zone keyed by record name."
+  type = map(object({
+    ttl   = number
+    record = string
+  }))
+  default = {}
+}
+
+# -------------------------
 # Key Vault & Storage networking
 # -------------------------
 variable "kv_public_network_access" {
