@@ -14,6 +14,14 @@ tags = {
 }
 
 # -------------------------
+# Monitoring
+# -------------------------
+log_analytics_workspace_name    = "log-arbit-stage"
+application_insights_name       = "appi-arbit-stage"
+log_analytics_retention_in_days = 60
+log_analytics_daily_quota_gb    = -1
+
+# -------------------------
 # Networking
 # -------------------------
 vnet_address_space = ["10.30.0.0/16"]

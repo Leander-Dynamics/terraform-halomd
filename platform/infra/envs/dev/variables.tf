@@ -22,6 +22,30 @@ variable "tags" {
   default     = {}
 }
 
+# -------------------------
+# Monitoring
+# -------------------------
+
+variable "log_analytics_workspace_name" {
+  description = "Name assigned to the Log Analytics workspace for this environment."
+  type        = string
+}
+
+variable "application_insights_name" {
+  description = "Name assigned to the Application Insights resource for this environment."
+  type        = string
+}
+
+variable "log_analytics_retention_in_days" {
+  description = "Number of days to retain data within the Log Analytics workspace."
+  type        = number
+}
+
+variable "log_analytics_daily_quota_gb" {
+  description = "Daily ingestion quota, in GB, for the Log Analytics workspace (-1 for unlimited)."
+  type        = number
+}
+
 variable "kv_cicd_principal_id" {
   description = "Optional object ID for the CI/CD principal that needs access to Key Vault secrets."
   type        = string

@@ -3,8 +3,8 @@
 locals {
   rg_name          = "rg-${var.project_name}-${var.env_name}"
   kv_name          = "kv-${var.project_name}-${var.env_name}"
-  log_name         = "log-${var.project_name}-${var.env_name}"
-  appi_name        = "appi-${var.project_name}-${var.env_name}"
+  log_name         = var.log_analytics_workspace_name
+  appi_name        = var.application_insights_name
 
   acr_name         = lower(replace("acr${var.project_name}${var.env_name}", "-", ""))
   aks_name         = "aks-${var.project_name}-${var.env_name}-${var.location}"
@@ -87,6 +87,17 @@ module "resource_group" {
   name     = local.rg_name
   location = var.location
   tags     = var.tags
+}
+
+module "app_insights" {
+  source                           = "../../Azure/modules/app-insights"
+  resource_group_name              = module.resource_group.name
+  location                         = var.location
+  log_analytics_workspace_name     = local.log_name
+  application_insights_name        = local.appi_name
+  log_analytics_retention_in_days  = var.log_analytics_retention_in_days
+  log_analytics_daily_quota_gb     = var.log_analytics_daily_quota_gb
+  tags                             = var.tags
 }
 
 module "network" {
