@@ -24,7 +24,6 @@ locals {
   sql_server_name   = "sql-${var.project_name}-${var.env_name}"
   sql_database_name = var.sql_database_name != "" ? var.sql_database_name : "${var.project_name}-${var.env_name}"
 
-  # NSGs per subnet
   subnet_network_security_groups = {
     for subnet_name in keys(var.subnets) :
     subnet_name => {
@@ -33,15 +32,13 @@ locals {
     }
   }
 
-  # Private Endpoints
   kv_private_endpoint_name      = "pep-${var.project_name}-${var.env_name}-kv"
   storage_private_endpoint_name = "pep-${var.project_name}-${var.env_name}-st"
 
-  # NAT Gateway
   nat_gateway_settings = var.enable_nat_gateway && var.nat_gateway_configuration != null ? {
     name                     = var.nat_gateway_configuration.name
     sku_name                 = try(var.nat_gateway_configuration.sku_name, "Standard")
-    idle_timeout_in_minutes  = try(var.nat_gateway_configuration.idle_timeout_in_minutes, 4)
+    idle_timeout_in_minutes = try(var.nat_gateway_configuration.idle_timeout_in_minutes, 4)
     zones                    = try(var.nat_gateway_configuration.zones, [])
     public_ip_configurations = try(var.nat_gateway_configuration.public_ip_configurations, [])
     public_ip_ids            = try(var.nat_gateway_configuration.public_ip_ids, [])
@@ -53,7 +50,6 @@ locals {
     for key in local.nat_gateway_settings.subnet_keys : module.network.subnet_ids[key]
   ] : []
 
-  # VPN Gateway
   vpn_gateway_settings = var.enable_vpn_gateway && var.vpn_gateway_configuration != null ? {
     name                     = var.vpn_gateway_configuration.name
     gateway_subnet_key       = var.vpn_gateway_configuration.gateway_subnet_key
@@ -74,7 +70,6 @@ locals {
 
   vpn_gateway_subnet_id = local.vpn_gateway_settings != null ? module.network.subnet_ids[local.vpn_gateway_settings.gateway_subnet_key] : null
 
-  # Private Endpoint subnet lookups
   kv_private_endpoint_subnet_id = var.enable_kv_private_endpoint && var.kv_private_endpoint_subnet_key != null && var.kv_private_endpoint_subnet_key != "" ? lookup(module.network.subnet_ids, var.kv_private_endpoint_subnet_key, null) : null
   storage_private_endpoint_subnet_id = var.enable_storage_private_endpoint && var.storage_private_endpoint_subnet_key != null && var.storage_private_endpoint_subnet_key != "" ? lookup(module.network.subnet_ids, var.storage_private_endpoint_subnet_key, null) : null
 }
@@ -100,6 +95,16 @@ module "app_insights" {
   tags                             = var.tags
 }
 
+module "dns_zone" {
+  count               = length(trimspace(coalesce(var.dns_zone_name, ""))) > 0 ? 1 : 0
+  source              = "../../Azure/modules/dns-zone"
+  zone_name           = var.dns_zone_name
+  resource_group_name = module.resource_group.name
+  tags                = var.tags
+  a_records           = var.dns_a_records
+  cname_records       = var.dns_cname_records
+}
+
 module "network" {
   source              = "../../Azure/modules/network"
   name                = "vnet-${var.project_name}-${var.env_name}"
@@ -109,11 +114,8 @@ module "network" {
   dns_servers         = var.vnet_dns_servers
   subnets             = var.subnets
   tags                = var.tags
-  a_records           = var.dns_a_records
-  cname_records       = var.dns_cname_records
 }
 
-# NSGs
 module "network_security_groups" {
   for_each            = local.subnet_network_security_groups
   source              = "../../Azure/modules/network-security-group"
@@ -124,7 +126,6 @@ module "network_security_groups" {
   subnet_ids          = toset([module.network.subnet_ids[each.key]])
 }
 
-# Private Endpoints
 module "kv_private_endpoint" {
   count = var.enable_kv_private_endpoint && local.kv_private_endpoint_subnet_id != null && var.kv_private_endpoint_resource_id != null ? 1 : 0
   source              = "../../Azure/modules/private-endpoint"
@@ -171,7 +172,6 @@ module "storage_private_endpoint" {
   ] : []
 }
 
-# NAT & VPN
 module "nat_gateway" {
   for_each = local.nat_gateway_settings == null ? {} : { default = local.nat_gateway_settings }
   source                  = "../../Azure/modules/nat-gateway"
@@ -209,7 +209,6 @@ module "vpn_gateway" {
   tags                         = merge(var.tags, each.value.tags)
 }
 
-# Bastion
 module "bastion" {
   count               = var.enable_bastion ? 1 : 0
   source              = "../../Azure/modules/bastion"

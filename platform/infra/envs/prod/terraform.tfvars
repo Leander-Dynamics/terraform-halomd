@@ -32,8 +32,23 @@ subnets = {
   mgmt    = { address_prefixes = ["10.40.3.0/24"] }
 }
 
-# For module using subnet keys
-app_gateway_subnet_key  = "gateway"
+# Subnet references for optional modules
+app_gateway_subnet_key              = "gateway"
+kv_private_endpoint_subnet_key      = "data"
+storage_private_endpoint_subnet_key = "data"
+
+# Key Vault configuration
+kv_public_network_access       = true
+kv_network_acls                = null
+enable_kv_private_endpoint     = false
+kv_private_dns_zone_ids        = []
+kv_private_endpoint_resource_id = null
+
+# Storage private endpoint configuration
+enable_storage_private_endpoint                = false
+storage_private_dns_zone_ids                   = []
+storage_private_endpoint_subresource_names     = ["blob"]
+storage_account_private_connection_resource_id = null
 
 # For module using direct subnet id
 app_gateway_subnet_id = "/subscriptions/930755b1-ef22-4721-a31a-1b6fbecf7da6/resourceGroups/rg-arbit-prod/providers/Microsoft.Network/virtualNetworks/vnet-arbit-prod/subnets/appgw"

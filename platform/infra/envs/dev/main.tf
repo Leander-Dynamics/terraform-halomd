@@ -8,6 +8,8 @@ locals {
   appi_name                    = var.application_insights_name
   kv_private_endpoint_name     = "pep-${var.project_name}-${var.env_name}-kv"
   storage_private_endpoint_name = "pep-${var.project_name}-${var.env_name}-st"
+  sql_server_name              = "sql-${var.project_name}-${var.env_name}"
+  sql_database_name            = var.sql_database_name != "" ? var.sql_database_name : "${var.project_name}-${var.env_name}"
 
   # NSG locals
   subnet_network_security_groups = {
@@ -169,6 +171,24 @@ module "kv" {
   network_acls                  = var.kv_network_acls
   private_endpoints             = local.kv_private_endpoints
   tags                          = var.tags
+}
+
+module "sql_serverless" {
+  source                         = "../../Azure/modules/sql-serverless"
+  server_name                    = local.sql_server_name
+  database_name                  = local.sql_database_name
+  resource_group_name            = module.resource_group.name
+  location                       = var.location
+  administrator_login            = var.sql_admin_login
+  administrator_password         = var.sql_admin_password
+  public_network_access_enabled  = var.sql_public_network_access
+  sku_name                       = var.sql_sku_name
+  max_size_gb                    = var.sql_max_size_gb
+  auto_pause_delay_in_minutes    = var.sql_auto_pause_delay
+  min_capacity                   = var.sql_min_capacity
+  max_capacity                   = var.sql_max_capacity
+  firewall_rules                 = var.sql_firewall_rules
+  tags                           = var.tags
 }
 
 resource "azurerm_role_assignment" "kv_cicd_secrets_user" {
