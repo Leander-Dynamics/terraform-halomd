@@ -3,6 +3,25 @@ output "id" {
   value       = azurerm_application_gateway.this.id
 }
 
+output "frontend_ip_addresses" {
+  description = "Frontend IP addresses configured for the Application Gateway."
+  value = [
+    for config in azurerm_application_gateway.this.frontend_ip_configuration : (
+      config.private_ip_address != null && config.private_ip_address != ""
+      ? config.private_ip_address
+      : (
+        config.public_ip_address_id == azurerm_public_ip.this.id
+        ? azurerm_public_ip.this.ip_address
+        : null
+      )
+    )
+    if (
+      (config.private_ip_address != null && config.private_ip_address != "") ||
+      (config.public_ip_address_id == azurerm_public_ip.this.id)
+    )
+  ]
+}
+
 output "name" {
   description = "Name of the Application Gateway."
   value       = azurerm_application_gateway.this.name

@@ -10,7 +10,8 @@ parameters:
 
 jobs:
 - job: validate_${{ parameters.envName }}
-  dependsOn: ${{ parameters.dependsOn }}
+  ${{ if ne(length(parameters.dependsOn), 0) }}:
+    dependsOn: ${{ parameters.dependsOn }}
   displayName: "Terraform fmt & validate (${{ parameters.envName }})"
   steps:
   - checkout: self

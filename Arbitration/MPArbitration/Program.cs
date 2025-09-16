@@ -1,197 +1,298 @@
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Web;
-using MPArbitration.Model;
+using System;
+using System.IO;
+using System.Linq;
+using System.Security.Claims;
+using System.Security.Principal;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Text.Json;
-using System.Security.Principal;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Http.Json;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Logging.Console;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MPArbitration.Model;
 using MPArbitration.Utility;
 using System.Reflection;
 
-internal class Program
+namespace MPArbitration
 {
-    private static void Main(string[] args)
+    internal class Program
     {
-        var builder = WebApplication.CreateBuilder(args);
-        // The following line enables Application Insights telemetry collection.
-        builder.Services.AddApplicationInsightsTelemetry();
-        var configuration = builder.Configuration;
-        // increase file upload size to handle the benchmark files
-        // https://bartwullems.blogspot.com/2022/01/aspnet-core-configure-file-upload-size.html
-        // https://stackoverflow.com/questions/38698350/increase-upload-file-size-in-asp-net-core
+        private const string CorsPolicyName = "CorsPolicy";
 
-        builder.Services.Configure<IISServerOptions>(options => options.MaxRequestBodySize = int.MaxValue);
-        builder.Services.Configure<FormOptions>(o =>
+        private static void Main(string[] args)
         {
-            o.ValueLengthLimit = int.MaxValue;
-            o.MultipartBodyLengthLimit = int.MaxValue;
-            o.MultipartBoundaryLengthLimit = int.MaxValue;
-            o.MultipartHeadersCountLimit = int.MaxValue;
-            o.MultipartHeadersLengthLimit = int.MaxValue;
-            o.BufferBodyLengthLimit = int.MaxValue;
-            o.BufferBody = true;
-            o.ValueCountLimit = int.MaxValue;
-        });
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
-        builder.Services.AddSwaggerGen(opt =>
-        {
-            opt.SwaggerDoc("v1", new OpenApiInfo { Title = "Arbit API Documentation", Version = "v1" });
-            opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            var builder = WebApplication.CreateBuilder(args);
+
+            builder.Services.AddApplicationInsightsTelemetry();
+
+            var configuration = builder.Configuration;
+
+            builder.Services.Configure<IISServerOptions>(options => options.MaxRequestBodySize = int.MaxValue);
+            builder.Services.Configure<FormOptions>(options =>
             {
-                In = ParameterLocation.Header,
-                Description = "Please enter authentication token",
-                Name = "Authorization",
-                Type = SecuritySchemeType.Http,
-                BearerFormat = "JWT",
-                Scheme = "bearer"
+                options.ValueLengthLimit = int.MaxValue;
+                options.MultipartBodyLengthLimit = int.MaxValue;
+                options.MultipartBoundaryLengthLimit = int.MaxValue;
+                options.MultipartHeadersCountLimit = int.MaxValue;
+                options.MultipartHeadersLengthLimit = int.MaxValue;
+                options.BufferBody = true;
+                options.BufferBodyLengthLimit = int.MaxValue;
+                options.ValueCountLimit = int.MaxValue;
             });
 
-            opt.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen(options =>
             {
-                Name = "X-API-KEY",
-                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-                Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-                Scheme = "ApiKeyScheme",
-                Description = "Enter API Key",
-            });
-
-            opt.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
+                options.SwaggerDoc("v1", new OpenApiInfo { Title = "MP Arbitration API", Version = "v1" });
+                options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
                 {
-                    new OpenApiSecurityScheme
+                    Name = "X-API-KEY",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = ApiKeyAuthenticationOptions.DefaultScheme,
+                    Description = "API key needed to access specific endpoints."
+                });
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Description = "JWT Authorization header using the Bearer scheme.",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT"
+                });
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
                     {
-                        Reference = new OpenApiReference
+                        new OpenApiSecurityScheme
                         {
-                            Type=ReferenceType.SecurityScheme,
-                            Id="Bearer"
-                        }
-                    },
-                    new string[]{}
-                },
-                {
-                new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "ApiKey"
-                    }
-                },
-               new string[]{}
-            }
-            });
-            // Set the comments path for the Swagger JSON and UI.
-            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-            opt.IncludeXmlComments(xmlPath);
-        });
-
-        builder.WebHost.ConfigureKestrel(serverOptions =>
-        {
-            serverOptions.Limits.MaxRequestBodySize = 100_000_000;
-        });
-
-        // Add services to the container.
-        //Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
-
-        builder.Services.AddMicrosoftIdentityWebAppAuthentication(configuration);
-        builder.Services.AddAuthentication(options =>
+                            Reference = new OpenApiReference
                             {
-                                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                            })
-                      .AddMicrosoftIdentityWebApi(configuration, "AzureAd");
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    },
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "ApiKey"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
 
-        // Add API key authentication
-        builder.Services.AddAuthentication("ApiKey").AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>("ApiKey", null);
-
-        builder.Services.AddControllersWithViews();
-        //    .AddJsonOptions(c => c.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve);
-
-        builder.Services.AddHttpContextAccessor();
-        builder.Services.AddTransient<IPrincipal>(provider => provider.GetService<IHttpContextAccessor>().HttpContext?.User);
-
-        // Best article on configuring Angular SPA on the entire WWW ;)
-        // https://roma-rathi17.medium.com/msal2-0-errors-and-their-resolution-9a776e254a2c
-        // This was a good one, too
-        // https://github.com/AzureAD/microsoft-identity-web/issues/549
-
-        builder.Services.AddTransient<IImportDataSynchronizer, ImportDataSynchronizer>();
-
-        var cs = configuration.GetConnectionString("ConnStr");
-        builder.Services.AddDbContext<ArbitrationDbContext>(options =>
-        {
-            options.UseSqlServer(cs, sqlServerOptionsAction: sqlOptions =>
-            {
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(60),
-                    errorNumbersToAdd: null);
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                if (File.Exists(xmlPath))
+                {
+                    options.IncludeXmlComments(xmlPath);
+                }
             });
-            //providerOptions => providerOptions.EnableRetryOnFailure());
-            //options.ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
-        });
 
-
-        var idr_cs = configuration.GetConnectionString("IDRConnStr");
-        builder.Services.AddDbContext<DisputeIdrDbContext>(options =>
-        {
-            options.UseSqlServer(idr_cs, sqlServerOptionsAction: sqlOptions =>
+            builder.Services.AddCors(cors =>
             {
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(60),
-                    errorNumbersToAdd: null);
+                var allowedOrigins = GetConfiguredValues(configuration, "Cors:AllowedOrigins");
+                var allowedMethods = GetConfiguredValues(configuration, "Cors:AllowedMethods");
+                var allowedHeaders = GetConfiguredValues(configuration, "Cors:AllowedHeaders");
+
+                cors.AddPolicy(CorsPolicyName, policy =>
+                {
+                    ConfigureCorsPolicy(policy, allowedOrigins, allowedMethods, allowedHeaders);
+                    policy.WithExposedHeaders("Content-Disposition");
+                });
             });
-            //providerOptions => providerOptions.EnableRetryOnFailure());
-            //options.ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
-        });
 
+            builder.Services.AddControllersWithViews()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+                    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+                });
+            builder.Services.AddRazorPages();
 
-        //------------------- BUILD AND USE MIDDLEWARE ----------------------------------------------
-        var app = builder.Build();
-        if (!app.Environment.IsProduction())
-        {
-            app.UseDeveloperExceptionPage();
-            app.UseSwagger();
-            app.UseSwaggerUI();
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddTransient<IPrincipal>(provider =>
+            {
+                var httpContext = provider.GetService<IHttpContextAccessor>();
+                return httpContext?.HttpContext?.User ?? new ClaimsPrincipal(new ClaimsIdentity());
+            });
+
+            builder.Services.AddMemoryCache();
+            builder.Services.AddTransient<IImportDataSynchronizer, ImportDataSynchronizer>();
+
+            var arbitrationConnectionString = configuration.GetConnectionString("ConnStr");
+            if (!string.IsNullOrWhiteSpace(arbitrationConnectionString))
+            {
+                builder.Services.AddDbContext<ArbitrationDbContext>(options =>
+                {
+                    options.UseSqlServer(arbitrationConnectionString, sqlOptions =>
+                    {
+                        sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(60), null);
+                    });
+                });
+            }
+
+            var idrConnectionString = configuration.GetConnectionString("IDRConnStr");
+            if (!string.IsNullOrWhiteSpace(idrConnectionString))
+            {
+                builder.Services.AddDbContext<DisputeIdrDbContext>(options =>
+                {
+                    options.UseSqlServer(idrConnectionString, sqlOptions =>
+                    {
+                        sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(60), null);
+                    });
+                });
+            }
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                var instance = configuration["AzureAd:Instance"];
+                var tenantId = configuration["AzureAd:TenantId"];
+                if (!string.IsNullOrWhiteSpace(instance) && !string.IsNullOrWhiteSpace(tenantId))
+                {
+                    options.Authority = $"{instance}{tenantId}/v2.0";
+                }
+
+                options.Audience = configuration["AzureAd:Audience"];
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = options.Authority,
+                    ValidAudience = configuration["AzureAd:Audience"],
+                    NameClaimType = "preferred_username"
+                };
+            })
+            .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthenticationOptions.DefaultScheme, _ => { });
+
+            builder.Services.AddAuthorization();
+
+            CopyConfigurationToLegacySettings(configuration);
+
+            var app = builder.Build();
+
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Error");
+                app.UseHsts();
+            }
+
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
+
+            app.UseRouting();
+
+            app.UseCors(CorsPolicyName);
+
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.MapRazorPages();
+            app.MapControllerRoute(
+                name: "default",
+                pattern: "{controller}/{action=Index}/{id?}");
+
+            app.MapFallbackToFile("index.html");
+
+            app.Run();
         }
 
-        // Configure the HTTP request pipeline.
-        if (!app.Environment.IsDevelopment())
+        private static void CopyConfigurationToLegacySettings(IConfiguration configuration)
         {
-            // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-            app.UseHsts();
+            static void TrySet(string key, string? value)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    System.Configuration.ConfigurationManager.AppSettings.Set(key, value);
+                }
+            }
+
+            TrySet("DEFAULT_PAYOR_JSON", configuration["DEFAULT_PAYOR_JSON"]);
+            TrySet("DEFAULT_ENTITY_ADDRESS", configuration["DEFAULT_ENTITY_ADDRESS"]);
+            TrySet("DEFAULT_ENTITY_CITY", configuration["DEFAULT_ENTITY_CITY"]);
+            TrySet("DEFAULT_ENTITY_STATE", configuration["DEFAULT_ENTITY_STATE"]);
+            TrySet("DEFAULT_ENTITY_ZIP", configuration["DEFAULT_ENTITY_ZIP"]);
+            TrySet("SendGridApiKey", configuration["SendGridApiKey"]);
+            TrySet("FromAddress", configuration["FromAddress"]);
+            TrySet("ReplyToAddress", configuration["ReplyToAddress"]);
         }
-        app.MapSwagger().RequireAuthorization();
-        app.UseCors();
-        app.UseHttpsRedirection();
-        app.UseStaticFiles();
-        app.UseRouting();
-        // Handle any exception occurred in application
-        app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-        app.UseAuthentication();
-        
-        app.UseAuthorization();
-        // NOTE: If you come here because a recently-added controller is 
-        // returning a 404 Not Found error, check your proxy.conf.js configuration!
-        // Service endpoints have to be explicitly-configured in the proxy
-        // because Microsoft is stupid that way :)
-        app.MapControllerRoute(
-            name: "default",
-            pattern: "{controller}/{action=Index}/{id?}");
+        private static void ConfigureCorsPolicy(CorsPolicyBuilder policyBuilder, string[] allowedOrigins, string[] allowedMethods, string[] allowedHeaders)
+        {
+            if (allowedOrigins.Length == 0 || allowedOrigins.Any(origin => string.Equals(origin, "*", StringComparison.Ordinal)))
+            {
+                policyBuilder.AllowAnyOrigin();
+            }
+            else
+            {
+                policyBuilder.WithOrigins(allowedOrigins);
+            }
 
-        app.MapFallbackToFile("index.html");
-        
-        app.Run();
+            if (allowedMethods.Length == 0 || allowedMethods.Any(method => string.Equals(method, "*", StringComparison.Ordinal)))
+            {
+                policyBuilder.AllowAnyMethod();
+            }
+            else
+            {
+                policyBuilder.WithMethods(allowedMethods);
+            }
+
+            if (allowedHeaders.Length == 0 || allowedHeaders.Any(header => string.Equals(header, "*", StringComparison.Ordinal)))
+            {
+                policyBuilder.AllowAnyHeader();
+            }
+            else
+            {
+                policyBuilder.WithHeaders(allowedHeaders);
+            }
+        }
+
+        private static string[] GetConfiguredValues(IConfiguration configuration, string key)
+        {
+            var section = configuration.GetSection(key);
+            var values = section.Get<string[]>() ?? Array.Empty<string>();
+
+            if (values.Length > 0)
+            {
+                values = values
+                    .Where(value => !string.IsNullOrWhiteSpace(value))
+                    .Select(value => value.Trim())
+                    .ToArray();
+            }
+
+            if (values.Length == 0 && !string.IsNullOrWhiteSpace(section.Value))
+            {
+                values = section.Value
+                    .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(value => value.Trim())
+                    .ToArray();
+            }
+
+            return values;
+        }
     }
 }
