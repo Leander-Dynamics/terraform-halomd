@@ -22,14 +22,22 @@ variable "location" {
 variable "administrator_login" {
   description = "Administrator login for the SQL Server."
   type        = string
-  default     = ""
+
+  validation {
+    condition     = length(trimspace(var.administrator_login)) > 0
+    error_message = "Administrator login must be provided."
+  }
 }
 
 variable "administrator_password" {
   description = "Administrator password for the SQL Server."
   type        = string
   sensitive   = true
-  default     = ""
+
+  validation {
+    condition     = length(trimspace(var.administrator_password)) > 0
+    error_message = "Administrator password must be provided."
+  }
 }
 
 variable "public_network_access_enabled" {
