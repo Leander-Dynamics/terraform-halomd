@@ -46,6 +46,12 @@ variable "enable_sql" {
   default     = false
 }
 
+variable "enable_bastion" {
+  description = "Flag to deploy an Azure Bastion host."
+  type        = bool
+  default     = false
+}
+
 variable "kv_public_network_access" {
   description = "Allow public network access to the Key Vault."
   type        = bool
@@ -84,6 +90,12 @@ variable "subnets" {
 variable "app_gateway_subnet_key" {
   description = "Key of the subnet used for the Application Gateway."
   type        = string
+}
+
+variable "bastion_subnet_key" {
+  description = "Key of the subnet reserved for the Bastion host."
+  type        = string
+  default     = null
 }
 
 variable "app_gateway_subnet_id" {
