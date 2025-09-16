@@ -63,3 +63,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "tags" {
+  description = "Optional tags to apply to the network security group."
+  type        = map(string)
+  default     = {}
+}

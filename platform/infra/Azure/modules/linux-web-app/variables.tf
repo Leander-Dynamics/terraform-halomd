@@ -18,3 +18,9 @@ variable "service_plan_id" {
   type        = string
   default     = ""
 }
+
+variable "tags" {
+  description = "Optional tags to apply to the Linux Web App."
+  type        = map(string)
+  default     = {}
+}

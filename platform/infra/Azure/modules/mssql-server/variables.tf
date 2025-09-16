@@ -22,3 +22,9 @@ variable "administrator_password" {
 variable "sku" {
   default = "Standard"
 }
+
+variable "tags" {
+  description = "Optional tags to apply to the SQL server."
+  type        = map(string)
+  default     = {}
+}

@@ -10,6 +10,7 @@ Provisions an Azure SQL (MSSQL) server instance.
 - `administrator_login` (`string`, required) – Login name for the SQL administrator account.
 - `administrator_password` (`string`, required, sensitive) – Password for the SQL administrator account. Store this value securely (for example in Key Vault or a secret store) and pass it to Terraform as a sensitive variable.
 - `sku` (`string`, optional) – SKU for the SQL server. Defaults to `Standard`.
+- `tags` (`map(string)`, optional) – Tags to apply to the SQL server resource.
 
 ### Example
 
@@ -23,6 +24,10 @@ module "mssql_server" {
 
   administrator_login    = "sqladminuser"
   administrator_password = var.sql_admin_password
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 variable "sql_admin_password" {
