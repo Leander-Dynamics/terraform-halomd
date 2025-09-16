@@ -77,10 +77,14 @@
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
   </Target>
   
-  <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish" Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release'">
-    <!-- As part of publishing, ensure the JS resources are freshly built in production mode for Debug builds -->
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" Condition="'$(Configuration)' == 'Debug'" />
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build -- --prod=false --configuration development" Condition="'$(Configuration)' == 'Debug'" />
+  <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish" Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release' Or '$(Configuration)' == 'Stage'">
+    <!-- As part of publishing, ensure the JS resources are freshly built for the selected configuration -->
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" Condition="'$(Configuration)' == 'Debug'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build-dev" Condition="'$(Configuration)' == 'Debug'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" Condition="'$(Configuration)' == 'Stage'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build-stage" Condition="'$(Configuration)' == 'Stage'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" Condition="'$(Configuration)' == 'Release'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" Condition="'$(Configuration)' == 'Release'" />
 
     <!-- Include the newly-built files in the publish output -->
     <ItemGroup>
