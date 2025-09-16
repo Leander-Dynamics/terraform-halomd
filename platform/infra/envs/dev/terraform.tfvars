@@ -16,14 +16,17 @@ tags = {
 # -------------------------
 # Networking
 # -------------------------
-vnet_address_space = ["10.10.0.0/16"]
+vnet_address_space = ["10.20.0.0/16"]
 subnets = {
-  gateway = {
-    address_prefixes = ["10.10.0.0/24"]
-  }
-  web = {
-    address_prefixes = ["10.10.1.0/24"]
-  }
+  gateway = { address_prefixes = ["10.20.0.0/24"] }
+  web     = { address_prefixes = ["10.20.1.0/24"] }
+  data    = { address_prefixes = ["10.20.2.0/24"] }
+  mgmt    = { address_prefixes = ["10.20.3.0/24"] }
 }
+
+# Subnet references for optional modules
+bastion_subnet_key                  = "mgmt"
+kv_private_endpoint_subnet_key      = "data"
+storage_private_endpoint_subnet_key = "data"
 
 kv_public_network_access = true
