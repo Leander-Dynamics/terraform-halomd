@@ -121,6 +121,24 @@ variable "dns_cname_records" {
 # -------------------------
 # App Service
 # -------------------------
+variable "resource_group_name" {
+  description = "Name of the resource group hosting the App Service resources. Defaults to rg-<project>-<env> when omitted."
+  type        = string
+  default     = null
+}
+
+variable "app_service_plan_name" {
+  description = "Explicit name assigned to the App Service plan. Defaults to asp-<project>-web-<env>-<location> when unset."
+  type        = string
+  default     = null
+}
+
+variable "app_service_name" {
+  description = "Name assigned to the primary App Service. Falls back to app_service_fqdn_prefix or app-<project>-web-<env>."
+  type        = string
+  default     = null
+}
+
 variable "app_service_plan_sku" {
   description = "SKU assigned to the App Service plan hosting the web applications."
   type        = string
@@ -452,6 +470,12 @@ variable "app_service_app_insights_connection_string" {
     condition     = try(trimspace(var.app_service_app_insights_connection_string), "") != ""
     error_message = "app_service_app_insights_connection_string must be provided when deploying the web app."
   }
+}
+
+variable "app_service_run_from_package" {
+  description = "When true, sets WEBSITE_RUN_FROM_PACKAGE to 1 for the primary web app."
+  type        = bool
+  default     = true
 }
 
 variable "app_service_log_analytics_workspace_id" {
