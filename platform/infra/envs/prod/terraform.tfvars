@@ -2,6 +2,11 @@ project_name = "arbit"
 env_name     = "prod"
 location     = "eastus2"
 
+# Secrets are injected at runtime via the pipeline / Key Vault.
+# Ensure `sql_admin_login` and `sql_admin_password` are supplied securely (for example,
+# via an untracked terraform.tfvars file, a variable group, or Key Vault) before
+# running `terraform plan` or `terraform apply`.
+
 tags = {
   project = "arbit"
   env     = "prod"
@@ -63,7 +68,7 @@ app_service_app_settings = {
 app_service_connection_strings = {
   PrimaryDatabase = {
     type  = "SQLAzure"
-    value = "Server=tcp:sql-arbit-prod.database.windows.net,1433;Initial Catalog=halomd;User ID=sqladminprod;Password=P@ssw0rd123!Prod;Encrypt=True;"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/app-service-primary-database-connection)"
   }
 }
 
@@ -71,7 +76,7 @@ app_service_connection_strings = {
 # Arbitration App
 # -------------------------
 arbitration_app_settings = {
-  "Storage__Connection" = "DefaultEndpointsProtocol=https;AccountName=prodarbitstorage;AccountKey=FakeKeyForProd==;EndpointSuffix=core.windows.net"
+  "Storage__Connection" = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-storage-connection)"
   "Storage__Container"  = "arbitration-calculator"
 }
 
@@ -89,14 +94,11 @@ sql_min_capacity         = 2
 sql_max_capacity         = 8
 sql_public_network_access = true
 
-sql_admin_login    = "sqladminprod"
-sql_admin_password = "P@ssw0rd123!Prod"
-
 # Firewall rules
 sql_firewall_rules = [
   {
-    name             = "allow-all"
+    name             = "allow-azure-services"
     start_ip_address = "0.0.0.0"
-    end_ip_address   = "255.255.255.255"
+    end_ip_address   = "0.0.0.0"
   }
 ]
