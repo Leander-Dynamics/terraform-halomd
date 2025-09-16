@@ -1,4 +1,4 @@
-# Network security group module
+# Network Security Group Module
 
 Creates an Azure Network Security Group (NSG).
 
@@ -13,9 +13,7 @@ module "network_security_group" {
   location            = azurerm_resource_group.example.location
 
   tags = {
-    Environment = "example"
+    Environment = "test"
+    Project     = "example"
   }
 }
-```
-
-The `tags` input is optional. When omitted, the NSG is created without custom tags.

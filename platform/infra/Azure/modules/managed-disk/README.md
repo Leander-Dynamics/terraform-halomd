@@ -1,4 +1,4 @@
-# managed-disk module
+# Managed Disk Module
 
 Provisions an Azure managed disk resource.
 
@@ -17,14 +17,14 @@ Provisions an Azure managed disk resource.
 module "managed_disk" {
   source = "../modules/managed-disk"
 
-  name                = "vmdata01"
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-  disk_size_gb        = 128
+  name                 = "data-disk-01"
+  location             = azurerm_resource_group.example.location
+  resource_group_name  = azurerm_resource_group.example.name
+  disk_size_gb         = 128
   storage_account_type = "Premium_LRS"
 
   tags = {
-    Environment = "prod"
+    Environment = "dev"
+    Project     = "example"
   }
 }
-```
