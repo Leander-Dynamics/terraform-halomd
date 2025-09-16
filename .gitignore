@@ -4,7 +4,9 @@
 *.tfstate.*
 crash.log
 crash.*.log
+# Allow committed environment variable files while ignoring other tfvars
 *.tfvars
+!platform/infra/envs/**/terraform.tfvars
 override.tf
 override.tf.json
 *_override.tf
