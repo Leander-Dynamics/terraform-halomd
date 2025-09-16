@@ -30,6 +30,12 @@ stages:
       inputs:
         command: 'restore'
         projects: 'Arbitration/MPArbitration.sln'
+    - script: npm ci --prefix Arbitration/MPArbitration/ClientApp
+      displayName: Install Arbitration client dependencies
+    - script: npm test --prefix Arbitration/MPArbitration/ClientApp
+      displayName: Run Arbitration client tests
+    - script: npm run build-dev --prefix Arbitration/MPArbitration/ClientApp
+      displayName: Build Arbitration client (dev)
     - task: DotNetCoreCLI@2
       displayName: Build MPArbitration.sln
       inputs:
