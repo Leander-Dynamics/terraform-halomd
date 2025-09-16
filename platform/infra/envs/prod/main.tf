@@ -197,6 +197,17 @@ module "vpn_gateway" {
   tags                         = merge(var.tags, each.value.tags)
 }
 
+# Bastion
+module "bastion" {
+  count               = var.enable_bastion ? 1 : 0
+  source              = "../../Azure/modules/bastion"
+  name                = local.bastion_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  subnet_id           = var.enable_bastion ? module.network.subnet_ids[var.bastion_subnet_key] : null
+  tags                = var.tags
+}
+
 # -------------------------
 # Outputs
 # -------------------------
@@ -223,4 +234,14 @@ output "nat_gateway_id" {
 output "vpn_gateway_id" {
   description = "Resource ID of the virtual network gateway when provisioned."
   value       = try(module.vpn_gateway["default"].id, null)
+}
+
+output "bastion_host_id" {
+  description = "Resource ID of the Bastion host."
+  value       = var.enable_bastion ? module.bastion[0].id : null
+}
+
+output "bastion_public_ip_address" {
+  description = "Public IP address associated with the Bastion host."
+  value       = var.enable_bastion ? module.bastion[0].public_ip_address : null
 }

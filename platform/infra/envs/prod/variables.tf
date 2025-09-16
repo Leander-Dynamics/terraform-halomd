@@ -119,6 +119,26 @@ variable "vpn_gateway_configuration" {
 }
 
 # -------------------------
+# Bastion
+# -------------------------
+variable "enable_bastion" {
+  description = "Flag to deploy an Azure Bastion host."
+  type        = bool
+  default     = false
+}
+
+variable "bastion_subnet_key" {
+  description = "Key referencing the AzureBastionSubnet entry in the `subnets` map."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.enable_bastion == false || try(trimspace(var.bastion_subnet_key), "") != ""
+    error_message = "bastion_subnet_key must be provided when enable_bastion is true."
+  }
+}
+
+# -------------------------
 # Networking
 # -------------------------
 variable "vnet_address_space" {
