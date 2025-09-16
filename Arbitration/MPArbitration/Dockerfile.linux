@@ -35,4 +35,7 @@ RUN mkdir -p /app/publish/ClientApp/dist \
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+RUN useradd -m appuser \
+    && chown -R appuser /app
+USER appuser
 ENTRYPOINT ["dotnet", "MPArbitration.dll"]
