@@ -78,8 +78,11 @@ arbit-consolidated-infra-ado/
 │           ├── stage/                 # Same structure as dev
 │           └── prod/                  # Same structure as dev
 ├── scripts/
+│   ├── Arbitration-SendNSARequests.ps1 # Sample script for NSA API interactions
 │   ├── azure-bootstrap-tfstate.ps1    # Bootstrap Terraform state resources (PowerShell)
-│   └── azure-bootstrap-tfstate.sh     # Bootstrap Terraform state resources (Bash)
+│   ├── azure-bootstrap-tfstate.sh     # Bootstrap Terraform state resources (Bash)
+│   ├── deploy-arbitration.ps1         # Build, package, and deploy MPArbitration via Azure CLI (PowerShell)
+│   └── deploy-arbitration.sh          # Bash equivalent for Linux/macOS agents
 ├── docs/
 │   ├── ADO-setup.md                   # Detailed ADO onboarding
 │   ├── step-by-step.md                # First-run walkthrough
@@ -181,6 +184,72 @@ arbit-consolidated-infra-ado/
 | `Backend not found` | Incorrect names in `backend.tfvars` | Update resource group/storage/container values to match reality. |
 | Provider version errors | Agent using wrong Terraform/provider versions | Keep `TF_VERSION` pinned; rerun with `terraform init -reconfigure`. |
 | OIDC login fails | Federated credential misconfigured | Recreate the service connection with workload identity federation and correct project/repo mapping. |
+
+## MPArbitration deployment helpers
+
+Cross-platform deployment scripts live under `scripts/` to mirror the manual build/package steps that run in CI. They restore the .NET solution, build the Angular client with an environment-specific configuration, publish the app, zip the output, and push it to App Service using `az webapp deploy` (or `--use-zip-deploy` for the legacy ZIP push command).
+
+### Prerequisites
+
+- [.NET SDK 6.0](global.json) to match the solution requirements.
+- Node.js 16.x (same version as the pipeline) for the Angular build.
+- Azure CLI authenticated against the target subscription (`az login` / `az account set`).
+- `zip` installed when using the Bash script on Linux/macOS agents.
+
+Artifacts are dropped in `artifacts/arbitration/<environment>` (ignored by Git). The `-Environment`/`--environment` switch selects the Angular build profile (`dev → npm run build-dev`, `stage → npm run build-stage`, all others → production `npm run build`).
+
+### PowerShell (Windows/PowerShell Core)
+
+```powershell
+pwsh ./scripts/deploy-arbitration.ps1 \`
+  -ResourceGroup rg-arbit-dev \`
+  -AppName mp-arbit-dev \`
+  -Environment dev \`
+  -Configuration Release \`
+  -Slot dev
+```
+
+Omit optional parameters as needed. Pass `-OutputDirectory` to change the artifact drop location or `-UseZipDeploy` to call `az webapp deployment source config-zip` instead of the newer `az webapp deploy` command.
+
+### Bash (Linux/macOS)
+
+```bash
+./scripts/deploy-arbitration.sh \
+  --resource-group rg-arbit-dev \
+  --app-name mp-arbit-dev \
+  --environment dev \
+  --configuration Release
+```
+
+Make the script executable once with `chmod +x scripts/deploy-arbitration.sh`. Supply `--slot` or `--use-zip-deploy` when you need to target a deployment slot or the legacy ZIP push workflow.
+
+### Azure Pipelines integration example
+
+```yaml
+- stage: Deploy_Arbitration_Dev
+  displayName: Deploy MPArbitration (dev)
+  dependsOn: Apply_Dev
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - job: deploy_app
+    displayName: Run deploy-arbitration.sh
+    pool: { vmImage: 'ubuntu-latest' }
+    steps:
+    - checkout: self
+    - task: AzureCLI@2
+      displayName: Deploy MPArbitration ZIP
+      inputs:
+        azureSubscription: sc-azure-oidc-dev
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          ./scripts/deploy-arbitration.sh \
+            --resource-group rg-arbit-dev \
+            --app-name mp-arbit-dev \
+            --environment dev
+```
+
+Swap in the PowerShell script when running on a Windows agent (`scriptType: pscore` + `scriptPath: scripts/deploy-arbitration.ps1`). Reuse the same stage structure for stage/prod slots or dedicated App Service instances.
 
 ---
 
