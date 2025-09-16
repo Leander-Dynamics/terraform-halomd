@@ -1,13 +1,16 @@
 variable "name" {
-  type = string
+  description = "Name of the Network Security Group."
+  type        = string
 }
 
 variable "location" {
-  type = string
+  description = "Azure region where the NSG will be deployed."
+  type        = string
 }
 
 variable "resource_group_name" {
-  type = string
+  description = "Resource group in which the NSG will be created."
+  type        = string
 }
 
 variable "security_rules" {
@@ -30,6 +33,7 @@ variable "security_rules" {
 
   When no rules are supplied the NSG will contain only the default Azure rules.
   DOC
+
   type = map(object({
     priority                     = number
     direction                    = optional(string, "Inbound")
@@ -52,4 +56,10 @@ variable "subnet_ids" {
   description = "Set of subnet resource IDs to associate with this network security group."
   type        = set(string)
   default     = []
+}
+
+variable "tags" {
+  description = "Tags to apply to the NSG."
+  type        = map(string)
+  default     = {}
 }

@@ -1,6 +1,10 @@
 {
   "name": "mparbitration",
   "version": "2024.9.0",
+  "engines": {
+    "node": ">=18 <19",
+    "npm": ">=9"
+  },
   "scripts": {
     "ng": "ng",
     "prestart": "node aspnetcore-https",
@@ -12,7 +16,7 @@
     "build-dev": "ng build --prod=false --configuration dev",
     "build:ssr": "ng run MPArbitration:server:dev",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test --watch=false --browsers=ChromeHeadless"
   },
   "private": true,
   "dependencies": {
