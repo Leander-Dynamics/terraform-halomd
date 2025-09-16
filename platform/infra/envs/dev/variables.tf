@@ -1,4 +1,39 @@
 # -------------------------
+# General
+# -------------------------
+
+variable "project_name" {
+  description = "Project or application identifier used for naming."
+  type        = string
+}
+
+variable "env_name" {
+  description = "Environment name (e.g. dev, stage, prod)."
+  type        = string
+}
+
+variable "location" {
+  description = "Azure region for resource deployment."
+  type        = string
+}
+
+variable "tags" {
+  description = "Common tags applied to all resources."
+  type        = map(string)
+  default     = {}
+}
+
+# -------------------------
+# Monitoring
+# -------------------------
+
+variable "app_insights_name" {
+  description = "Optional name override for the Application Insights resource."
+  type        = string
+  default     = ""
+}
+
+# -------------------------
 # Connectivity
 # -------------------------
 variable "enable_nat_gateway" {
@@ -21,6 +56,18 @@ variable "enable_vpn_gateway" {
     condition     = var.enable_vpn_gateway == false || var.vpn_gateway_configuration != null
     error_message = "vpn_gateway_configuration must be provided when enable_vpn_gateway is true."
   }
+}
+
+variable "enable_bastion" {
+  description = "Flag to deploy an Azure Bastion host."
+  type        = bool
+  default     = false
+}
+
+variable "bastion_subnet_key" {
+  description = "Key of the subnet reserved for the Bastion host."
+  type        = string
+  default     = null
 }
 
 # -------------------------
@@ -168,4 +215,83 @@ variable "vpn_gateway_configuration" {
     ) > 0
     error_message = "Either a public_ip definition or public_ip_id must be supplied for the virtual network gateway."
   }
+}
+
+# -------------------------
+# Key Vault
+# -------------------------
+
+variable "kv_public_network_access" {
+  description = "Allow public network access to the Key Vault."
+  type        = bool
+  default     = true
+}
+
+variable "kv_network_acls" {
+  description = "Network ACL configuration applied to the Key Vault."
+  type = object({
+    bypass                     = optional(string)
+    default_action             = optional(string)
+    ip_rules                   = optional(list(string))
+    virtual_network_subnet_ids = optional(list(string))
+  })
+  default = null
+}
+
+variable "enable_kv_private_endpoint" {
+  description = "Toggle creation of a private endpoint for the Key Vault."
+  type        = bool
+  default     = false
+}
+
+variable "kv_private_endpoint_subnet_key" {
+  description = "Key of the subnet used when creating the Key Vault private endpoint."
+  type        = string
+  default     = null
+}
+
+variable "kv_private_endpoint_resource_id" {
+  description = "Optional override for the Key Vault resource ID used by the private endpoint module."
+  type        = string
+  default     = null
+}
+
+variable "kv_private_dns_zone_ids" {
+  description = "Private DNS zone IDs linked to the Key Vault private endpoint."
+  type        = list(string)
+  default     = []
+}
+
+# -------------------------
+# Storage
+# -------------------------
+
+variable "enable_storage_private_endpoint" {
+  description = "Toggle creation of a private endpoint for the storage account."
+  type        = bool
+  default     = false
+}
+
+variable "storage_private_endpoint_subnet_key" {
+  description = "Key of the subnet used when creating the storage account private endpoint."
+  type        = string
+  default     = null
+}
+
+variable "storage_account_private_connection_resource_id" {
+  description = "Resource ID used by the storage account private endpoint connection."
+  type        = string
+  default     = null
+}
+
+variable "storage_private_endpoint_subresource_names" {
+  description = "Subresource names exposed through the storage account private endpoint."
+  type        = list(string)
+  default     = ["blob"]
+}
+
+variable "storage_private_dns_zone_ids" {
+  description = "Private DNS zone IDs linked to the storage account private endpoint."
+  type        = list(string)
+  default     = []
 }
