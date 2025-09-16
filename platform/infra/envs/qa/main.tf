@@ -189,17 +189,54 @@ module "storage_private_endpoint" {
 
 # App Services
 module "app_service_web" {
-  source = "../../Azure/modules/app-service-web"
+  source = "../../Azure/modules/web-app"
 
-  name                = local.app_service_name
   plan_name           = local.app_service_plan_name
-  plan_sku            = var.app_service_plan_sku
+  plan_sku            = length(try(trimspace(var.app_service_plan_sku), "")) > 0 ? var.app_service_plan_sku : "B1"
+  name                = local.app_service_name
+  app_name            = local.app_service_name
   resource_group_name = module.resource_group.name
   location            = var.location
 
-  dotnet_version                  = var.app_service_dotnet_version
+  runtime_version                = var.app_service_dotnet_version
   app_insights_connection_string = var.app_service_app_insights_connection_string
   log_analytics_workspace_id     = var.app_service_log_analytics_workspace_id
   app_settings                   = var.app_service_app_settings
   connection_strings             = var.app_service_connection_strings
+  tags                           = var.tags
+}
+
+module "app_service_arbitration" {
+  count  = var.enable_arbitration_app_service ? 1 : 0
+  source = "../../Azure/modules/web-app"
+
+  plan_name = local.arbitration_plan_name
+  plan_sku = length(try(trimspace(var.arbitration_app_plan_sku), "")) > 0
+    ? var.arbitration_app_plan_sku
+    : length(try(trimspace(var.app_service_plan_sku), "")) > 0
+    ? var.app_service_plan_sku
+    : "B1"
+
+  name                = local.arbitration_app_name
+  app_name            = local.arbitration_app_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+
+  runtime_stack   = var.arbitration_runtime_stack
+  runtime_version = var.arbitration_runtime_version
+
+  app_insights_connection_string = length(try(trimspace(var.arbitration_app_insights_connection_string), "")) > 0
+    ? var.arbitration_app_insights_connection_string
+    : var.app_service_app_insights_connection_string
+
+  log_analytics_workspace_id = length(try(trimspace(var.arbitration_log_analytics_workspace_id), "")) > 0
+    ? var.arbitration_log_analytics_workspace_id
+    : (length(try(trimspace(var.app_service_log_analytics_workspace_id), "")) > 0
+      ? var.app_service_log_analytics_workspace_id
+      : null)
+
+  run_from_package   = var.arbitration_run_from_package
+  app_settings       = var.arbitration_app_settings
+  connection_strings = var.arbitration_connection_strings
+  tags               = var.tags
 }
