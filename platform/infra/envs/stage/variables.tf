@@ -264,3 +264,131 @@ variable "storage_account_private_connection_resource_id" {
   type        = string
   default     = null
 }
+
+# -------------------------
+# Function Apps
+# -------------------------
+
+variable "cron_function_name" {
+  description = "Name of the cron Function App."
+  type        = string
+}
+
+variable "cron_function_plan_name" {
+  description = "Name of the App Service plan used by the cron Function App."
+  type        = string
+}
+
+variable "cron_function_plan_sku" {
+  description = "SKU for the cron Function App service plan."
+  type        = string
+  default     = "Y1"
+}
+
+variable "cron_function_runtime_stack" {
+  description = "Worker runtime stack for the cron Function App."
+  type        = string
+  default     = "dotnet"
+
+  validation {
+    condition     = contains(["dotnet", "node", "python"], lower(trimspace(var.cron_function_runtime_stack)))
+    error_message = "cron_function_runtime_stack must be one of: dotnet, node, python."
+  }
+}
+
+variable "cron_function_runtime_version" {
+  description = "Optional runtime version for the cron Function App."
+  type        = string
+  default     = ""
+}
+
+variable "cron_function_app_settings" {
+  description = "Additional application settings for the cron Function App."
+  type        = map(string)
+  default     = {}
+}
+
+variable "cron_function_application_insights_connection_string" {
+  description = "Application Insights connection string for the cron Function App."
+  type        = string
+  default     = ""
+}
+
+variable "cron_function_log_analytics_workspace_id" {
+  description = "Log Analytics workspace ID used for cron Function App diagnostics."
+  type        = string
+  default     = null
+}
+
+variable "cron_function_storage_account_name" {
+  description = "Optional storage account name backing the cron Function App."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.cron_function_storage_account_name == "" ? true : can(regex("^[a-z0-9]{3,24}$", var.cron_function_storage_account_name))
+    error_message = "cron_function_storage_account_name must be empty or contain 3-24 lowercase letters and numbers."
+  }
+}
+
+variable "external_function_name" {
+  description = "Name of the external Function App."
+  type        = string
+}
+
+variable "external_function_plan_name" {
+  description = "Name of the App Service plan used by the external Function App."
+  type        = string
+}
+
+variable "external_function_plan_sku" {
+  description = "SKU for the external Function App service plan."
+  type        = string
+  default     = "Y1"
+}
+
+variable "external_function_runtime_stack" {
+  description = "Worker runtime stack for the external Function App."
+  type        = string
+  default     = "dotnet"
+
+  validation {
+    condition     = contains(["dotnet", "node", "python"], lower(trimspace(var.external_function_runtime_stack)))
+    error_message = "external_function_runtime_stack must be one of: dotnet, node, python."
+  }
+}
+
+variable "external_function_runtime_version" {
+  description = "Optional runtime version for the external Function App."
+  type        = string
+  default     = ""
+}
+
+variable "external_function_app_settings" {
+  description = "Additional application settings for the external Function App."
+  type        = map(string)
+  default     = {}
+}
+
+variable "external_function_application_insights_connection_string" {
+  description = "Application Insights connection string for the external Function App."
+  type        = string
+  default     = ""
+}
+
+variable "external_function_log_analytics_workspace_id" {
+  description = "Log Analytics workspace ID used for external Function App diagnostics."
+  type        = string
+  default     = null
+}
+
+variable "external_function_storage_account_name" {
+  description = "Optional storage account name backing the external Function App."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.external_function_storage_account_name == "" ? true : can(regex("^[a-z0-9]{3,24}$", var.external_function_storage_account_name))
+    error_message = "external_function_storage_account_name must be empty or contain 3-24 lowercase letters and numbers."
+  }
+}

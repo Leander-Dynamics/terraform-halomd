@@ -30,3 +30,22 @@ kv_private_endpoint_subnet_key      = "data"
 storage_private_endpoint_subnet_key = "data"
 
 kv_public_network_access = true
+
+# -------------------------
+# Function Apps
+# -------------------------
+cron_function_name       = "func-cron-dev"
+cron_function_plan_name  = "asp-cron-dev-eastus"
+cron_function_plan_sku   = "Y1"
+cron_function_runtime_stack = "dotnet"
+# App settings are supplied via pipeline secrets / Key Vault references.
+cron_function_app_settings = {}
+cron_function_application_insights_connection_string = ""
+
+external_function_name       = "func-external-dev"
+external_function_plan_name  = "asp-external-dev-eastus"
+external_function_plan_sku   = "Y1"
+external_function_runtime_stack = "dotnet"
+# App settings are supplied via pipeline secrets / Key Vault references.
+external_function_app_settings = {}
+external_function_application_insights_connection_string = ""

@@ -79,6 +79,25 @@ arbitration_app_settings = {
 }
 
 # -------------------------
+# Function Apps
+# -------------------------
+cron_function_name          = "func-cron-prod"
+cron_function_plan_name     = "asp-cron-prod-eastus2"
+cron_function_plan_sku      = "Y1"
+cron_function_runtime_stack = "dotnet"
+# Additional configuration is sourced from pipeline secrets / Key Vault references.
+cron_function_app_settings = {}
+cron_function_application_insights_connection_string = ""
+
+external_function_name          = "func-external-prod"
+external_function_plan_name     = "asp-external-prod-eastus2"
+external_function_plan_sku      = "Y1"
+external_function_runtime_stack = "dotnet"
+# Additional configuration is sourced from pipeline secrets / Key Vault references.
+external_function_app_settings = {}
+external_function_application_insights_connection_string = ""
+
+# -------------------------
 # SQL Database
 # -------------------------
 # Support both sql_database_name and sql_db_name for different modules

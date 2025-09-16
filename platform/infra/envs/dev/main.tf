@@ -4,6 +4,10 @@ locals {
   rg_name                      = "rg-${var.project_name}-${var.env_name}"
   kv_name                      = "kv-${var.project_name}-${var.env_name}"
   bastion_name                 = "bas-${var.project_name}-${var.env_name}"
+  func_external_plan           = var.external_function_plan_name
+  func_external_name           = var.external_function_name
+  func_cron_plan               = var.cron_function_plan_name
+  func_cron_name               = var.cron_function_name
   kv_private_endpoint_name     = "pep-${var.project_name}-${var.env_name}-kv"
   storage_private_endpoint_name = "pep-${var.project_name}-${var.env_name}-st"
 
@@ -209,6 +213,44 @@ module "storage_private_endpoint" {
       private_dns_zone_ids = var.storage_private_dns_zone_ids
     }
   ] : []
+}
+
+# -------------------------
+# Function Apps
+# -------------------------
+
+module "cron_function_app" {
+  source              = "../../Azure/modules/linux-function-app"
+  name                = local.func_cron_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  plan_name           = local.func_cron_plan
+  plan_sku            = var.cron_function_plan_sku
+  runtime_stack       = var.cron_function_runtime_stack
+  runtime_version     = var.cron_function_runtime_version
+  storage_account_name = var.cron_function_storage_account_name
+
+  application_insights_connection_string = var.cron_function_application_insights_connection_string
+  log_analytics_workspace_id              = var.cron_function_log_analytics_workspace_id
+  app_settings                            = var.cron_function_app_settings
+  tags                                    = var.tags
+}
+
+module "external_function_app" {
+  source              = "../../Azure/modules/linux-function-app"
+  name                = local.func_external_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  plan_name           = local.func_external_plan
+  plan_sku            = var.external_function_plan_sku
+  runtime_stack       = var.external_function_runtime_stack
+  runtime_version     = var.external_function_runtime_version
+  storage_account_name = var.external_function_storage_account_name
+
+  application_insights_connection_string = var.external_function_application_insights_connection_string
+  log_analytics_workspace_id              = var.external_function_log_analytics_workspace_id
+  app_settings                            = var.external_function_app_settings
+  tags                                    = var.tags
 }
 
 # -------------------------
