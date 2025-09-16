@@ -17,6 +17,8 @@
 - `AZ_SUBSCRIPTION_ID` = `<subscription guid>`
 - `AZ_TENANT_ID` = `<tenant guid>`
 
+  > Mark both as **secret** variables so the pipeline can inject them into `terraform init` without storing the GUIDs in source control.
+
 - `AKV_ENABLE_DYNAMIC_IP_DEV` = `true`   # temp IP allow during plan on hosted agents
 - `AKV_ENABLE_DYNAMIC_IP_STAGE` = `false`
 - `AKV_ENABLE_DYNAMIC_IP_PROD` = `false`
