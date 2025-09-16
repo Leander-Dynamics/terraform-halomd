@@ -1,4 +1,40 @@
 # -------------------------
+# General settings
+# -------------------------
+variable "subscription_id" {
+  description = "Optional Azure subscription ID used by the provider configuration."
+  type        = string
+  default     = null
+}
+
+variable "tenant_id" {
+  description = "Optional Azure tenant ID used by the provider configuration."
+  type        = string
+  default     = null
+}
+
+variable "project_name" {
+  description = "Short name of the project used when constructing resource names."
+  type        = string
+}
+
+variable "env_name" {
+  description = "Name of the deployment environment (for example, dev or prod)."
+  type        = string
+}
+
+variable "location" {
+  description = "Azure region where resources will be deployed."
+  type        = string
+}
+
+variable "tags" {
+  description = "Common tags applied to all resources."
+  type        = map(string)
+  default     = {}
+}
+
+# -------------------------
 # Connectivity
 # -------------------------
 variable "enable_nat_gateway" {
@@ -168,4 +204,124 @@ variable "vpn_gateway_configuration" {
     ) > 0
     error_message = "Either a public_ip definition or public_ip_id must be supplied for the virtual network gateway."
   }
+}
+
+# -------------------------
+# Bastion
+# -------------------------
+variable "enable_bastion" {
+  description = "Flag to deploy an Azure Bastion host for secure remote access."
+  type        = bool
+  default     = false
+}
+
+variable "bastion_subnet_key" {
+  description = "Key of the subnet that hosts the Bastion when enabled."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.enable_bastion == false || try(trimspace(var.bastion_subnet_key), "") != ""
+    error_message = "bastion_subnet_key must be provided when enable_bastion is true."
+  }
+}
+
+# -------------------------
+# Key Vault
+# -------------------------
+variable "kv_public_network_access" {
+  description = "Controls whether the Key Vault allows public network access."
+  type        = bool
+  default     = true
+}
+
+variable "kv_network_acls" {
+  description = "Optional network ACL configuration applied to the Key Vault."
+  type = object({
+    bypass                     = optional(string)
+    default_action             = optional(string)
+    ip_rules                   = optional(list(string))
+    virtual_network_subnet_ids = optional(list(string))
+  })
+  default = null
+}
+
+# -------------------------
+# Key Vault private endpoints
+# -------------------------
+variable "enable_kv_private_endpoint" {
+  description = "Flag to create a private endpoint for the Key Vault."
+  type        = bool
+  default     = false
+}
+
+variable "kv_private_endpoint_subnet_key" {
+  description = "Key of the subnet used by the Key Vault private endpoint when enabled."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.enable_kv_private_endpoint == false || try(trimspace(var.kv_private_endpoint_subnet_key), "") != ""
+    error_message = "kv_private_endpoint_subnet_key must be provided when enable_kv_private_endpoint is true."
+  }
+}
+
+variable "kv_private_endpoint_resource_id" {
+  description = "Optional resource ID of an existing Key Vault to associate with the private endpoint."
+  type        = string
+  default     = null
+}
+
+variable "kv_private_dns_zone_ids" {
+  description = "Private DNS zone IDs linked to the Key Vault private endpoint."
+  type        = list(string)
+  default     = []
+}
+
+# -------------------------
+# Storage private endpoints
+# -------------------------
+variable "enable_storage_private_endpoint" {
+  description = "Flag to create a private endpoint for the storage account."
+  type        = bool
+  default     = false
+}
+
+variable "storage_private_endpoint_subnet_key" {
+  description = "Key of the subnet used by the storage private endpoint when enabled."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.enable_storage_private_endpoint == false || try(trimspace(var.storage_private_endpoint_subnet_key), "") != ""
+    error_message = "storage_private_endpoint_subnet_key must be provided when enable_storage_private_endpoint is true."
+  }
+}
+
+variable "storage_account_private_connection_resource_id" {
+  description = "Resource ID of the storage account to associate with the private endpoint when enabled."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.enable_storage_private_endpoint == false || try(trimspace(var.storage_account_private_connection_resource_id), "") != ""
+    error_message = "storage_account_private_connection_resource_id must be provided when enable_storage_private_endpoint is true."
+  }
+}
+
+variable "storage_private_endpoint_subresource_names" {
+  description = "Subresource names exposed over the storage private endpoint."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = var.enable_storage_private_endpoint == false || length(var.storage_private_endpoint_subresource_names) > 0
+    error_message = "At least one storage private endpoint subresource name must be provided when enable_storage_private_endpoint is true."
+  }
+}
+
+variable "storage_private_dns_zone_ids" {
+  description = "Private DNS zone IDs linked to the storage private endpoint."
+  type        = list(string)
+  default     = []
 }
