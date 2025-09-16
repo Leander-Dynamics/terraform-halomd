@@ -1,5 +1,3 @@
-# Environment composition for the qa environment
-
 locals {
   rg_name                      = "rg-${var.project_name}-${var.env_name}"
   kv_name                      = "kv-${var.project_name}-${var.env_name}"
@@ -10,17 +8,25 @@ locals {
   kv_private_endpoint_name      = "pep-${var.project_name}-${var.env_name}-kv"
   storage_private_endpoint_name = "pep-${var.project_name}-${var.env_name}-st"
 
-  # App Service naming
   app_service_plan_name         = "asp-${var.project_name}-web-${var.env_name}-${var.location}"
   app_service_name              = "app-${var.project_name}-web-${var.env_name}"
   arbitration_plan_name         = "asp-${var.project_name}-arb-${var.env_name}-${var.location}"
   arbitration_app_name          = "app-${var.project_name}-arb-${var.env_name}"
+  arbitration_plan_sku          = try(trimspace(var.arbitration_app_plan_sku), "") != "" ? var.arbitration_app_plan_sku : var.app_service_plan_sku
+  arbitration_app_insights_connection_string = try(trimspace(var.arbitration_app_insights_connection_string), "") != "" ? var.arbitration_app_insights_connection_string : var.app_service_app_insights_connection_string
+  arbitration_log_analytics_workspace_id     = try(trimspace(var.arbitration_log_analytics_workspace_id), "") != "" ? var.arbitration_log_analytics_workspace_id : var.app_service_log_analytics_workspace_id
+  arbitration_app_settings = merge(
+    {
+      APPINSIGHTS_CONNECTION_STRING = local.arbitration_app_insights_connection_string
+      APPINSIGHTS_CONNECTIONSTRING  = local.arbitration_app_insights_connection_string
+    },
+    var.arbitration_run_from_package ? { WEBSITE_RUN_FROM_PACKAGE = "1" } : {},
+    var.arbitration_app_settings
+  )
 
-  # SQL Server
-  sql_server_name               = "sql-${var.project_name}-${var.env_name}"
-  sql_database_name             = var.sql_database_name != "" ? var.sql_database_name : "${var.project_name}-${var.env_name}"
+  sql_server_name       = "sql-${var.project_name}-${var.env_name}"
+  sql_database_name     = var.sql_database_name != "" ? var.sql_database_name : "${var.project_name}-${var.env_name}"
 
-  # NSG locals
   subnet_network_security_groups = {
     for subnet_name in keys(var.subnets) :
     subnet_name => {
@@ -29,44 +35,6 @@ locals {
     }
   }
 
-  # NAT Gateway
-  nat_gateway_settings = var.enable_nat_gateway && var.nat_gateway_configuration != null ? {
-    name                     = var.nat_gateway_configuration.name
-    sku_name                 = try(var.nat_gateway_configuration.sku_name, "Standard")
-    idle_timeout_in_minutes  = try(var.nat_gateway_configuration.idle_timeout_in_minutes, 4)
-    zones                    = try(var.nat_gateway_configuration.zones, [])
-    public_ip_configurations = try(var.nat_gateway_configuration.public_ip_configurations, [])
-    public_ip_ids            = try(var.nat_gateway_configuration.public_ip_ids, [])
-    subnet_keys              = var.nat_gateway_configuration.subnet_keys
-    tags                     = try(var.nat_gateway_configuration.tags, {})
-  } : null
-
-  nat_gateway_subnet_ids = local.nat_gateway_settings != null ? [
-    for key in local.nat_gateway_settings.subnet_keys : module.network.subnet_ids[key]
-  ] : []
-
-  # VPN Gateway
-  vpn_gateway_settings = var.enable_vpn_gateway && var.vpn_gateway_configuration != null ? {
-    name                     = var.vpn_gateway_configuration.name
-    gateway_subnet_key       = var.vpn_gateway_configuration.gateway_subnet_key
-    sku                      = var.vpn_gateway_configuration.sku
-    gateway_type             = try(var.vpn_gateway_configuration.gateway_type, "Vpn")
-    vpn_type                 = try(var.vpn_gateway_configuration.vpn_type, "RouteBased")
-    active_active            = try(var.vpn_gateway_configuration.active_active, false)
-    enable_bgp               = try(var.vpn_gateway_configuration.enable_bgp, false)
-    generation               = try(var.vpn_gateway_configuration.generation, null)
-    ip_configuration_name    = try(var.vpn_gateway_configuration.ip_configuration_name, "default")
-    custom_routes            = try(var.vpn_gateway_configuration.custom_routes, [])
-    public_ip                = try(var.vpn_gateway_configuration.public_ip, null)
-    public_ip_id             = try(var.vpn_gateway_configuration.public_ip_id, null)
-    vpn_client_configuration = try(var.vpn_gateway_configuration.vpn_client_configuration, null)
-    bgp_settings             = try(var.vpn_gateway_configuration.bgp_settings, null)
-    tags                     = try(var.vpn_gateway_configuration.tags, {})
-  } : null
-
-  vpn_gateway_subnet_id = local.vpn_gateway_settings != null ? module.network.subnet_ids[local.vpn_gateway_settings.gateway_subnet_key] : null
-
-  # Private Endpoints
   kv_private_endpoint_subnet_id = var.enable_kv_private_endpoint && var.kv_private_endpoint_subnet_key != null && var.kv_private_endpoint_subnet_key != "" ? lookup(module.network.subnet_ids, var.kv_private_endpoint_subnet_key, null) : null
   kv_private_endpoints = local.kv_private_endpoint_subnet_id != null ? [{ subnet_id = local.kv_private_endpoint_subnet_id }] : []
 
@@ -187,18 +155,17 @@ module "storage_private_endpoint" {
   }] : []
 }
 
-# App Services
 module "app_service_web" {
   source = "../../Azure/modules/web-app"
 
-  plan_name           = local.app_service_plan_name
-  plan_sku            = length(try(trimspace(var.app_service_plan_sku), "")) > 0 ? var.app_service_plan_sku : "B1"
-  name                = local.app_service_name
-  app_name            = local.app_service_name
-  resource_group_name = module.resource_group.name
-  location            = var.location
-
+  name                           = local.app_service_name
+  plan_name                      = local.app_service_plan_name
+  plan_sku                       = var.app_service_plan_sku
+  resource_group_name            = module.resource_group.name
+  location                       = var.location
+  runtime_stack                  = "dotnet"
   runtime_version                = var.app_service_dotnet_version
+  run_from_package               = true
   app_insights_connection_string = var.app_service_app_insights_connection_string
   log_analytics_workspace_id     = var.app_service_log_analytics_workspace_id
   app_settings                   = var.app_service_app_settings
@@ -206,37 +173,13 @@ module "app_service_web" {
   tags                           = var.tags
 }
 
-module "app_service_arbitration" {
+module "web_app_arbitration" {
   count  = var.enable_arbitration_app_service ? 1 : 0
   source = "../../Azure/modules/web-app"
 
-  plan_name = local.arbitration_plan_name
-  plan_sku = length(try(trimspace(var.arbitration_app_plan_sku), "")) > 0
-    ? var.arbitration_app_plan_sku
-    : length(try(trimspace(var.app_service_plan_sku), "")) > 0
-    ? var.app_service_plan_sku
-    : "B1"
-
-  name                = local.arbitration_app_name
-  app_name            = local.arbitration_app_name
-  resource_group_name = module.resource_group.name
-  location            = var.location
-
-  runtime_stack   = var.arbitration_runtime_stack
-  runtime_version = var.arbitration_runtime_version
-
-  app_insights_connection_string = length(try(trimspace(var.arbitration_app_insights_connection_string), "")) > 0
-    ? var.arbitration_app_insights_connection_string
-    : var.app_service_app_insights_connection_string
-
-  log_analytics_workspace_id = length(try(trimspace(var.arbitration_log_analytics_workspace_id), "")) > 0
-    ? var.arbitration_log_analytics_workspace_id
-    : (length(try(trimspace(var.app_service_log_analytics_workspace_id), "")) > 0
-      ? var.app_service_log_analytics_workspace_id
-      : null)
-
-  run_from_package   = var.arbitration_run_from_package
-  app_settings       = var.arbitration_app_settings
-  connection_strings = var.arbitration_connection_strings
-  tags               = var.tags
-}
+  name                           = local.arbitration_app_name
+  plan_name                      = local.arbitration_plan_name
+  plan_sku                       = local.arbitration_plan_sku
+  resource_group_name            = module.resource_group.name
+  location                       = var.location
+  runtime_stack                  =_
