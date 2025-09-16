@@ -12,7 +12,7 @@
     "build-dev": "ng build --prod=false --configuration dev",
     "build:ssr": "ng run MPArbitration:server:dev",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test --watch=false --browsers=ChromeHeadless"
   },
   "private": true,
   "dependencies": {
