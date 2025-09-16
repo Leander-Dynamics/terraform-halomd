@@ -128,7 +128,7 @@ module "network_security_groups" {
 
 # App Services
 module "app_service_web" {
-  source = "../../Azure/modules/app-service-web"
+  source = "../../Azure/modules/web-app"
 
   name                = local.web_name
   plan_name           = local.web_plan
@@ -136,7 +136,9 @@ module "app_service_web" {
   resource_group_name = module.resource_group.name
   location            = var.location
 
-  dotnet_version                  = var.app_service_dotnet_version
+  runtime_stack                  = "dotnet"
+  runtime_version                = var.app_service_dotnet_version
+  run_from_package               = true
   app_insights_connection_string = var.app_service_app_insights_connection_string
   log_analytics_workspace_id     = var.app_service_log_analytics_workspace_id
   app_settings                   = var.app_service_app_settings
@@ -146,7 +148,7 @@ module "app_service_web" {
 
 module "app_service_arbitration" {
   count = var.enable_arbitration_app_service ? 1 : 0
-  source = "../../Azure/modules/app-service-arbitration"
+  source = "../../Azure/modules/web-app"
 
   name                = local.arbitration_name
   plan_name           = local.arbitration_plan
@@ -156,6 +158,7 @@ module "app_service_arbitration" {
 
   runtime_stack                  = var.arbitration_runtime_stack
   runtime_version                = var.arbitration_runtime_version
+  always_on                     = true
   app_insights_connection_string = var.arbitration_app_insights_connection_string != null && trimspace(var.arbitration_app_insights_connection_string) != "" ? var.arbitration_app_insights_connection_string : var.app_service_app_insights_connection_string
   log_analytics_workspace_id     = var.arbitration_log_analytics_workspace_id != null && trimspace(var.arbitration_log_analytics_workspace_id) != "" ? var.arbitration_log_analytics_workspace_id : var.app_service_log_analytics_workspace_id
   connection_strings             = var.arbitration_connection_strings
