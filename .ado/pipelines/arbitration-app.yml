@@ -1,5 +1,5 @@
 # Azure DevOps multi-stage pipeline for the Arbitration web application
-# Build -> Deploy (dev -> stage -> prod)
+# Build -> Deploy (dev -> qa -> stage -> prod)
 # Environment approvals for stage/prod should be configured on the
 # corresponding Azure DevOps environments (arbitration-stage, arbitration-prod).
 
@@ -37,9 +37,23 @@ stages:
       displayNameSuffix: dev
       azureSubscription: sc-azure-oidc-dev
 
+- stage: deploy_qa
+  displayName: Deploy to qa
+  dependsOn: deploy_dev
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  variables:
+  - group: arbitration-app-qa  # provides webAppName/appSettingsJson/connectionStringsJson
+  jobs:
+  - template: .ado/templates/arbitration-deploy.yml
+    parameters:
+      jobName: deploy_qa
+      environmentName: arbitration-qa
+      displayNameSuffix: qa
+      azureSubscription: sc-azure-oidc-qa
+
 - stage: deploy_stage
   displayName: Deploy to stage
-  dependsOn: deploy_dev
+  dependsOn: deploy_qa
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   variables:
   - group: arbitration-app-stage  # provides webAppName/appSettingsJson/connectionStringsJson

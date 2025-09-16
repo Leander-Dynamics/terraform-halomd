@@ -1,3 +1,7 @@
+# -------------------------
+# App Service Plan
+# -------------------------
+
 variable "plan_name" {
   description = "Name of the App Service plan."
   type        = string
@@ -6,10 +10,20 @@ variable "plan_name" {
 variable "plan_sku" {
   description = "SKU used by the App Service plan."
   type        = string
+  default     = "B1"
+}
+
+# -------------------------
+# App Service Web App
+# -------------------------
+
+variable "name" {
+  description = "Name of the App Service."
+  type        = string
 }
 
 variable "app_name" {
-  description = "Name of the App Service."
+  description = "Alias for name; used for diagnostic output naming."
   type        = string
 }
 
@@ -24,15 +38,55 @@ variable "location" {
 }
 
 variable "runtime_stack" {
-  description = "Application runtime stack (dotnet, node, python)."
+  description = "Runtime stack for the Linux web app. Supported values: dotnet, node, python."
   type        = string
   default     = "dotnet"
+
+  validation {
+    condition     = contains(["dotnet", "node", "python"], lower(trimspace(coalesce(var.runtime_stack, "dotnet"))))
+    error_message = "runtime_stack must be one of: dotnet, node, python."
+  }
 }
 
 variable "runtime_version" {
   description = "Runtime version associated with the selected stack."
   type        = string
   default     = "8.0"
+}
+
+variable "always_on" {
+  description = "Enables the Always On setting for the web app."
+  type        = bool
+  default     = true
+}
+
+variable "https_only" {
+  description = "Force HTTPS traffic to the web app."
+  type        = bool
+  default     = true
+}
+
+variable "ftps_state" {
+  description = "FTPS configuration for the web app."
+  type        = string
+  default     = "Disabled"
+}
+
+variable "app_insights_connection_string" {
+  description = "Application Insights connection string injected into the app settings."
+  type        = string
+}
+
+variable "log_analytics_workspace_id" {
+  description = "Log Analytics workspace resource ID for diagnostics."
+  type        = string
+  default     = null
+}
+
+variable "run_from_package" {
+  description = "When true, sets WEBSITE_RUN_FROM_PACKAGE to 1."
+  type        = bool
+  default     = null
 }
 
 variable "app_settings" {
@@ -50,32 +104,8 @@ variable "connection_strings" {
   default = {}
 }
 
-variable "log_analytics_workspace_id" {
-  description = "Optional Log Analytics workspace resource ID for diagnostics."
-  type        = string
-  default     = null
-}
-
 variable "tags" {
   description = "Tags applied to created resources."
   type        = map(string)
   default     = {}
-}
-
-variable "https_only" {
-  description = "Force HTTPS traffic to the web app."
-  type        = bool
-  default     = true
-}
-
-variable "always_on" {
-  description = "Keep the web app always on."
-  type        = bool
-  default     = true
-}
-
-variable "ftps_state" {
-  description = "FTPS configuration for the web app."
-  type        = string
-  default     = "Disabled"
 }

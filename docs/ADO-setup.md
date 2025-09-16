@@ -1,15 +1,16 @@
 # Azure DevOps (ADO) Setup
 
 ## Service Connections (OIDC)
-Create three **Azure Resource Manager** service connections with **Workload identity federation**:
+Create four **Azure Resource Manager** service connections with **Workload identity federation**:
 - `sc-azure-oidc-dev`
+- `sc-azure-oidc-qa`
 - `sc-azure-oidc-stage`
 - `sc-azure-oidc-prod`
 
 Grant **Contributor** on the target scope and **Storage Blob Data Contributor** on the Terraform state storage account used by your backends.
 
 ## Environments & Approvals
-Create **Environments**: `dev`, `stage`, `prod`.
+Create **Environments**: `dev`, `qa`, `stage`, `prod`.
 - Add **Approvals** for `stage` and `prod` (SRE/lead/change approvers).
 - (Optional) Add **Branch control** to allow only `refs/heads/main`.
 

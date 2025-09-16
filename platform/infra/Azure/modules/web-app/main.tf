@@ -1,3 +1,15 @@
+# -------------------------
+# Local Values
+# -------------------------
+
+locals {
+  normalized_runtime_stack = lower(trimspace(coalesce(var.runtime_stack, "dotnet")))
+}
+
+# -------------------------
+# App Service Plan
+# -------------------------
+
 resource "azurerm_service_plan" "plan" {
   name                = var.plan_name
   location            = var.location
@@ -7,27 +19,40 @@ resource "azurerm_service_plan" "plan" {
   tags                = var.tags
 }
 
+# -------------------------
+# Linux Web App
+# -------------------------
+
 resource "azurerm_linux_web_app" "app" {
-  name                = var.app_name
+  name                = var.name
   location            = var.location
   resource_group_name = var.resource_group_name
   service_plan_id     = azurerm_service_plan.plan.id
   https_only          = var.https_only
 
-  identity { type = "SystemAssigned" }
+  identity {
+    type = "SystemAssigned"
+  }
 
   site_config {
-    always_on = var.always_on
+    always_on  = var.always_on
     ftps_state = var.ftps_state
 
     application_stack {
-      dotnet_version = var.runtime_stack == "dotnet" ? var.runtime_version : null
-      node_version   = var.runtime_stack == "node"   ? var.runtime_version : null
-      python_version = var.runtime_stack == "python" ? var.runtime_version : null
+      dotnet_version = local.normalized_runtime_stack == "dotnet" ? var.runtime_version : null
+      node_version   = local.normalized_runtime_stack == "node"   ? var.runtime_version : null
+      python_version = local.normalized_runtime_stack == "python" ? var.runtime_version : null
     }
   }
 
-  app_settings = var.app_settings
+  app_settings = merge(
+    {
+      "APPINSIGHTS_CONNECTION_STRING" = var.app_insights_connection_string
+      "APPINSIGHTS_CONNECTIONSTRING"  = var.app_insights_connection_string
+    },
+    var.run_from_package == true ? { "WEBSITE_RUN_FROM_PACKAGE" = "1" } : {},
+    var.app_settings
+  )
 
   dynamic "connection_string" {
     for_each = var.connection_strings
@@ -41,10 +66,14 @@ resource "azurerm_linux_web_app" "app" {
   tags = var.tags
 }
 
-resource "azurerm_monitor_diagnostic_setting" "app" {
-  count = trimspace(coalesce(var.log_analytics_workspace_id, "")) != "" ? 1 : 0
+# -------------------------
+# Diagnostic Settings
+# -------------------------
 
-  name                       = "${var.app_name}-diag"
+resource "azurerm_monitor_diagnostic_setting" "app" {
+  count = var.log_analytics_workspace_id == null || trimspace(var.log_analytics_workspace_id) == "" ? 0 : 1
+
+  name                       = "${var.name}-diag"
   target_resource_id         = azurerm_linux_web_app.app.id
   log_analytics_workspace_id = var.log_analytics_workspace_id
 
