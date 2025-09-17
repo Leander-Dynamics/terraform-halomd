@@ -1,3 +1,6 @@
+# -------------------------
+# Global
+# -------------------------
 variable "location" {
   description = "Azure region for resource deployment."
   type        = string
@@ -14,21 +17,15 @@ variable "project_name" {
 }
 
 variable "subscription_id" {
-  description = "Azure subscription ID."
+  description = "Azure subscription ID. If null, ensure downstream modules handle this gracefully or require explicit assignment."
   type        = string
-  default     = null
+  default     = ""
 }
 
 variable "tenant_id" {
-  description = "Azure tenant ID."
+  description = "Azure tenant ID. If null, ensure downstream modules handle this gracefully or require explicit assignment."
   type        = string
-  default     = null
-}
-
-variable "tags" {
-  description = "Common tags applied to all resources."
-  type        = map(string)
-  default     = {}
+  default     = ""
 }
 
 # -------------------------
@@ -61,13 +58,31 @@ variable "vnet_address_space" {
 }
 
 variable "vnet_dns_servers" {
-  description = "Optional custom DNS servers applied to the virtual network."
+  description = "Optional custom DNS servers applied to the virtual network. Set to an empty list to disable custom DNS."
   type        = list(string)
   default     = []
 }
 
 variable "subnets" {
-  description = "Map of subnet definitions keyed by subnet name."
+  description = <<EOT
+Map of subnet definitions keyed by subnet name.
+Example:
+{
+  "app" = {
+    address_prefixes  = ["10.0.1.0/24"]
+    service_endpoints = ["Microsoft.Sql"]
+    delegations = [
+      {
+        name = "delegation1"
+        service_delegation = {
+          name    = "Microsoft.Web/serverFarms"
+          actions = ["Microsoft.Network/virtualNetworks/subnets/action"]
+        }
+      }
+    ]
+  }
+}
+EOT
   type = map(object({
     address_prefixes  = list(string)
     service_endpoints = optional(list(string), [])
@@ -82,17 +97,17 @@ variable "subnets" {
 }
 
 variable "app_gateway_subnet_key" {
-  description = "Key of the subnet used for the Application Gateway."
+  description = "Key referencing the subnet in the 'subnets' variable to be used for the Application Gateway."
   type        = string
 }
 
 variable "app_gateway_subnet_id" {
-  description = "Subnet resource ID for the Application Gateway."
+  description = "Explicit subnet resource ID for the Application Gateway."
   type        = string
 }
 
 # -------------------------
-# App Gateway
+# Application Gateway
 # -------------------------
 variable "app_gateway_fqdn_prefix" {
   description = "Domain name label for the Application Gateway public IP."
@@ -109,12 +124,6 @@ variable "app_gateway_backend_port" {
   description = "Backend port used by the Application Gateway."
   type        = number
   default     = 80
-}
-
-variable "app_gateway_backend_protocol" {
-  description = "Backend protocol used by the Application Gateway."
-  type        = string
-  default     = "Http"
 }
 
 variable "app_gateway_frontend_port" {
@@ -153,12 +162,6 @@ variable "app_gateway_enable_http2" {
   default     = true
 }
 
-variable "app_gateway_backend_request_timeout" {
-  description = "Request timeout for backend HTTP settings."
-  type        = number
-  default     = 30
-}
-
 variable "app_gateway_pick_host_name" {
   description = "Use backend address host names for the host header."
   type        = bool
@@ -169,7 +172,7 @@ variable "app_gateway_pick_host_name" {
 # App Service
 # -------------------------
 variable "app_service_plan_sku" {
-  description = "SKU used for the App Service plan."
+  description = "SKU used for the App Service plan. Example: 'S1', 'P1v2', 'B1'."
   type        = string
 }
 
@@ -226,12 +229,23 @@ variable "app_insights_name" {
   default     = ""
 }
 
+variable "log_analytics_workspace_name" {
+  description = "Name of Log Analytics workspace. Example: 'halomd-dev-law'"
+  type        = string
+}
+
+variable "application_insights_name" {
+  description = "Name of Application Insights resource. Example: 'my-app-insights'"
+  type        = string
+}
+
 # -------------------------
 # DNS
 # -------------------------
 variable "dns_zone_name" {
   description = "DNS zone managed within the environment."
   type        = string
+  default     = "az.halomd.com"
 }
 
 variable "dns_a_records" {
@@ -246,7 +260,7 @@ variable "dns_a_records" {
 variable "dns_cname_records" {
   description = "DNS CNAME records managed by Terraform."
   type = map(object({
-    ttl   = number
+    ttl    = number
     record = string
   }))
   default = {}
@@ -262,14 +276,14 @@ variable "sql_database_name" {
 }
 
 variable "sql_sku_name" {
-  description = "SKU for the serverless SQL database."
+  description = "SKU for the serverless SQL database. Example: 'GP_S_Gen5_2'."
   type        = string
 }
 
 variable "sql_max_size_gb" {
-  description = "Maximum size of the SQL database."
+  description = "Maximum size of the SQL database in GB."
   type        = number
-  default     = 32
+  default     = 75
 }
 
 variable "sql_auto_pause_delay" {
@@ -333,26 +347,66 @@ variable "sql_firewall_rules" {
 variable "sql_admin_login" {
   description = "Administrator login for the SQL server."
   type        = string
-  default     = null
+  default     = ""
 }
 
 variable "sql_admin_password" {
-  description = "Administrator password for the SQL server."
+  description = "Administrator password for the SQL server. Provide this securely via environment variable or Key Vault."
   type        = string
   sensitive   = true
-  default     = null
 }
 
 # -------------------------
 # Arbitration
 # -------------------------
-variable "arbitration_storage_container_name" {
-  description = "Name of the blob container supporting the arbitration workload."
-  type        = string
-}
-
 variable "arbitration_plan_sku" {
   description = "SKU for the arbitration App Service plan."
   type        = string
-  default     = ""
+  default     = null
+}
+
+variable "arbitration_runtime_stack" {
+  description = "Runtime stack used by the arbitration App Service."
+  type        = string
+  default     = null
+}
+
+variable "arbitration_runtime_version" {
+  description = "Runtime version for the arbitration App Service."
+  type        = string
+  default     = null
+}
+
+variable "arbitration_app_settings" {
+  description = "App settings applied to the arbitration App Service."
+  type        = map(string)
+  default     = {}
+}
+
+variable "arbitration_connection_strings" {
+  description = "Connection strings for arbitration app service"
+  type = list(object({
+    name  = string
+    type  = string
+    value = string
+  }))
+  default = []
+}
+
+# -------------------------
+# Tags
+# -------------------------
+variable "tags" {
+  description = "Tags to apply to resources. Example: { environment = \"dev\", owner = \"team-x\" }"
+  type        = map(string)
+  default     = {}
+}
+
+# -------------------------
+# Plan SKU (Generic)
+# -------------------------
+variable "plan_sku" {
+  description = "SKU for the App Service plan"
+  type        = string
+  default     = "B1"
 }
