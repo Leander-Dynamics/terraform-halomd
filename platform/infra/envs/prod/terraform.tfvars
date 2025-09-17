@@ -70,6 +70,7 @@ app_service_connection_strings = {
 # -------------------------
 # Arbitration App
 # -------------------------
+arbitration_runtime_version = "v6.0"
 arbitration_app_settings = {
   "Storage__Connection" = "DefaultEndpointsProtocol=https;AccountName=prodarbitstorage;AccountKey=FakeKeyForProd==;EndpointSuffix=core.windows.net"
   "Storage__Container"  = "arbitration-calculator"

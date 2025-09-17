@@ -75,7 +75,7 @@ kv_public_network_access = true
 # -------------------------
 arbitration_plan_sku        = "B1"
 arbitration_runtime_stack   = "dotnet"
-arbitration_runtime_version = "8.0"
+arbitration_runtime_version = "v6.0"
 
 arbitration_connection_strings = [
   {
