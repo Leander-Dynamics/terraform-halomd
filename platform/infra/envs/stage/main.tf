@@ -43,8 +43,6 @@ module "network" {
   dns_servers         = var.vnet_dns_servers
   subnets             = var.subnets
   tags                = var.tags
-  a_records           = var.dns_a_records
-  cname_records       = var.dns_cname_records
 }
 
 module "app_service" {
