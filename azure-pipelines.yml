@@ -55,7 +55,7 @@ stages:
       displayName: Run Arbitration tests
       inputs:
         command: 'test'
-        projects: 'tests/TestArbitApi/Tests.csproj'
+        projects: './tests/TestArbitApi/Tests.csproj'
         arguments: '--configuration Release --no-build --no-restore'
   - template: .ado/templates/tf-validate.yml
     parameters:
