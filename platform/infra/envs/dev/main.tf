@@ -16,7 +16,7 @@ locals {
   arbitration_app_name                  = "web-${var.project_name}-${var.env_name}-arb"
   arbitration_plan_sku_effective        = var.arbitration_plan_sku != "" ? trimspace(var.arbitration_plan_sku) : "B1"
   arbitration_runtime_stack_effective   = var.arbitration_runtime_stack != "" ? trimspace(var.arbitration_runtime_stack) : "dotnet"
-  arbitration_runtime_version_effective = var.arbitration_runtime_version != "" ? trimspace(var.arbitration_runtime_version) : "8.0"
+  arbitration_runtime_version_effective = var.arbitration_runtime_version != "" ? trimspace(var.arbitration_runtime_version) : "v6.0"
   storage_data_name                     = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
   sql_server_name                       = "sql-${var.project_name}-${var.env_name}"
   aad_app_display                       = "aad-${var.project_name}-${var.env_name}"
