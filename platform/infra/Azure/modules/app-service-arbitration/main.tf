@@ -32,6 +32,10 @@ resource "azurerm_windows_web_app" "this" {
     }
   }
 
+  identity {
+    type = "SystemAssigned"
+  }
+
   tags = var.tags
 }
 
