@@ -3,6 +3,29 @@
 # Environment approvals for stage/prod should be configured on the
 # corresponding Azure DevOps environments (arbitration-stage, arbitration-prod).
 
+parameters:
+- name: devAppType
+  displayName: App Service type (dev)
+  type: string
+  default: webApp
+  values:
+  - webApp
+  - webAppLinux
+- name: stageAppType
+  displayName: App Service type (stage)
+  type: string
+  default: webApp
+  values:
+  - webApp
+  - webAppLinux
+- name: prodAppType
+  displayName: App Service type (prod)
+  type: string
+  default: webApp
+  values:
+  - webApp
+  - webAppLinux
+
 trigger:
   branches: { include: [ main ] }
   paths: { include: [ 'Arbitration/**', '.ado/pipelines/arbitration-app.yml' ] }
@@ -36,6 +59,7 @@ stages:
       environmentName: arbitration-dev
       displayNameSuffix: dev
       azureSubscription: sc-azure-oidc-dev
+      appType: ${{ parameters.devAppType }}
 
 - stage: deploy_stage
   displayName: Deploy to stage
@@ -50,6 +74,7 @@ stages:
       environmentName: arbitration-stage
       displayNameSuffix: stage
       azureSubscription: sc-azure-oidc-stage
+      appType: ${{ parameters.stageAppType }}
 
 - stage: deploy_prod
   displayName: Deploy to prod
@@ -64,3 +89,4 @@ stages:
       environmentName: arbitration-prod
       displayNameSuffix: prod
       azureSubscription: sc-azure-oidc-prod
+      appType: ${{ parameters.prodAppType }}
