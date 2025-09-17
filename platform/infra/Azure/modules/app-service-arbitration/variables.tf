@@ -63,3 +63,9 @@ variable "app_insights_connection_string" {
   type        = string
   description = "Application Insights connection string to link App Service with monitoring"
 }
+
+variable "app_insights_instrumentation_key" {
+  type        = string
+  description = "Optional Application Insights instrumentation key for legacy integrations"
+  default     = null
+}

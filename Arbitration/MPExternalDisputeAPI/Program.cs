@@ -1,3 +1,5 @@
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Azure.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +18,14 @@ internal class Program
         var builder = WebApplication.CreateBuilder(args);
         // The following line enables Application Insights telemetry collection.
 //        builder.Services.AddApplicationInsightsTelemetry();
+
+        var keyVaultUri = builder.Configuration["KeyVault:Uri"] ?? builder.Configuration["KeyVaultUri"];
+        if (!string.IsNullOrWhiteSpace(keyVaultUri))
+        {
+            var credential = new DefaultAzureCredential();
+            builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUri), credential);
+        }
+
         var configuration = builder.Configuration;
         // increase file upload size to handle the benchmark files
         // https://bartwullems.blogspot.com/2022/01/aspnet-core-configure-file-upload-size.html

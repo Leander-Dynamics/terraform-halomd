@@ -18,18 +18,21 @@ flowchart TD
   end
   subgraph PRPipe[ADO PR Run]
     P1[Validate: fmt + init(-backend=false) + validate]
-    P2[Plan dev → artifact <code>tfplan-dev</code>]
+    P2[Plan dev/qa → artifacts <code>tfplan-dev</code>, <code>tfplan-qa</code>]
     P3[Plan stage/prod → artifacts]
   end
   subgraph MainPipe[ADO Main Run]
     M1[Validate]
     M2[Plan_All → artifacts]
     M3[Apply_Dev (auto) using <code>tfplan-dev</code>]
+    M4[Apply_QA (auto) using <code>tfplan-qa</code>]
   end
   subgraph Azure[Azure]
     Z1[(Dev RG + KV + Logs/AppInsights + WebApp + Functions)]
+    Z2[(QA RG + KV + Logs/AppInsights + WebApp + Functions)]
   end
-  A1-->A2-->A3-->A4-->A5-->P1-->P2-->P3-->M1-->M2-->M3-->Z1
+  A1-->A2-->A3-->A4-->A5-->P1-->P2-->P3-->M1-->M2-->M3-->M4-->Z1
+  M4-->Z2
 ```
 
 ## Path B — Local CLI to Dev
