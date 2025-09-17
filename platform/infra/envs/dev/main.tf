@@ -86,6 +86,7 @@ module "app_service_arbitration" {
   runtime_stack                  = local.arbitration_runtime_stack_effective
   runtime_version                = local.arbitration_runtime_version_effective
   app_insights_connection_string = module.app_insights.application_insights_connection_string
+  app_insights_instrumentation_key = module.app_insights.application_insights_instrumentation_key
   log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
   connection_strings             = var.arbitration_connection_strings
   app_settings                   = var.arbitration_app_settings
