@@ -10,3 +10,10 @@ resource "azurerm_key_vault" "kv" {
   public_network_access_enabled = var.public_network_access_enabled
   tags                          = var.tags
 }
+
+resource "azurerm_key_vault_secret" "this" {
+  for_each     = var.secrets
+  name         = each.key
+  value        = each.value
+  key_vault_id = azurerm_key_vault.kv.id
+}

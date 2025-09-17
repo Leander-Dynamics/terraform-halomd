@@ -15,6 +15,8 @@ locals {
   arbitration_plan = "asp-${var.project_name}-arb-${var.env_name}-${var.location}"
   arbitration_name = "app-${var.project_name}-arb-${var.env_name}"
 
+  storage_data_name = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
+
   func_external_plan = "asp-external-${var.env_name}-${var.location}"
   func_external_name = "func-external-${var.env_name}"
   func_cron_plan     = "asp-cron-${var.env_name}-${var.location}"
@@ -43,6 +45,20 @@ module "network" {
   dns_servers         = var.vnet_dns_servers
   subnets             = var.subnets
   tags                = var.tags
+}
+
+module "arbitration_storage_account" {
+  source              = "../../Azure/modules/storage-account"
+  name                = local.storage_data_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  tags                = var.tags
+}
+
+module "arbitration_storage_container" {
+  source               = "../../Azure/modules/storage-container"
+  name                 = var.arbitration_storage_container_name
+  storage_account_name = module.arbitration_storage_account.name
 }
 
 module "app_service" {
@@ -120,6 +136,18 @@ module "app_insights" {
   log_analytics_workspace_name = local.log_name
   application_insights_name    = local.appi_name
   tags                         = var.tags
+}
+
+module "kv" {
+  source                        = "../../Azure/modules/key-vault"
+  name                          = local.kv_name
+  resource_group_name           = module.resource_group.name
+  location                      = var.location
+  public_network_access_enabled = var.kv_public_network_access
+  tags                          = var.tags
+  secrets = {
+    "arbitration-storage-connection" = module.arbitration_storage_account.primary_connection_string
+  }
 }
 
 # -------------------------

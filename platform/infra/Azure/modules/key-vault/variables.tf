@@ -10,3 +10,9 @@ variable "public_network_access_enabled" {
   type    = bool
   default = true
 }
+
+variable "secrets" {
+  description = "Map of secrets to create within the Key Vault."
+  type        = map(string)
+  default     = {}
+}

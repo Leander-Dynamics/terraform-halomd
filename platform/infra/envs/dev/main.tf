@@ -40,6 +40,20 @@ module "network" {
   tags                = var.tags
 }
 
+module "arbitration_storage_account" {
+  source              = "../../Azure/modules/storage-account"
+  name                = local.storage_data_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  tags                = var.tags
+}
+
+module "arbitration_storage_container" {
+  source               = "../../Azure/modules/storage-container"
+  name                 = var.arbitration_storage_container_name
+  storage_account_name = module.arbitration_storage_account.name
+}
+
 module "acr" {
   count               = var.enable_acr ? 1 : 0
   source              = "../../Azure/modules/acr"
@@ -173,6 +187,9 @@ module "kv" {
   location                      = var.location
   public_network_access_enabled = var.kv_public_network_access
   tags                          = var.tags
+  secrets = {
+    "arbitration-storage-connection" = module.arbitration_storage_account.primary_connection_string
+  }
 }
 
 module "dns_zone" {
