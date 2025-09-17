@@ -400,6 +400,11 @@ variable "sql_admin_password" {
 # -------------------------
 # Arbitration
 # -------------------------
+variable "arbitration_storage_container_name" {
+  description = "Name of the blob container used by the arbitration workload."
+  type        = string
+}
+
 variable "arbitration_plan_sku" {
   description = "SKU for the arbitration App Service plan."
   type        = string

@@ -73,6 +73,8 @@ kv_public_network_access = true
 # -------------------------
 # Arbitration app
 # -------------------------
+arbitration_storage_container_name = "arbitration-calculator"
+
 arbitration_plan_sku        = "B1"
 arbitration_runtime_stack   = "dotnet"
 arbitration_runtime_version = "v6.0"

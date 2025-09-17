@@ -1,5 +1,4 @@
-# Environment composition for the stage environment
-
+# Local Variables
 locals {
   rg_name          = "rg-${var.project_name}-${var.env_name}"
   kv_name          = "kv-${var.project_name}-${var.env_name}"
@@ -15,9 +14,12 @@ locals {
   app_gateway_name = "agw-${var.project_name}-${var.env_name}"
   arbitration_plan = "asp-${var.project_name}-arb-${var.env_name}-${var.location}"
   arbitration_name = "app-${var.project_name}-arb-${var.env_name}"
+
   arbitration_plan_sku_effective        = var.arbitration_plan_sku != "" ? trimspace(var.arbitration_plan_sku) : "B1"
   arbitration_runtime_stack_effective   = var.arbitration_runtime_stack != "" ? trimspace(var.arbitration_runtime_stack) : "dotnet"
   arbitration_runtime_version_effective = var.arbitration_runtime_version != "" ? trimspace(var.arbitration_runtime_version) : "8.0"
+
+  storage_data_name = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
 
   func_external_plan = "asp-external-${var.env_name}-${var.location}"
   func_external_name = "func-external-${var.env_name}"
@@ -28,9 +30,7 @@ locals {
   sql_database_name = var.sql_database_name != "" ? var.sql_database_name : "${var.project_name}-${var.env_name}"
 }
 
-# -------------------------
-# Core modules
-# -------------------------
+# Core Modules
 module "resource_group" {
   source   = "../../Azure/modules/resource-group"
   name     = local.rg_name
@@ -49,6 +49,22 @@ module "network" {
   tags                = var.tags
 }
 
+# Storage
+module "arbitration_storage_account" {
+  source              = "../../Azure/modules/storage-account"
+  name                = local.storage_data_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  tags                = var.tags
+}
+
+module "arbitration_storage_container" {
+  source               = "../../Azure/modules/storage-container"
+  name                 = var.arbitration_storage_container_name
+  storage_account_name = module.arbitration_storage_account.name
+}
+
+# App Service (Web)
 module "app_service" {
   source              = "../../Azure/modules/app-service"
   plan_name           = local.web_plan
@@ -64,6 +80,7 @@ module "app_service" {
   tags                = var.tags
 }
 
+# Application Gateway
 module "app_gateway" {
   source              = "../../Azure/modules/app-gateway"
   name                = local.app_gateway_name
@@ -85,6 +102,7 @@ module "app_gateway" {
   tags                = var.tags
 }
 
+# SQL
 module "sql" {
   count                         = var.enable_sql ? 1 : 0
   source                        = "../../Azure/modules/sql-serverless"
@@ -108,6 +126,7 @@ module "sql" {
   tags                          = var.tags
 }
 
+# DNS
 module "dns_zone" {
   source              = "../../Azure/modules/dns-zone"
   zone_name           = var.dns_zone_name
@@ -117,6 +136,7 @@ module "dns_zone" {
   cname_records       = var.dns_cname_records
 }
 
+# App Insights
 module "app_insights" {
   source                       = "../../Azure/modules/app-insights"
   resource_group_name          = coalesce(var.app_insights_resource_group_name, module.resource_group.name)
@@ -126,38 +146,40 @@ module "app_insights" {
   tags                         = var.tags
 }
 
+# App Service: Arbitration
 module "app_service_arbitration" {
-  source    = "../../Azure/modules/app-service-arbitration"
-  name      = local.arbitration_name
-  plan_name = local.arbitration_plan
-  plan_sku  = local.arbitration_plan_sku_effective
-
-  resource_group_name            = module.resource_group.name
-  location                       = var.location
-  runtime_stack                  = local.arbitration_runtime_stack_effective
-  runtime_version                = local.arbitration_runtime_version_effective
+  source                        = "../../Azure/modules/app-service-arbitration"
+  name                          = local.arbitration_name
+  plan_name                     = local.arbitration_plan
+  plan_sku                      = local.arbitration_plan_sku_effective
+  resource_group_name           = module.resource_group.name
+  location                      = var.location
+  runtime_stack                 = local.arbitration_runtime_stack_effective
+  runtime_version               = local.arbitration_runtime_version_effective
   app_insights_connection_string = module.app_insights.application_insights_connection_string
   log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
-  connection_strings             = var.arbitration_connection_strings
-  app_settings                   = var.arbitration_app_settings
-  tags                           = var.tags
+  connection_strings            = var.arbitration_connection_strings
+  app_settings                  = var.arbitration_app_settings
+  tags                          = var.tags
 }
 
+# AAD Application
 module "aad_app" {
   source       = "../../Azure/modules/aad-app"
   display_name = local.aad_app_display
 }
 
+# Key Vault Setup
 locals {
   kv_secret_input_values = merge({
-    "sql-admin-login"                         => var.sql_admin_login,
-    "sql-admin-password"                      => var.sql_admin_password,
-    "app-service-primary-database-connection" => var.app_service_primary_database_connection_string,
-    "arbitration-primary-connection"          => var.arbitration_primary_connection_string,
-    "arbitration-idr-connection"              => var.arbitration_idr_connection_string,
-    "arbitration-storage-connection"          => var.arbitration_storage_connection_string,
-    "aad-application-client-id"               => module.aad_app.client_id,
-    "aad-application-object-id"               => module.aad_app.object_id,
+    "sql-admin-login"                         = var.sql_admin_login,
+    "sql-admin-password"                      = var.sql_admin_password,
+    "app-service-primary-database-connection" = var.app_service_primary_database_connection_string,
+    "arbitration-primary-connection"          = var.arbitration_primary_connection_string,
+    "arbitration-idr-connection"              = var.arbitration_idr_connection_string,
+    "arbitration-storage-connection"          = module.arbitration_storage_account.primary_connection_string,
+    "aad-application-client-id"               = module.aad_app.client_id,
+    "aad-application-object-id"               = module.aad_app.object_id,
   }, var.kv_additional_secrets)
 
   kv_secrets = {
@@ -200,61 +222,61 @@ module "kv" {
 # Outputs
 # -------------------------
 output "resource_group_name" {
-  description = "Resource group provisioned for the environment."
   value       = module.resource_group.name
+  description = "Resource group provisioned for the environment."
 }
 
 output "virtual_network_id" {
-  description = "ID of the deployed virtual network."
   value       = module.network.virtual_network_id
+  description = "ID of the deployed virtual network."
 }
 
 output "app_service_default_hostname" {
-  description = "Default hostname assigned to the App Service."
   value       = module.app_service.default_hostname
+  description = "Default hostname assigned to the App Service."
 }
 
 output "app_gateway_id" {
-  description = "ID of the Application Gateway."
   value       = module.app_gateway.id
+  description = "ID of the Application Gateway."
 }
 
 output "app_gateway_public_ip_address" {
-  description = "Allocated public IP address of the Application Gateway."
   value       = module.app_gateway.public_ip_address
+  description = "Allocated public IP address of the Application Gateway."
 }
 
 output "app_gateway_public_fqdn" {
-  description = "Public FQDN assigned to the Application Gateway."
   value       = module.app_gateway.public_ip_fqdn
+  description = "Public FQDN assigned to the Application Gateway."
 }
 
 output "sql_server_fqdn" {
-  description = "Fully qualified domain name of the SQL Server."
   value       = var.enable_sql ? module.sql[0].server_fqdn : null
+  description = "Fully qualified domain name of the SQL Server."
 }
 
 output "sql_database_id" {
-  description = "Database resource ID."
   value       = var.enable_sql ? module.sql[0].database_id : null
+  description = "Database resource ID."
 }
 
 output "sql_server_name" {
-  description = "SQL Server name."
   value       = var.enable_sql ? module.sql[0].server_name : null
+  description = "SQL Server name."
 }
 
 output "app_insights_connection_string" {
-  description = "Application Insights connection string."
   value       = module.app_insights.application_insights_connection_string
+  description = "Application Insights connection string."
 }
 
 output "app_insights_instrumentation_key" {
-  description = "Application Insights instrumentation key."
   value       = module.app_insights.application_insights_instrumentation_key
+  description = "Application Insights instrumentation key."
 }
 
 output "log_analytics_workspace_id" {
-  description = "Log Analytics workspace ID."
   value       = module.app_insights.log_analytics_workspace_id
+  description = "Log Analytics workspace ID."
 }
