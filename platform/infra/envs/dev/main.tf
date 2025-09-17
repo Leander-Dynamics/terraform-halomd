@@ -166,12 +166,51 @@ module "aad_app" {
   display_name = local.aad_app_display
 }
 
+locals {
+  kv_secret_input_values = merge({
+    "sql-admin-login"                         => var.sql_admin_login,
+    "sql-admin-password"                      => var.sql_admin_password,
+    "app-service-primary-database-connection" => var.app_service_primary_database_connection_string,
+    "arbitration-primary-connection"          => var.arbitration_primary_connection_string,
+    "arbitration-idr-connection"              => var.arbitration_idr_connection_string,
+    "arbitration-storage-connection"          => var.arbitration_storage_connection_string,
+    "aad-application-client-id"               => module.aad_app.client_id,
+    "aad-application-object-id"               => module.aad_app.object_id,
+  }, var.kv_additional_secrets)
+
+  kv_secrets = {
+    for name, value in local.kv_secret_input_values :
+    name => {
+      value = value
+    }
+    if try(trim(value), "") != ""
+  }
+
+  kv_rbac_assignments = merge(
+    {
+      arbitration_app = {
+        principal_id         = module.app_service_arbitration.principal_id
+        role_definition_name = "Key Vault Secrets User"
+      }
+    },
+    var.kv_cicd_principal_id != "" ? {
+      cicd = {
+        principal_id         = var.kv_cicd_principal_id
+        role_definition_name = "Key Vault Secrets User"
+      }
+    } : {}
+  )
+}
+
 module "kv" {
   source                        = "../../Azure/modules/key-vault"
   name                          = local.kv_name
   resource_group_name           = module.resource_group.name
   location                      = var.location
   public_network_access_enabled = var.kv_public_network_access
+  enable_rbac_authorization     = true
+  secrets                       = local.kv_secrets
+  rbac_assignments              = local.kv_rbac_assignments
   tags                          = var.tags
 }
 

@@ -63,7 +63,7 @@ app_service_app_settings = {
 app_service_connection_strings = {
   PrimaryDatabase = {
     type  = "SQLAzure"
-    value = "Server=tcp:sql-arbit-stage.database.windows.net,1433;Initial Catalog=halomd;User ID=sqladminstage;Password=P@ssw0rd123!Stage;Encrypt=True;"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/app-service-primary-database-connection)"
   }
 }
 
@@ -71,9 +71,17 @@ app_service_connection_strings = {
 # Arbitration App
 # -------------------------
 arbitration_app_settings = {
-  "Storage__Connection" = "DefaultEndpointsProtocol=https;AccountName=stagearbitstorage;AccountKey=FakeKeyForStage==;EndpointSuffix=core.windows.net"
+  "Storage__Connection" = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-storage-connection)"
   "Storage__Container"  = "arbitration-calculator"
 }
+
+arbitration_connection_strings = [
+  {
+    name  = "DefaultConnection"
+    type  = "SQLAzure"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-primary-connection)"
+  }
+]
 
 # -------------------------
 # SQL Database
@@ -89,8 +97,8 @@ sql_min_capacity         = 1
 sql_max_capacity         = 6
 sql_public_network_access = true
 
-sql_admin_login    = "sqladminstage"
-sql_admin_password = "P@ssw0rd123!Stage"
+sql_admin_login    = ""
+sql_admin_password = ""
 
 # Firewall rules
 sql_firewall_rules = [
