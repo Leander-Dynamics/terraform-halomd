@@ -45,19 +45,19 @@ variable "frontend_port" {
   default     = 80
 }
 
-variable "backend_protocol" {
-  description = "Protocol used for communications with the backend pool."
+variable "frontend_protocol" {
+  description = "Protocol used by the frontend listener."
   type        = string
   default     = "Http"
 
   validation {
-    condition     = contains(["Http", "Https"], var.backend_protocol)
-    error_message = "The backend protocol must be either 'Http' or 'Https'."
+    condition     = contains(["Http", "Https"], var.frontend_protocol)
+    error_message = "The frontend protocol must be either 'Http' or 'Https'."
   }
 }
 
 variable "listener_protocol" {
-  description = "Protocol for the default listener."
+  description = "Protocol for the default listener (legacy compatibility)."
   type        = string
   default     = "Http"
 }
@@ -81,7 +81,7 @@ variable "trusted_client_certificates" {
   default = []
 }
 
-variable "backend_request_timeout" {
+variable "request_timeout" {
   description = "Timeout, in seconds, for requests to the backend."
   type        = number
   default     = 30
@@ -145,4 +145,13 @@ variable "tags" {
   description = "Tags to apply to all resources created by the module."
   type        = map(string)
   default     = {}
+}
+variable "backend_protocol" {
+  type    = string
+  default = "Https"
+}
+
+variable "backend_request_timeout" {
+  type    = number
+  default = 20
 }

@@ -1,44 +1,28 @@
-# -------------------------
-# Monitoring
-# -------------------------
-
-variable "log_analytics_workspace_name" {
-  description = "Name assigned to the Log Analytics workspace for this environment."
-  type        = string
-}
-
-variable "application_insights_name" {
-  description = "Name assigned to the Application Insights resource for this environment."
-  type        = string
-}
-
-variable "log_analytics_retention_in_days" {
-  description = "Number of days to retain data within the Log Analytics workspace."
-  type        = number
-}
-
-variable "log_analytics_daily_quota_gb" {
-  description = "Daily ingestion quota, in GB, for the Log Analytics workspace (-1 for unlimited)."
-  type        = number
-}
-
-# -------------------------
-# General settings
-# -------------------------
-
-variable "project_name" {
-  description = "Short name of the project used when constructing resource names."
+variable "location" {
+  description = "Azure region for resource deployment."
   type        = string
 }
 
 variable "env_name" {
-  description = "Name of the deployment environment (e.g. dev, stage, prod)."
+  description = "Environment name (e.g. dev, stage, prod)."
   type        = string
 }
 
-variable "location" {
-  description = "Azure region where resources will be deployed."
+variable "project_name" {
+  description = "Project or application identifier used for naming."
   type        = string
+}
+
+variable "subscription_id" {
+  description = "Azure subscription ID."
+  type        = string
+  default     = null
+}
+
+variable "tenant_id" {
+  description = "Azure tenant ID."
+  type        = string
+  default     = null
 }
 
 variable "tags" {
@@ -47,64 +31,211 @@ variable "tags" {
   default     = {}
 }
 
-variable "kv_cicd_principal_id" {
-  description = "Optional object ID for the CI/CD principal that needs access to Key Vault secrets."
-  type        = string
-  default     = null
+# -------------------------
+# Feature toggles
+# -------------------------
+variable "enable_acr" {
+  description = "Flag to enable Azure Container Registry provisioning."
+  type        = bool
+  default     = false
 }
 
-variable "subscription_id" {
-  description = "Optional Azure subscription ID override when the authenticated context differs from the desired target."
-  type        = string
-  default     = null
+variable "enable_sql" {
+  description = "Flag to deploy the SQL Serverless resources."
+  type        = bool
+  default     = false
 }
 
-variable "tenant_id" {
-  description = "Optional Azure AD tenant ID override when the authenticated context differs from the desired target."
-  type        = string
-  default     = null
+variable "kv_public_network_access" {
+  description = "Allow public network access to the Key Vault."
+  type        = bool
+  default     = true
 }
 
 # -------------------------
-# Application Gateway
+# Networking
 # -------------------------
+variable "vnet_address_space" {
+  description = "Address space assigned to the virtual network."
+  type        = list(string)
+}
+
+variable "vnet_dns_servers" {
+  description = "Optional custom DNS servers applied to the virtual network."
+  type        = list(string)
+  default     = []
+}
+
+variable "subnets" {
+  description = "Map of subnet definitions keyed by subnet name."
+  type = map(object({
+    address_prefixes  = list(string)
+    service_endpoints = optional(list(string), [])
+    delegations = optional(list(object({
+      name = string
+      service_delegation = object({
+        name    = string
+        actions = list(string)
+      })
+    })), [])
+  }))
+}
 
 variable "app_gateway_subnet_key" {
-  description = "Key referencing the subnet used by the Application Gateway when selecting from the virtual network map."
+  description = "Key of the subnet used for the Application Gateway."
   type        = string
-  default     = null
 }
 
 variable "app_gateway_subnet_id" {
-  description = "Resource ID of the subnet used by the Application Gateway when referencing an existing subnet directly."
+  description = "Subnet resource ID for the Application Gateway."
   type        = string
-  default     = null
 }
 
+# -------------------------
+# App Gateway
+# -------------------------
 variable "app_gateway_fqdn_prefix" {
-  description = "Prefix applied to DNS names associated with the Application Gateway."
+  description = "Domain name label for the Application Gateway public IP."
   type        = string
-  default     = null
 }
 
 variable "app_gateway_backend_fqdns" {
-  description = "List of backend FQDNs configured on the Application Gateway."
+  description = "Additional backend FQDNs joined to the App Gateway pool."
   type        = list(string)
   default     = []
+}
+
+variable "app_gateway_backend_port" {
+  description = "Backend port used by the Application Gateway."
+  type        = number
+  default     = 80
+}
+
+variable "app_gateway_backend_protocol" {
+  description = "Backend protocol used by the Application Gateway."
+  type        = string
+  default     = "Http"
+}
+
+variable "app_gateway_frontend_port" {
+  description = "Frontend port exposed by the Application Gateway."
+  type        = number
+  default     = 80
+}
+
+variable "app_gateway_listener_protocol" {
+  description = "Protocol for the default listener."
+  type        = string
+  default     = "Http"
+}
+
+variable "app_gateway_sku_name" {
+  description = "Application Gateway SKU name."
+  type        = string
+  default     = "Standard_v2"
+}
+
+variable "app_gateway_sku_tier" {
+  description = "Application Gateway SKU tier."
+  type        = string
+  default     = "Standard_v2"
+}
+
+variable "app_gateway_capacity" {
+  description = "Application Gateway capacity units."
+  type        = number
+  default     = 1
+}
+
+variable "app_gateway_enable_http2" {
+  description = "Enable HTTP/2 on the Application Gateway listener."
+  type        = bool
+  default     = true
+}
+
+variable "app_gateway_backend_request_timeout" {
+  description = "Request timeout for backend HTTP settings."
+  type        = number
+  default     = 30
+}
+
+variable "app_gateway_pick_host_name" {
+  description = "Use backend address host names for the host header."
+  type        = bool
+  default     = true
+}
+
+# -------------------------
+# App Service
+# -------------------------
+variable "app_service_plan_sku" {
+  description = "SKU used for the App Service plan."
+  type        = string
+}
+
+variable "app_service_plan_os_type" {
+  description = "Operating system for the App Service plan."
+  type        = string
+  default     = "Windows"
+}
+
+variable "app_service_fqdn_prefix" {
+  description = "Name of the App Service (also the default FQDN prefix)."
+  type        = string
+}
+
+variable "app_service_https_only" {
+  description = "Force HTTPS traffic only."
+  type        = bool
+  default     = true
+}
+
+variable "app_service_always_on" {
+  description = "Keep the App Service always on."
+  type        = bool
+  default     = true
+}
+
+variable "app_service_app_settings" {
+  description = "Application settings applied to the App Service."
+  type        = map(string)
+  default     = {}
+}
+
+variable "app_service_connection_strings" {
+  description = "Connection strings applied to the App Service."
+  type = map(object({
+    type  = string
+    value = string
+  }))
+  default = {}
+}
+
+# -------------------------
+# Monitoring
+# -------------------------
+variable "app_insights_resource_group_name" {
+  description = "Optional resource group where Application Insights resources are created."
+  type        = string
+  default     = null
+}
+
+variable "app_insights_name" {
+  description = "Optional name override for the Application Insights resource."
+  type        = string
+  default     = ""
 }
 
 # -------------------------
 # DNS
 # -------------------------
-
 variable "dns_zone_name" {
-  description = "Name of the DNS zone hosting environment-specific records."
+  description = "DNS zone managed within the environment."
   type        = string
-  default     = null
 }
 
 variable "dns_a_records" {
-  description = "Map of DNS A record definitions keyed by record name."
+  description = "DNS A records managed by Terraform."
   type = map(object({
     ttl     = number
     records = list(string)
@@ -113,149 +244,108 @@ variable "dns_a_records" {
 }
 
 variable "dns_cname_records" {
-  description = "Map of DNS CNAME record definitions keyed by record name."
+  description = "DNS CNAME records managed by Terraform."
   type = map(object({
-    ttl    = number
+    ttl   = number
     record = string
   }))
   default = {}
 }
 
 # -------------------------
-# App Services
+# SQL
 # -------------------------
-
-variable "resource_group_name" {
-  description = "Name of the resource group hosting the App Service resources. Defaults to rg-<project>-<env> when omitted."
+variable "sql_database_name" {
+  description = "Optional SQL database name override."
   type        = string
-  default     = null
+  default     = ""
 }
 
-variable "app_service_plan_name" {
-  description = "Explicit name assigned to the App Service plan. Defaults to asp-<project>-web-<env>-<location> when unset."
+variable "sql_sku_name" {
+  description = "SKU for the serverless SQL database."
   type        = string
-  default     = null
 }
 
-variable "app_service_name" {
-  description = "Name assigned to the primary App Service. Falls back to app_service_fqdn_prefix or app-<project>-web-<env>."
-  type        = string
-  default     = null
+variable "sql_max_size_gb" {
+  description = "Maximum size of the SQL database."
+  type        = number
+  default     = 32
 }
 
-variable "app_service_fqdn_prefix" {
-  description = "Prefix used when composing the default hostname for the primary web app."
-  type        = string
-  default     = null
+variable "sql_auto_pause_delay" {
+  description = "Auto pause delay for the SQL database."
+  type        = number
+  default     = 60
 }
 
-variable "app_service_plan_sku" {
-  description = "SKU for the App Service plan hosting the primary web application."
-  type        = string
-  default     = "B1"
+variable "sql_min_capacity" {
+  description = "Minimum vCore capacity for the SQL database."
+  type        = number
+  default     = 0.5
 }
 
-variable "app_service_dotnet_version" {
-  description = ".NET runtime version for the primary web application."
-  type        = string
-  default     = "8.0"
+variable "sql_max_capacity" {
+  description = "Maximum vCore capacity for the SQL database."
+  type        = number
+  default     = 4
 }
 
-variable "app_service_app_insights_connection_string" {
-  description = "Application Insights connection string injected into the primary web app."
-  type        = string
-
-  validation {
-    condition     = try(trimspace(var.app_service_app_insights_connection_string), "") != ""
-    error_message = "app_service_app_insights_connection_string must be provided when deploying the web app."
-  }
-}
-
-variable "app_service_run_from_package" {
-  description = "When true, sets WEBSITE_RUN_FROM_PACKAGE to 1 for the primary web app."
-  type        = bool
-  default     = true
-}
-
-variable "app_service_log_analytics_workspace_id" {
-  description = "Optional Log Analytics workspace resource ID for App Service diagnostics."
-  type        = string
-  default     = null
-}
-
-variable "app_service_app_settings" {
-  description = "Additional application settings applied to the primary web app."
-  type        = map(string)
-  default     = {}
-}
-
-variable "app_service_connection_strings" {
-  description = "Connection strings exposed to the primary web application."
-  type = map(object({
-    type  = string
-    value = string
-  }))
-  default = {}
-}
-
-variable "enable_arbitration_app_service" {
-  description = "Toggle deployment of the arbitration App Service."
+variable "sql_read_scale" {
+  description = "Enable read scale-out on the SQL database."
   type        = bool
   default     = false
 }
 
-variable "arbitration_app_plan_sku" {
-  description = "Optional SKU override for the arbitration App Service plan."
+variable "sql_zone_redundant" {
+  description = "Enable zone redundancy on the SQL database."
+  type        = bool
+  default     = false
+}
+
+variable "sql_collation" {
+  description = "Collation applied to the SQL database."
   type        = string
-  default     = null
+  default     = "SQL_Latin1_General_CP1_CI_AS"
 }
 
-variable "arbitration_runtime_stack" {
-  description = "Runtime stack for the arbitration App Service."
+variable "sql_minimum_tls_version" {
+  description = "Minimum TLS version enforced on the SQL server."
   type        = string
-  default     = "dotnet"
+  default     = "1.2"
 }
 
-variable "arbitration_runtime_version" {
-  description = "Runtime version for the arbitration App Service."
-  type        = string
-  default     = "8.0"
-}
-
-variable "arbitration_app_insights_connection_string" {
-  description = "Optional Application Insights connection string for the arbitration app (defaults to the primary web app string)."
-  type        = string
-  default     = null
-
-  validation {
-    condition     = var.arbitration_app_insights_connection_string == null || trimspace(var.arbitration_app_insights_connection_string) != ""
-    error_message = "arbitration_app_insights_connection_string cannot be blank; omit it to reuse the primary web app setting."
-  }
-}
-
-variable "arbitration_log_analytics_workspace_id" {
-  description = "Optional Log Analytics workspace resource ID dedicated to the arbitration app."
-  type        = string
-  default     = null
-}
-
-variable "arbitration_app_settings" {
-  description = "Application settings applied to the arbitration App Service (expects Storage__Connection and Storage__Container entries)."
-  type        = map(string)
-  default     = {}
-}
-
-variable "arbitration_connection_strings" {
-  description = "Connection strings exposed to the arbitration App Service (expects ConnStr and IDRConnStr entries sourced from Key Vault)."
-  type = map(object({
-    type  = string
-    value = string
-  }))
-  default = {}
-}
-
-variable "arbitration_run_from_package" {
-  description = "Flag controlling WEBSITE_RUN_FROM_PACKAGE for the arbitration App Service."
+variable "sql_public_network_access" {
+  description = "Allow public network access to the SQL server."
   type        = bool
   default     = true
+}
+
+variable "sql_firewall_rules" {
+  description = "Firewall rules applied to the SQL server."
+  type = list(object({
+    name             = string
+    start_ip_address = string
+    end_ip_address   = string
+  }))
+  default = []
+}
+
+variable "sql_admin_login" {
+  description = "Administrator login for the SQL server."
+  type        = string
+}
+
+variable "sql_admin_password" {
+  description = "Administrator password for the SQL server."
+  type        = string
+  sensitive   = true
+}
+
+# -------------------------
+# Arbitration
+# -------------------------
+variable "arbitration_plan_sku" {
+  description = "SKU for the arbitration App Service plan."
+  type        = string
+  default     = ""
 }

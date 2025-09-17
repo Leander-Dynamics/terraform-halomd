@@ -1,11 +1,11 @@
 resource "azurerm_mssql_server" "this" {
-  name                          = var.server_name
-  resource_group_name           = var.resource_group_name
-  location                      = var.location
-  version                       = "12.0"
+  name                = var.server_name
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  version             = "12.0"
 
-  administrator_login           = var.administrator_login
-  administrator_login_password  = var.administrator_password
+  administrator_login          = var.administrator_login
+  administrator_login_password = var.administrator_password
 
   minimum_tls_version           = var.minimum_tls_version
   public_network_access_enabled = var.public_network_access_enabled
@@ -14,17 +14,13 @@ resource "azurerm_mssql_server" "this" {
 }
 
 resource "azurerm_mssql_database" "this" {
-  name                        = var.database_name
-  server_id                   = azurerm_mssql_server.this.id
+  name      = var.database_name
+  server_id = azurerm_mssql_server.this.id
+
   sku_name                    = var.sku_name
-  collation                   = var.collation
-  max_size_gb                 = var.max_size_gb
-  auto_pause_delay_in_minutes = var.auto_pause_delay_in_minutes
-  min_capacity                = var.min_capacity
-  max_capacity                = var.max_capacity
-  read_scale                  = var.read_scale
-  zone_redundant              = var.zone_redundant
-  backup_storage_redundancy   = var.backup_storage_redundancy
+  auto_pause_delay_in_minutes = var.sql_auto_pause_delay
+  min_capacity                = var.sql_min_capacity
+  max_size_gb                 = var.sql_max_size_gb
 
   tags = var.tags
 }

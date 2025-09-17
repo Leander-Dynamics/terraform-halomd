@@ -23,9 +23,3 @@ variable "storage_account_type" {
   type        = string
   default     = "Standard_LRS"
 }
-
-variable "tags" {
-  description = "Optional map of tags to apply to the managed disk."
-  type        = map(string)
-  default     = {}
-}
