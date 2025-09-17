@@ -85,12 +85,13 @@ arbitration_app_settings = {
   "Storage__Container"  = "arbitration-calculator"
 }
 
-arbitration_connection_strings = {
-  DefaultConnection = {
+arbitration_connection_strings = [
+  {
+    name  = "DefaultConnection"
     type  = "SQLAzure"
     value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-primary-connection)"
   }
-}
+]
 
 # -------------------------
 # SQL Database
