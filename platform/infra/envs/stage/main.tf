@@ -5,6 +5,7 @@ locals {
   kv_name          = "kv-${var.project_name}-${var.env_name}"
   log_name         = "log-${var.project_name}-${var.env_name}"
   appi_name        = "appi-${var.project_name}-${var.env_name}"
+  aad_app_display  = "aad-${var.project_name}-${var.env_name}"
 
   acr_name         = lower(replace("acr${var.project_name}${var.env_name}", "-", ""))
   aks_name         = "aks-${var.project_name}-${var.env_name}-${var.location}"
@@ -14,6 +15,9 @@ locals {
   app_gateway_name = "agw-${var.project_name}-${var.env_name}"
   arbitration_plan = "asp-${var.project_name}-arb-${var.env_name}-${var.location}"
   arbitration_name = "app-${var.project_name}-arb-${var.env_name}"
+  arbitration_plan_sku_effective        = var.arbitration_plan_sku != "" ? trimspace(var.arbitration_plan_sku) : "B1"
+  arbitration_runtime_stack_effective   = var.arbitration_runtime_stack != "" ? trimspace(var.arbitration_runtime_stack) : "dotnet"
+  arbitration_runtime_version_effective = var.arbitration_runtime_version != "" ? trimspace(var.arbitration_runtime_version) : "8.0"
 
   func_external_plan = "asp-external-${var.env_name}-${var.location}"
   func_external_name = "func-external-${var.env_name}"
@@ -120,6 +124,76 @@ module "app_insights" {
   log_analytics_workspace_name = local.log_name
   application_insights_name    = local.appi_name
   tags                         = var.tags
+}
+
+module "app_service_arbitration" {
+  source    = "../../Azure/modules/app-service-arbitration"
+  name      = local.arbitration_name
+  plan_name = local.arbitration_plan
+  plan_sku  = local.arbitration_plan_sku_effective
+
+  resource_group_name            = module.resource_group.name
+  location                       = var.location
+  runtime_stack                  = local.arbitration_runtime_stack_effective
+  runtime_version                = local.arbitration_runtime_version_effective
+  app_insights_connection_string = module.app_insights.application_insights_connection_string
+  log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
+  connection_strings             = var.arbitration_connection_strings
+  app_settings                   = var.arbitration_app_settings
+  tags                           = var.tags
+}
+
+module "aad_app" {
+  source       = "../../Azure/modules/aad-app"
+  display_name = local.aad_app_display
+}
+
+locals {
+  kv_secret_input_values = merge({
+    "sql-admin-login"                         => var.sql_admin_login,
+    "sql-admin-password"                      => var.sql_admin_password,
+    "app-service-primary-database-connection" => var.app_service_primary_database_connection_string,
+    "arbitration-primary-connection"          => var.arbitration_primary_connection_string,
+    "arbitration-idr-connection"              => var.arbitration_idr_connection_string,
+    "arbitration-storage-connection"          => var.arbitration_storage_connection_string,
+    "aad-application-client-id"               => module.aad_app.client_id,
+    "aad-application-object-id"               => module.aad_app.object_id,
+  }, var.kv_additional_secrets)
+
+  kv_secrets = {
+    for name, value in local.kv_secret_input_values :
+    name => {
+      value = value
+    }
+    if try(trim(value), "") != ""
+  }
+
+  kv_rbac_assignments = merge(
+    {
+      arbitration_app = {
+        principal_id         = module.app_service_arbitration.principal_id
+        role_definition_name = "Key Vault Secrets User"
+      }
+    },
+    var.kv_cicd_principal_id != "" ? {
+      cicd = {
+        principal_id         = var.kv_cicd_principal_id
+        role_definition_name = "Key Vault Secrets User"
+      }
+    } : {}
+  )
+}
+
+module "kv" {
+  source                        = "../../Azure/modules/key-vault"
+  name                          = local.kv_name
+  resource_group_name           = module.resource_group.name
+  location                      = var.location
+  public_network_access_enabled = var.kv_public_network_access
+  enable_rbac_authorization     = true
+  secrets                       = local.kv_secrets
+  rbac_assignments              = local.kv_rbac_assignments
+  tags                          = var.tags
 }
 
 # -------------------------

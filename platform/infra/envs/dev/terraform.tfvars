@@ -81,7 +81,7 @@ arbitration_connection_strings = [
   {
     name  = "DefaultConnection"
     type  = "SQLAzure"
-    value = "Server=tcp:sql-arbit-dev.database.windows.net;Database=ArbitDB;User Id=sqladmin;Password=SuperSecret123!"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/arbitration-primary-connection)"
   }
 ]
 

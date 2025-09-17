@@ -25,6 +25,12 @@ variable "tenant_id" {
   default     = null
 }
 
+variable "kv_cicd_principal_id" {
+  description = "Object ID of the CI/CD principal that should be granted Key Vault access."
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Common tags applied to all resources."
   type        = map(string)
@@ -50,6 +56,41 @@ variable "kv_public_network_access" {
   description = "Allow public network access to the Key Vault."
   type        = bool
   default     = true
+}
+
+variable "app_service_primary_database_connection_string" {
+  description = "Primary database connection string for the web App Service (stored in Key Vault)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "arbitration_primary_connection_string" {
+  description = "Primary arbitration SQL connection string stored in Key Vault."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "arbitration_idr_connection_string" {
+  description = "IDR arbitration SQL connection string stored in Key Vault."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "arbitration_storage_connection_string" {
+  description = "Storage connection string consumed by the arbitration workloads."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "kv_additional_secrets" {
+  description = "Additional secrets to populate in the Key Vault (name => value)."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
 }
 
 # -------------------------
@@ -333,12 +374,14 @@ variable "sql_firewall_rules" {
 variable "sql_admin_login" {
   description = "Administrator login for the SQL server."
   type        = string
+  default     = ""
 }
 
 variable "sql_admin_password" {
   description = "Administrator password for the SQL server."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 # -------------------------
@@ -348,4 +391,32 @@ variable "arbitration_plan_sku" {
   description = "SKU for the arbitration App Service plan."
   type        = string
   default     = ""
+}
+
+variable "arbitration_runtime_stack" {
+  description = "Runtime stack used by the arbitration App Service."
+  type        = string
+  default     = ""
+}
+
+variable "arbitration_runtime_version" {
+  description = "Runtime version for the arbitration App Service."
+  type        = string
+  default     = ""
+}
+
+variable "arbitration_app_settings" {
+  description = "App settings applied to the arbitration App Service."
+  type        = map(string)
+  default     = {}
+}
+
+variable "arbitration_connection_strings" {
+  description = "Connection strings for the arbitration App Service."
+  type = list(object({
+    name  = string
+    type  = string
+    value = string
+  }))
+  default = []
 }
