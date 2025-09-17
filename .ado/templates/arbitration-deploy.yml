@@ -10,7 +10,7 @@ parameters:
   type: string
 - name: appType
   type: string
-  default: webAppLinux
+  default: webApp
 jobs:
 - deployment: ${{ parameters.jobName }}
   displayName: Deploy to ${{ parameters.displayNameSuffix }}
