@@ -100,8 +100,8 @@ sql_max_size_gb           = 75
 sql_min_capacity          = 0.5
 sql_max_capacity          = 4
 sql_public_network_access = true
-sql_admin_login           = ""
-sql_admin_password        = ""
+
+# SQL administrator credentials are supplied at runtime via the pipeline / Key Vault.
 
 sql_firewall_rules = [
   {

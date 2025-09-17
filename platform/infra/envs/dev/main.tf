@@ -20,6 +20,8 @@ locals {
   storage_data_name                     = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
   sql_server_name                       = "sql-${var.project_name}-${var.env_name}"
   aad_app_display                       = "aad-${var.project_name}-${var.env_name}"
+  sql_admin_login_effective             = trimspace(coalesce(var.sql_admin_login, ""))
+  sql_admin_password_effective          = coalesce(var.sql_admin_password, "")
 }
 
 module "resource_group" {
@@ -139,7 +141,7 @@ module "app_gateway" {
 }
 
 module "sql" {
-  count                         = var.enable_sql && var.sql_admin_login != "" && var.sql_admin_password != "" ? 1 : 0
+  count                         = var.enable_sql && local.sql_admin_login_effective != "" && local.sql_admin_password_effective != "" ? 1 : 0
   source                        = "../../Azure/modules/sql-serverless"
   server_name                   = local.sql_server_name
   database_name                 = var.sql_database_name

@@ -9,6 +9,11 @@ tags = {
 }
 
 # -------------------------
+# Feature flags
+# -------------------------
+enable_sql = true
+
+# -------------------------
 # Networking
 # -------------------------
 vnet_address_space = ["10.30.0.0/16"]
@@ -89,8 +94,10 @@ sql_min_capacity         = 2
 sql_max_capacity         = 8
 sql_public_network_access = true
 
-sql_admin_login    = "sqladminprod"
-sql_admin_password = "P@ssw0rd123!Prod"
+sql_admin_login    = null
+sql_admin_password = null
+
+# SQL administrator credentials are supplied securely at deploy time (Key Vault or pipeline variables).
 
 # Firewall rules
 sql_firewall_rules = [
