@@ -101,11 +101,6 @@ variable "app_gateway_subnet_key" {
   type        = string
 }
 
-variable "app_gateway_subnet_id" {
-  description = "Explicit subnet resource ID for the Application Gateway."
-  type        = string
-}
-
 # -------------------------
 # Application Gateway
 # -------------------------
