@@ -16,12 +16,22 @@ locals {
   arbitration_app_name                  = "web-${var.project_name}-${var.env_name}-arb"
   arbitration_plan_sku_effective        = var.arbitration_plan_sku != "" ? trimspace(var.arbitration_plan_sku) : "B1"
   arbitration_runtime_stack_effective   = var.arbitration_runtime_stack != "" ? trimspace(var.arbitration_runtime_stack) : "dotnet"
-  arbitration_runtime_version_effective = var.arbitration_runtime_version != "" ? trimspace(var.arbitration_runtime_version) : "v6.0"
+  arbitration_runtime_version_effective = var.arbitration_runtime_version != "" ? trimspace(var.arbitration_runtime_version) : "8.0"
+  arbitration_storage_container_name    = coalesce(
+    try(
+      trimspace(var.arbitration_app_settings["Storage__Container"]) != "" ?
+      trimspace(var.arbitration_app_settings["Storage__Container"]) :
+      null,
+      null,
+    ),
+    "arbitration-calculator"
+  )
   storage_data_name                     = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
   sql_server_name                       = "sql-${var.project_name}-${var.env_name}"
   aad_app_display                       = "aad-${var.project_name}-${var.env_name}"
 }
 
+# Core Modules
 module "resource_group" {
   source   = "../../Azure/modules/resource-group"
   name     = local.rg_name
@@ -40,6 +50,22 @@ module "network" {
   tags                = var.tags
 }
 
+# Storage for Arbitration
+module "arbitration_storage_account" {
+  source              = "../../Azure/modules/storage-account"
+  name                = local.storage_data_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  tags                = var.tags
+}
+
+module "arbitration_storage_container" {
+  source               = "../../Azure/modules/storage-container"
+  name                 = local.arbitration_storage_container_name
+  storage_account_name = module.arbitration_storage_account.name
+}
+
+# ACR (Conditional)
 module "acr" {
   count               = var.enable_acr ? 1 : 0
   source              = "../../Azure/modules/acr"
@@ -49,6 +75,7 @@ module "acr" {
   tags                = var.tags
 }
 
+# App Service (Main)
 module "app_service" {
   source              = "../../Azure/modules/app-service"
   plan_name           = local.plan_name
@@ -64,34 +91,34 @@ module "app_service" {
   tags                = var.tags
 }
 
+# App Insights
 module "app_insights" {
-  source = "../../Azure/modules/app-insights"
-
+  source                       = "../../Azure/modules/app-insights"
   log_analytics_workspace_name = var.log_analytics_workspace_name
   application_insights_name    = var.application_insights_name
-
-  location            = var.location
-  resource_group_name = module.resource_group.name
-  tags                = var.tags
+  location                     = var.location
+  resource_group_name          = module.resource_group.name
+  tags                         = var.tags
 }
 
+# App Service (Arbitration)
 module "app_service_arbitration" {
-  source    = "../../Azure/modules/app-service-arbitration"
-  name      = local.arbitration_app_name
-  plan_name = local.arbitration_plan_name
-  plan_sku  = local.arbitration_plan_sku_effective
-  #plan_os_type                   = var.app_service_plan_os_type
-  resource_group_name            = module.resource_group.name
-  location                       = var.location
-  runtime_stack                  = local.arbitration_runtime_stack_effective
-  runtime_version                = local.arbitration_runtime_version_effective
+  source                        = "../../Azure/modules/app-service-arbitration"
+  name                          = local.arbitration_app_name
+  plan_name                     = local.arbitration_plan_name
+  plan_sku                      = local.arbitration_plan_sku_effective
+  resource_group_name           = module.resource_group.name
+  location                      = var.location
+  runtime_stack                 = local.arbitration_runtime_stack_effective
+  runtime_version               = local.arbitration_runtime_version_effective
   app_insights_connection_string = module.app_insights.application_insights_connection_string
   log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
-  connection_strings             = var.arbitration_connection_strings
-  app_settings                   = var.arbitration_app_settings
-  tags                           = var.tags
+  connection_strings            = var.arbitration_connection_strings
+  app_settings                  = var.arbitration_app_settings
+  tags                          = var.tags
 }
 
+# DNS and Gateway
 locals {
   default_app_gateway_backend_fqdns = compact([
     module.app_service.default_hostname,
@@ -100,7 +127,7 @@ locals {
 
   app_gateway_backend_fqdns = distinct(compact(concat(
     var.app_gateway_backend_fqdns,
-    local.default_app_gateway_backend_fqdns,
+    local.default_app_gateway_backend_fqdns
   )))
 
   dns_hostname_overrides = {
@@ -138,6 +165,7 @@ module "app_gateway" {
   tags                                = var.tags
 }
 
+# SQL
 module "sql" {
   count                         = var.enable_sql && var.sql_admin_login != "" && var.sql_admin_password != "" ? 1 : 0
   source                        = "../../Azure/modules/sql-serverless"
@@ -161,9 +189,26 @@ module "sql" {
   tags                          = var.tags
 }
 
+# AAD
 module "aad_app" {
   source       = "../../Azure/modules/aad-app"
   display_name = local.aad_app_display
+}
+
+# Key Vault
+locals {
+  kv_secrets = {
+    "arbitration-storage-connection" = {
+      value = module.arbitration_storage_account.primary_connection_string
+    }
+  }
+
+  kv_rbac_assignments = {
+    arbitration_app = {
+      principal_id         = module.app_service_arbitration.principal_id
+      role_definition_name = "Key Vault Secrets User"
+    }
+  }
 }
 
 module "kv" {
@@ -172,9 +217,13 @@ module "kv" {
   resource_group_name           = module.resource_group.name
   location                      = var.location
   public_network_access_enabled = var.kv_public_network_access
+  enable_rbac_authorization     = true
+  secrets                       = local.kv_secrets
+  rbac_assignments              = local.kv_rbac_assignments
   tags                          = var.tags
 }
 
+# DNS
 module "dns_zone" {
   source              = "../../Azure/modules/dns-zone"
   zone_name           = var.dns_zone_name
@@ -189,46 +238,46 @@ module "dns_zone" {
 # ----------------------
 
 output "resource_group_name" {
-  description = "Resource group provisioned for the environment."
   value       = module.resource_group.name
+  description = "Resource group provisioned for the environment."
 }
 
 output "virtual_network_id" {
-  description = "ID of the deployed virtual network."
   value       = module.network.virtual_network_id
+  description = "ID of the deployed virtual network."
 }
 
 output "app_service_default_hostname" {
-  description = "Default hostname assigned to the primary App Service."
   value       = module.app_service.default_hostname
+  description = "Default hostname assigned to the primary App Service."
 }
 
 output "arbitration_app_service_default_hostname" {
-  description = "Default hostname assigned to the arbitration App Service."
   value       = module.app_service_arbitration.default_hostname
+  description = "Default hostname assigned to the arbitration App Service."
 }
 
 output "app_gateway_id" {
-  description = "ID of the Application Gateway."
   value       = module.app_gateway.id
+  description = "ID of the Application Gateway."
 }
 
 output "app_gateway_public_ip_address" {
-  description = "Allocated public IP address of the Application Gateway."
   value       = module.app_gateway.public_ip_address
+  description = "Allocated public IP address of the Application Gateway."
 }
 
 output "app_gateway_public_fqdn" {
-  description = "Public FQDN assigned to the Application Gateway."
   value       = module.app_gateway.public_ip_fqdn
+  description = "Public FQDN assigned to the Application Gateway."
 }
 
 output "sql_server_fqdn" {
-  description = "Fully qualified domain name of the SQL Server."
   value       = length(module.sql) > 0 ? module.sql[0].server_fqdn : null
+  description = "Fully qualified domain name of the SQL Server."
 }
 
 output "log_analytics_workspace_name" {
-  description = "Name of the Log Analytics Workspace used in this environment."
   value       = var.log_analytics_workspace_name
+  description = "Name of the Log Analytics Workspace used in this environment."
 }
