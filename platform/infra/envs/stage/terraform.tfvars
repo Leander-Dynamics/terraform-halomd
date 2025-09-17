@@ -94,17 +94,18 @@ arbitration_connection_strings = {
 # -------------------------
 # SQL Database
 # -------------------------
-sql_database_name        = "halomd"
-sql_sku_name             = "GP_S_Gen5_2"
-sql_max_size_gb          = 64
-sql_auto_pause_delay     = 60
-sql_min_capacity         = 1
-sql_max_capacity         = 6
+sql_database_name         = "halomd"
+sql_sku_name              = "GP_S_Gen5_2"
+sql_max_size_gb           = 64
+sql_auto_pause_delay      = 60
+sql_min_capacity          = 1
+sql_max_capacity          = 6
 sql_public_network_access = true
 
-# ✅ Securely inject these at deploy-time via Key Vault or pipeline variables (e.g., Terraform Cloud, Azure DevOps)
-sql_admin_login    = null
-sql_admin_password = null
+# ✅ Use Key Vault for secure secret injection
+sql_admin_login                = "sqladminstage"
+sql_admin_password             = null
+sql_admin_password_secret_name = "sql-admin-password-stage"
 
 sql_firewall_rules = [
   {

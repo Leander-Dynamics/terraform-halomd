@@ -10,3 +10,18 @@ variable "sql_admin_password" {
   sensitive   = true
   default     = null  # ✅ Use null and mark as sensitive for security
 }
+
+variable "sql_admin_password_secret_name" {
+  description = "Name of the Key Vault secret that stores the SQL administrator password."
+  type        = string
+  default     = null
+}
+
+# -------------------------
+# Arbitration
+# -------------------------
+variable "arbitration_plan_sku" {
+  description = "SKU for the arbitration App Service plan."
+  type        = string
+  default     = ""
+}
