@@ -195,13 +195,20 @@ locals {
     "aad-application-object-id"               => module.aad_app.object_id,
   }, var.kv_additional_secrets)
 
-  kv_secrets = {
-    for name, value in local.kv_secret_input_values :
-    name => {
-      value = value
-    }
-    if try(trim(value), "") != ""
-  }
+  kv_secrets = merge(
+    {
+      for name, value in local.kv_secret_input_values :
+      name => {
+        value = value
+      }
+      if try(trim(value), "") != ""
+    },
+    try(trim(module.arbitration_storage_account.primary_connection_string), "") != "" ? {
+      "arbitration-storage-connection" = {
+        value = module.arbitration_storage_account.primary_connection_string
+      }
+    } : {}
+  )
 
   kv_rbac_assignments = merge(
     {
@@ -229,9 +236,6 @@ module "kv" {
   secrets                       = local.kv_secrets
   rbac_assignments              = local.kv_rbac_assignments
   tags                          = var.tags
-  secrets = {
-    "arbitration-storage-connection" = module.arbitration_storage_account.primary_connection_string
-  }
 }
 
 module "dns_zone" {
