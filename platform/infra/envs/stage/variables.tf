@@ -338,7 +338,14 @@ variable "sql_admin_login" {
 variable "sql_admin_password" {
   description = "Administrator password for the SQL server."
   type        = string
+  default     = null
   sensitive   = true
+}
+
+variable "sql_admin_password_secret_name" {
+  description = "Name of the Key Vault secret that stores the SQL administrator password."
+  type        = string
+  default     = null
 }
 
 # -------------------------

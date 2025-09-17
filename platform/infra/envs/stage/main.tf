@@ -34,6 +34,18 @@ module "resource_group" {
   tags     = var.tags
 }
 
+data "azurerm_key_vault" "environment" {
+  count               = var.sql_admin_password_secret_name != null && var.sql_admin_password_secret_name != "" ? 1 : 0
+  name                = local.kv_name
+  resource_group_name = module.resource_group.name
+}
+
+data "azurerm_key_vault_secret" "sql_admin_password" {
+  count        = var.sql_admin_password_secret_name != null && var.sql_admin_password_secret_name != "" ? 1 : 0
+  name         = var.sql_admin_password_secret_name
+  key_vault_id = data.azurerm_key_vault.environment[0].id
+}
+
 module "network" {
   source              = "../../Azure/modules/network"
   name                = "vnet-${var.project_name}-${var.env_name}"
@@ -81,15 +93,22 @@ module "app_gateway" {
   tags                = var.tags
 }
 
+locals {
+  sql_admin_password_input = try(trim(var.sql_admin_password), "")
+  resolved_sql_admin_password = local.sql_admin_password_input != "" ? local.sql_admin_password_input : (
+    length(data.azurerm_key_vault_secret.sql_admin_password) > 0 ? data.azurerm_key_vault_secret.sql_admin_password[0].value : ""
+  )
+}
+
 module "sql" {
-  count                         = var.enable_sql ? 1 : 0
+  count                         = var.enable_sql && local.resolved_sql_admin_password != "" ? 1 : 0
   source                        = "../../Azure/modules/sql-serverless"
   server_name                   = local.sql_server_name
   database_name                 = local.sql_database_name
   resource_group_name           = module.resource_group.name
   location                      = var.location
   administrator_login           = var.sql_admin_login
-  administrator_password        = var.sql_admin_password
+  administrator_password        = local.resolved_sql_admin_password
   public_network_access_enabled = var.sql_public_network_access
   minimum_tls_version           = var.sql_minimum_tls_version
   sku_name                      = var.sql_sku_name
