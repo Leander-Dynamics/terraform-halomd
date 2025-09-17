@@ -30,23 +30,3 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
-
-variable "network_rules" {
-  description = "Optional network rules applied to the storage account."
-  type = object({
-    bypass                     = optional(list(string))
-    default_action             = optional(string)
-    ip_rules                   = optional(list(string))
-    virtual_network_subnet_ids = optional(list(string))
-  })
-  default = null
-}
-
-variable "private_endpoints" {
-  description = "Private endpoint definitions associated with the storage account for network rule augmentation."
-  type = list(object({
-    id        = optional(string)
-    subnet_id = optional(string)
-  }))
-  default = []
-}

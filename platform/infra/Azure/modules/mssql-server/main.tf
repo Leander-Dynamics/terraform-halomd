@@ -3,7 +3,6 @@ resource "azurerm_mssql_server" "this" {
   resource_group_name          = var.resource_group_name
   location                     = var.location
   version                      = "12.0"
-  administrator_login          = var.administrator_login
-  administrator_login_password = var.administrator_password
-  tags                         = var.tags
+  # administrator_login          = var.admin_login
+  # administrator_login_password = var.admin_password
 }

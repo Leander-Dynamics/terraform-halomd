@@ -1,10 +1,4 @@
-locals {
-  app_insights_connection_string_trimmed = trimspace(coalesce(var.app_insights_connection_string, ""))
-  log_analytics_workspace_id_trimmed      = trimspace(coalesce(var.log_analytics_workspace_id, ""))
-  enable_diagnostics                      = local.log_analytics_workspace_id_trimmed != ""
-}
-
-resource "azurerm_service_plan" "this" {
+resource "azurerm_service_plan" "plan" {
   name                = var.plan_name
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -12,52 +6,29 @@ resource "azurerm_service_plan" "this" {
   sku_name            = var.plan_sku
   tags                = var.tags
 }
-
-resource "azurerm_linux_web_app" "this" {
+resource "azurerm_linux_web_app" "app" {
   name                = var.name
-  location            = var.location
   resource_group_name = var.resource_group_name
-  service_plan_id     = azurerm_service_plan.this.id
-  https_only          = var.https_only
-  tags                = var.tags
-
-  identity {
-    type = "SystemAssigned"
-  }
-
+  location            = var.location
+  service_plan_id     = azurerm_service_plan.plan.id
+  https_only          = true
+  identity { type = "SystemAssigned" }
   site_config {
-    always_on  = var.always_on
-    ftps_state = var.ftps_state
-
-    application_stack {
-      dotnet_version = var.dotnet_version
-    }
+    ftps_state = "Disabled"
+    application_stack { dotnet_version = var.dotnet_version }
   }
-
-  app_settings = merge(
-    local.app_insights_connection_string_trimmed != "" ? {
-      "APPINSIGHTS_CONNECTION_STRING" = local.app_insights_connection_string_trimmed
-      "APPINSIGHTS_CONNECTIONSTRING"  = local.app_insights_connection_string_trimmed
-    } : {},
-    var.run_from_package ? { "WEBSITE_RUN_FROM_PACKAGE" = "1" } : {},
-    var.app_settings
-  )
-
-  dynamic "connection_string" {
-    for_each = var.connection_strings
-    content {
-      name  = connection_string.key
-      type  = connection_string.value.type
-      value = connection_string.value.value
-    }
-  }
+  app_settings = merge({
+    "APPINSIGHTS_CONNECTION_STRING" = var.app_insights_connection_string
+    "WEBSITE_RUN_FROM_PACKAGE"      = "1"
+  }, var.app_settings)
+  tags = var.tags
 }
 
-resource "azurerm_monitor_diagnostic_setting" "this" {
-  count = local.enable_diagnostics ? 1 : 0
+resource "azurerm_monitor_diagnostic_setting" "app" {
+  count = var.log_analytics_workspace_id == null || var.log_analytics_workspace_id == "" ? 0 : 1
 
   name                       = "${var.name}-diag"
-  target_resource_id         = azurerm_linux_web_app.this.id
+  target_resource_id         = azurerm_linux_web_app.app.id
   log_analytics_workspace_id = var.log_analytics_workspace_id
 
   dynamic "log" {
