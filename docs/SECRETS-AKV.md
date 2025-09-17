@@ -44,10 +44,12 @@ Create these **Pipeline variables** (Project → Pipelines → Library → Varia
 
 ### Per environment (non‑secret)
 - `KV_NAME_DEV` = `kv-arbit-dev`
+- `KV_NAME_QA` = `kv-arbit-qa`
 - `KV_NAME_STAGE` = `kv-arbit-stage`
 - `KV_NAME_PROD` = `kv-arbit-prod`
 
-- `AKV_ENABLE_DYNAMIC_IP_DEV`   = `true`|`false`  
+- `AKV_ENABLE_DYNAMIC_IP_DEV`   = `true`|`false`
+- `AKV_ENABLE_DYNAMIC_IP_QA`    = `true`|`false`
 - `AKV_ENABLE_DYNAMIC_IP_STAGE` = `false` (recommended false for higher envs)
 - `AKV_ENABLE_DYNAMIC_IP_PROD`  = `false` (recommended false for prod)
 
@@ -55,6 +57,7 @@ Create these **Pipeline variables** (Project → Pipelines → Library → Varia
 
 ### Optional (for Terraform-managed RBAC)
 - `KV_CICD_PRINCIPAL_ID_DEV` = `<object id of dev service connection principal>`
+- `KV_CICD_PRINCIPAL_ID_QA` = `<object id ...>`
 - `KV_CICD_PRINCIPAL_ID_STAGE` = `<object id ...>`
 - `KV_CICD_PRINCIPAL_ID_PROD` = `<object id ...>`
 

@@ -63,13 +63,15 @@ app_service_app_settings = {
 app_service_connection_strings = {
   PrimaryDatabase = {
     type  = "SQLAzure"
-    value = "Server=tcp:sql-arbit-stage.database.windows.net,1433;Initial Catalog=halomd;User ID=sqladminstage;Password=P@ssw0rd123!Stage;Encrypt=True;"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/app-service-primary-database-connection)"
   }
 }
 
 # -------------------------
 # Arbitration App
 # -------------------------
+arbitration_runtime_version = "v6.0"
+
 arbitration_storage_container_name = "arbitration-calculator"
 
 arbitration_app_settings = {
@@ -77,13 +79,18 @@ arbitration_app_settings = {
   "Storage__Container"  = "arbitration-calculator"
 }
 
+arbitration_connection_strings = {
+  DefaultConnection = {
+    type  = "SQLAzure"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-primary-connection)"
+  }
+}
+
 # -------------------------
 # SQL Database
 # -------------------------
-# Support both sql_database_name and sql_db_name for different modules
 sql_database_name        = "halomd"
 
-# Extended config
 sql_sku_name             = "GP_S_Gen5_2"
 sql_max_size_gb          = 64
 sql_auto_pause_delay     = 60
@@ -91,10 +98,9 @@ sql_min_capacity         = 1
 sql_max_capacity         = 6
 sql_public_network_access = true
 
-sql_admin_login    = "sqladminstage"
-sql_admin_password = "P@ssw0rd123!Stage"
+sql_admin_login    = "REPLACE_ME"
+sql_admin_password = "REPLACE_ME_SECURELY"
 
-# Firewall rules
 sql_firewall_rules = [
   {
     name             = "allow-all"

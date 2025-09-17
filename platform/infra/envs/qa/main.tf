@@ -1,4 +1,4 @@
-# Environment composition for the dev environment
+# Environment composition for the qa environment
 
 locals {
   rg_name                               = "rg-${var.project_name}-${var.env_name}"
@@ -16,7 +16,7 @@ locals {
   arbitration_app_name                  = "web-${var.project_name}-${var.env_name}-arb"
   arbitration_plan_sku_effective        = var.arbitration_plan_sku != "" ? trimspace(var.arbitration_plan_sku) : "B1"
   arbitration_runtime_stack_effective   = var.arbitration_runtime_stack != "" ? trimspace(var.arbitration_runtime_stack) : "dotnet"
-  arbitration_runtime_version_effective = var.arbitration_runtime_version != "" ? trimspace(var.arbitration_runtime_version) : "v6.0"
+  arbitration_runtime_version_effective = var.arbitration_runtime_version != "" ? trimspace(var.arbitration_runtime_version) : "8.0"
   storage_data_name                     = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
   sql_server_name                       = "sql-${var.project_name}-${var.env_name}"
   aad_app_display                       = "aad-${var.project_name}-${var.env_name}"
@@ -38,20 +38,6 @@ module "network" {
   dns_servers         = var.vnet_dns_servers
   subnets             = var.subnets
   tags                = var.tags
-}
-
-module "arbitration_storage_account" {
-  source              = "../../Azure/modules/storage-account"
-  name                = local.storage_data_name
-  resource_group_name = module.resource_group.name
-  location            = var.location
-  tags                = var.tags
-}
-
-module "arbitration_storage_container" {
-  source               = "../../Azure/modules/storage-container"
-  name                 = var.arbitration_storage_container_name
-  storage_account_name = module.arbitration_storage_account.name
 }
 
 module "acr" {
@@ -100,7 +86,6 @@ module "app_service_arbitration" {
   runtime_stack                  = local.arbitration_runtime_stack_effective
   runtime_version                = local.arbitration_runtime_version_effective
   app_insights_connection_string = module.app_insights.application_insights_connection_string
-  app_insights_instrumentation_key = module.app_insights.application_insights_instrumentation_key
   log_analytics_workspace_id     = module.app_insights.log_analytics_workspace_id
   connection_strings             = var.arbitration_connection_strings
   app_settings                   = var.arbitration_app_settings
@@ -181,55 +166,13 @@ module "aad_app" {
   display_name = local.aad_app_display
 }
 
-locals {
-  kv_secret_input_values = merge({
-    "sql-admin-login"                         => var.sql_admin_login,
-    "sql-admin-password"                      => var.sql_admin_password,
-    "app-service-primary-database-connection" => var.app_service_primary_database_connection_string,
-    "arbitration-primary-connection"          => var.arbitration_primary_connection_string,
-    "arbitration-idr-connection"              => var.arbitration_idr_connection_string,
-    "arbitration-storage-connection"          => var.arbitration_storage_connection_string,
-    "aad-application-client-id"               => module.aad_app.client_id,
-    "aad-application-object-id"               => module.aad_app.object_id,
-  }, var.kv_additional_secrets)
-
-  kv_secrets = {
-    for name, value in local.kv_secret_input_values :
-    name => {
-      value = value
-    }
-    if try(trim(value), "") != ""
-  }
-
-  kv_rbac_assignments = merge(
-    {
-      arbitration_app = {
-        principal_id         = module.app_service_arbitration.principal_id
-        role_definition_name = "Key Vault Secrets User"
-      }
-    },
-    var.kv_cicd_principal_id != "" ? {
-      cicd = {
-        principal_id         = var.kv_cicd_principal_id
-        role_definition_name = "Key Vault Secrets User"
-      }
-    } : {}
-  )
-}
-
 module "kv" {
   source                        = "../../Azure/modules/key-vault"
   name                          = local.kv_name
   resource_group_name           = module.resource_group.name
   location                      = var.location
   public_network_access_enabled = var.kv_public_network_access
-  enable_rbac_authorization     = true
-  secrets                       = local.kv_secrets
-  rbac_assignments              = local.kv_rbac_assignments
   tags                          = var.tags
-  secrets = {
-    "arbitration-storage-connection" = module.arbitration_storage_account.primary_connection_string
-  }
 }
 
 module "dns_zone" {

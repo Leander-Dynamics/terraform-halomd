@@ -70,20 +70,29 @@ app_service_connection_strings = {
 # -------------------------
 # Arbitration App
 # -------------------------
-arbitration_storage_container_name = "arbitration-calculator"
+arbitration_runtime_version = "v6.0"
 
 arbitration_app_settings = {
   "Storage__Connection" = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-storage-connection)"
   "Storage__Container"  = "arbitration-calculator"
 }
 
+# Optional: Uncomment if using Key Vault secrets for DB connections
+# arbitration_connection_strings = {
+#   ConnStr = {
+#     type  = "SQLAzure"
+#     value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-primary-connection)"
+#   }
+#   IDRConnStr = {
+#     type  = "SQLAzure"
+#     value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-idr-connection)"
+#   }
+# }
+
 # -------------------------
 # SQL Database
 # -------------------------
-# Support both sql_database_name and sql_db_name for different modules
 sql_database_name        = "halomd"
-
-# Extended config
 sql_sku_name             = "GP_S_Gen5_4"
 sql_max_size_gb          = 128
 sql_auto_pause_delay     = 60
@@ -92,9 +101,8 @@ sql_max_capacity         = 8
 sql_public_network_access = true
 
 sql_admin_login    = "sqladminprod"
-sql_admin_password = "P@ssw0rd123!Prod"
+sql_admin_password = "P@ssw0rd123!Prod"  # ❗Consider sourcing from Key Vault or secrets store
 
-# Firewall rules
 sql_firewall_rules = [
   {
     name             = "allow-all"

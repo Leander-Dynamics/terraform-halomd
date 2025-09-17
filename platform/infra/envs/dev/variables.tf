@@ -28,6 +28,12 @@ variable "tenant_id" {
   default     = ""
 }
 
+variable "kv_cicd_principal_id" {
+  description = "Object ID of the CI/CD principal that should have Key Vault access."
+  type        = string
+  default     = ""
+}
+
 # -------------------------
 # Feature toggles
 # -------------------------
@@ -47,6 +53,41 @@ variable "kv_public_network_access" {
   description = "Allow public network access to the Key Vault."
   type        = bool
   default     = true
+}
+
+variable "app_service_primary_database_connection_string" {
+  description = "Primary database connection string for the web App Service (stored in Key Vault)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "arbitration_primary_connection_string" {
+  description = "Primary arbitration SQL connection string stored in Key Vault."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "arbitration_idr_connection_string" {
+  description = "IDR arbitration SQL connection string stored in Key Vault."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "arbitration_storage_connection_string" {
+  description = "Storage connection string consumed by the arbitration workload."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "kv_additional_secrets" {
+  description = "Additional secrets to populate in the Key Vault (name => value)."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
 }
 
 # -------------------------

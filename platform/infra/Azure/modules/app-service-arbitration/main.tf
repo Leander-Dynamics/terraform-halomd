@@ -20,8 +20,16 @@ resource "azurerm_windows_web_app" "this" {
     always_on = true
   }
 
-  https_only   = true
-  app_settings = var.app_settings
+  https_only = true
+  app_settings = merge(
+    var.app_settings,
+    {
+      APPLICATIONINSIGHTS_CONNECTION_STRING = var.app_insights_connection_string
+    },
+    var.app_insights_instrumentation_key != null && var.app_insights_instrumentation_key != "" ? {
+      APPINSIGHTS_INSTRUMENTATIONKEY = var.app_insights_instrumentation_key
+    } : {}
+  )
 
   dynamic "connection_string" {
     for_each = var.connection_strings
