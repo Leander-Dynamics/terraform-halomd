@@ -28,6 +28,8 @@ locals {
 
   sql_server_name   = "sql-${var.project_name}-${var.env_name}"
   sql_database_name = var.sql_database_name != "" ? var.sql_database_name : "${var.project_name}-${var.env_name}"
+  sql_admin_login_effective    = trimspace(coalesce(var.sql_admin_login, ""))
+  sql_admin_password_effective = coalesce(var.sql_admin_password, "")
 }
 
 # Core Modules
@@ -104,7 +106,7 @@ module "app_gateway" {
 
 # SQL
 module "sql" {
-  count                         = var.enable_sql ? 1 : 0
+  count                         = var.enable_sql && local.sql_admin_login_effective != "" && local.sql_admin_password_effective != "" ? 1 : 0
   source                        = "../../Azure/modules/sql-serverless"
   server_name                   = local.sql_server_name
   database_name                 = local.sql_database_name

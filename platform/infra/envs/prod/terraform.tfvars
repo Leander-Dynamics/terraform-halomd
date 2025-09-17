@@ -9,6 +9,11 @@ tags = {
 }
 
 # -------------------------
+# Feature flags
+# -------------------------
+enable_sql = true
+
+# -------------------------
 # Networking
 # -------------------------
 vnet_address_space = ["10.30.0.0/16"]
@@ -22,12 +27,12 @@ subnets = {
 }
 
 # For module using subnet keys
-app_gateway_subnet_key  = "gateway"
+app_gateway_subnet_key = "gateway"
 
 # For module using direct subnet id
 app_gateway_subnet_id = "/subscriptions/930755b1-ef22-4721-a31a-1b6fbecf7da6/resourceGroups/rg-arbit-prod/providers/Microsoft.Network/virtualNetworks/vnet-arbit-prod/subnets/appgw"
 
-app_gateway_fqdn_prefix   = "agw-arbit-prod"
+app_gateway_fqdn_prefix = "agw-arbit-prod"
 app_gateway_backend_fqdns = [
   "app-halomdweb-prod.azurewebsites.net",
   "app-arbit-arb-prod.azurewebsites.net",
@@ -100,8 +105,9 @@ sql_min_capacity         = 2
 sql_max_capacity         = 8
 sql_public_network_access = true
 
+# ❗Use Key Vault or secure method in pipelines instead of hardcoding in production
 sql_admin_login    = "sqladminprod"
-sql_admin_password = "P@ssw0rd123!Prod"  # ❗Consider sourcing from Key Vault or secrets store
+sql_admin_password = "P@ssw0rd123!Prod"
 
 sql_firewall_rules = [
   {

@@ -388,13 +388,14 @@ variable "sql_firewall_rules" {
 variable "sql_admin_login" {
   description = "Administrator login for the SQL server."
   type        = string
-  default     = ""
+  default     = null
 }
 
 variable "sql_admin_password" {
   description = "Administrator password for the SQL server. Provide this securely via environment variable or Key Vault."
   type        = string
   sensitive   = true
+  default     = null
 }
 
 # -------------------------

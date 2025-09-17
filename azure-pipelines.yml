@@ -80,6 +80,8 @@ stages:
       akvEnableDynamicIp: '$(AKV_ENABLE_DYNAMIC_IP_DEV)'
       akvSecretSqlAdminLoginName: '$(AKV_SECRET_SQL_ADMIN_LOGIN_NAME)'
       akvSecretSqlAdminPasswordName: '$(AKV_SECRET_SQL_ADMIN_PASSWORD_NAME)'
+      pipelineSqlAdminLogin: '$(SQL_ADMIN_LOGIN_DEV)'
+      pipelineSqlAdminPassword: '$(SQL_ADMIN_PASSWORD_DEV)'
   - template: .ado/templates/tf-plan.yml
     parameters:
       envName: qa
@@ -93,6 +95,8 @@ stages:
       akvEnableDynamicIp: '$(AKV_ENABLE_DYNAMIC_IP_QA)'
       akvSecretSqlAdminLoginName: '$(AKV_SECRET_SQL_ADMIN_LOGIN_NAME)'
       akvSecretSqlAdminPasswordName: '$(AKV_SECRET_SQL_ADMIN_PASSWORD_NAME)'
+      pipelineSqlAdminLogin: '$(SQL_ADMIN_LOGIN_QA)'
+      pipelineSqlAdminPassword: '$(SQL_ADMIN_PASSWORD_QA)'
   - template: .ado/templates/tf-plan.yml
     parameters:
       envName: stage
@@ -106,6 +110,8 @@ stages:
       akvEnableDynamicIp: '$(AKV_ENABLE_DYNAMIC_IP_STAGE)'
       akvSecretSqlAdminLoginName: '$(AKV_SECRET_SQL_ADMIN_LOGIN_NAME)'
       akvSecretSqlAdminPasswordName: '$(AKV_SECRET_SQL_ADMIN_PASSWORD_NAME)'
+      pipelineSqlAdminLogin: '$(SQL_ADMIN_LOGIN_STAGE)'
+      pipelineSqlAdminPassword: '$(SQL_ADMIN_PASSWORD_STAGE)'
   - template: .ado/templates/tf-plan.yml
     parameters:
       envName: prod
@@ -119,6 +125,8 @@ stages:
       akvEnableDynamicIp: '$(AKV_ENABLE_DYNAMIC_IP_PROD)'
       akvSecretSqlAdminLoginName: '$(AKV_SECRET_SQL_ADMIN_LOGIN_NAME)'
       akvSecretSqlAdminPasswordName: '$(AKV_SECRET_SQL_ADMIN_PASSWORD_NAME)'
+      pipelineSqlAdminLogin: '$(SQL_ADMIN_LOGIN_PROD)'
+      pipelineSqlAdminPassword: '$(SQL_ADMIN_PASSWORD_PROD)'
 
 - stage: Apply_Dev
   displayName: Terraform Apply (dev)

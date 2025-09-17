@@ -33,6 +33,12 @@ parameters:
   - name: akvSecretSqlAdminPasswordName
     type: string
     default: 'sql-admin-password'
+  - name: pipelineSqlAdminLogin
+    type: string
+    default: ''
+  - name: pipelineSqlAdminPassword
+    type: string
+    default: ''
 
 jobs:
 - job: plan_${{ parameters.envName }}
@@ -82,18 +88,40 @@ jobs:
             fi
           fi
 
-          # Pull secrets (avoid echoing values)
-          set +x
-          SQL_ADMIN_LOGIN="$(az keyvault secret show --vault-name "$KV_NAME" --name "$SECRET_LOGIN" --query value -o tsv || true)"
-          SQL_ADMIN_PASSWORD="$(az keyvault secret show --vault-name "$KV_NAME" --name "$SECRET_PASS" --query value -o tsv || true)"
-          set -x
+        fi
 
-          if [[ -n "$SQL_ADMIN_LOGIN" && -n "$SQL_ADMIN_PASSWORD" ]]; then
-            AKV_VAR_FLAGS="-var \"sql_admin_login=${SQL_ADMIN_LOGIN}\" -var \"sql_admin_password=${SQL_ADMIN_PASSWORD}\""
-          else
-            echo "NOTE: SQL secrets missing or empty in Key Vault '${KV_NAME}'. Skipping SQL vars."
+        # Pull secrets from Key Vault or pipeline variables without echoing sensitive data
+        set +x
+        SQL_ADMIN_LOGIN=""
+        SQL_ADMIN_PASSWORD=""
+        PIPELINE_SQL_ADMIN_LOGIN="${PIPELINE_SQL_ADMIN_LOGIN:-}"
+        PIPELINE_SQL_ADMIN_PASSWORD="${PIPELINE_SQL_ADMIN_PASSWORD:-}"
+
+        if [[ "$USE_AKV" == "true" && -n "$KV_NAME" ]]; then
+          KV_SQL_ADMIN_LOGIN="$(az keyvault secret show --vault-name "$KV_NAME" --name "$SECRET_LOGIN" --query value -o tsv || true)"
+          KV_SQL_ADMIN_PASSWORD="$(az keyvault secret show --vault-name "$KV_NAME" --name "$SECRET_PASS" --query value -o tsv || true)"
+
+          if [[ -n "$KV_SQL_ADMIN_LOGIN" ]]; then
+            SQL_ADMIN_LOGIN="$KV_SQL_ADMIN_LOGIN"
+          fi
+          if [[ -n "$KV_SQL_ADMIN_PASSWORD" ]]; then
+            SQL_ADMIN_PASSWORD="$KV_SQL_ADMIN_PASSWORD"
           fi
         fi
+
+        if [[ -z "$SQL_ADMIN_LOGIN" && -n "$PIPELINE_SQL_ADMIN_LOGIN" ]]; then
+          SQL_ADMIN_LOGIN="$PIPELINE_SQL_ADMIN_LOGIN"
+        fi
+        if [[ -z "$SQL_ADMIN_PASSWORD" && -n "$PIPELINE_SQL_ADMIN_PASSWORD" ]]; then
+          SQL_ADMIN_PASSWORD="$PIPELINE_SQL_ADMIN_PASSWORD"
+        fi
+
+        if [[ -n "$SQL_ADMIN_LOGIN" && -n "$SQL_ADMIN_PASSWORD" ]]; then
+          AKV_VAR_FLAGS="-var \"sql_admin_login=${SQL_ADMIN_LOGIN}\" -var \"sql_admin_password=${SQL_ADMIN_PASSWORD}\""
+        else
+          echo "NOTE: SQL admin credentials not supplied via Key Vault or pipeline variables for '${{ parameters.envName }}'. Skipping SQL vars."
+        fi
+        set -x
 
         cd platform/infra/envs/${{ parameters.envName }}
         if [[ -n "${AZ_SUBSCRIPTION_ID:-}" ]]; then
@@ -105,6 +133,9 @@ jobs:
 
         terraform init -reconfigure -backend-config=backend.tfvars -lock-timeout='${{ parameters.lockTimeout }}'
         terraform plan -input=false -var-file=terraform.tfvars ${{ parameters.extraVarFlags }} ${SUB_TENANT_VAR_FLAGS} ${AKV_VAR_FLAGS} -out "$BUILD_SOURCESDIRECTORY/tfplan-${{ parameters.envName }}.tfplan"
+    env:
+      PIPELINE_SQL_ADMIN_LOGIN: ${{ parameters.pipelineSqlAdminLogin }}
+      PIPELINE_SQL_ADMIN_PASSWORD: ${{ parameters.pipelineSqlAdminPassword }}
   - task: PublishPipelineArtifact@1
     inputs:
       targetPath: '$(Build.SourcesDirectory)/tfplan-${{ parameters.envName }}.tfplan'
