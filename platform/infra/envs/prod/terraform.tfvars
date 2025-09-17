@@ -27,12 +27,12 @@ subnets = {
 }
 
 # For module using subnet keys
-app_gateway_subnet_key  = "gateway"
+app_gateway_subnet_key = "gateway"
 
 # For module using direct subnet id
 app_gateway_subnet_id = "/subscriptions/930755b1-ef22-4721-a31a-1b6fbecf7da6/resourceGroups/rg-arbit-prod/providers/Microsoft.Network/virtualNetworks/vnet-arbit-prod/subnets/appgw"
 
-app_gateway_fqdn_prefix   = "agw-arbit-prod"
+app_gateway_fqdn_prefix = "agw-arbit-prod"
 app_gateway_backend_fqdns = [
   "app-halomdweb-prod.azurewebsites.net",
   "app-arbit-arb-prod.azurewebsites.net",
@@ -75,18 +75,29 @@ app_service_connection_strings = {
 # -------------------------
 # Arbitration App
 # -------------------------
+arbitration_runtime_version = "v6.0"
+
 arbitration_app_settings = {
-  "Storage__Connection" = "DefaultEndpointsProtocol=https;AccountName=prodarbitstorage;AccountKey=FakeKeyForProd==;EndpointSuffix=core.windows.net"
+  "Storage__Connection" = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-storage-connection)"
   "Storage__Container"  = "arbitration-calculator"
 }
+
+# Optional: Uncomment if using Key Vault secrets for DB connections
+# arbitration_connection_strings = {
+#   ConnStr = {
+#     type  = "SQLAzure"
+#     value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-primary-connection)"
+#   }
+#   IDRConnStr = {
+#     type  = "SQLAzure"
+#     value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-idr-connection)"
+#   }
+# }
 
 # -------------------------
 # SQL Database
 # -------------------------
-# Support both sql_database_name and sql_db_name for different modules
 sql_database_name        = "halomd"
-
-# Extended config
 sql_sku_name             = "GP_S_Gen5_4"
 sql_max_size_gb          = 128
 sql_auto_pause_delay     = 60
@@ -94,12 +105,10 @@ sql_min_capacity         = 2
 sql_max_capacity         = 8
 sql_public_network_access = true
 
-sql_admin_login    = null
-sql_admin_password = null
+# ❗Use Key Vault or secure method in pipelines instead of hardcoding in production
+sql_admin_login    = "sqladminprod"
+sql_admin_password = "P@ssw0rd123!Prod"
 
-# SQL administrator credentials are supplied securely at deploy time (Key Vault or pipeline variables).
-
-# Firewall rules
 sql_firewall_rules = [
   {
     name             = "allow-all"

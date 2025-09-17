@@ -2,7 +2,7 @@
 
 We use **trunk‑based development**:
 
-- **main** — trunk; merging triggers Dev apply; stage/prod need approvals.
+- **main** — trunk; merging triggers Dev & QA apply; stage/prod need approvals.
 - **feature/*** — short‑lived branches for features.
 - **hotfix/*** — urgent fixes.
 - **chore/*** — docs/tooling.
