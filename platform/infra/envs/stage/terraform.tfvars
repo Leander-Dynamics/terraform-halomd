@@ -63,15 +63,27 @@ app_service_app_settings = {
 app_service_connection_strings = {
   PrimaryDatabase = {
     type  = "SQLAzure"
-    value = "Server=tcp:sql-arbit-stage.database.windows.net,1433;Initial Catalog=halomd;User ID=sqladminstage;Password=P@ssw0rd123!Stage;Encrypt=True;"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/app-service-primary-database-connection)"
   }
 }
 
 # -------------------------
 # Arbitration App
 # -------------------------
+arbitration_plan_sku        = "P1v3"
+arbitration_runtime_stack   = "dotnet"
+arbitration_runtime_version = "8.0"
+
+arbitration_connection_strings = [
+  {
+    name  = "DefaultConnection"
+    type  = "SQLAzure"
+    value = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-default-connection)"
+  }
+]
+
 arbitration_app_settings = {
-  "Storage__Connection" = "DefaultEndpointsProtocol=https;AccountName=stagearbitstorage;AccountKey=FakeKeyForStage==;EndpointSuffix=core.windows.net"
+  "Storage__Connection" = "@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-storage-connection)"
   "Storage__Container"  = "arbitration-calculator"
 }
 

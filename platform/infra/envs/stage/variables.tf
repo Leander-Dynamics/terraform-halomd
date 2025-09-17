@@ -349,3 +349,31 @@ variable "arbitration_plan_sku" {
   type        = string
   default     = ""
 }
+
+variable "arbitration_runtime_stack" {
+  description = "Runtime stack used by the arbitration App Service."
+  type        = string
+  default     = ""
+}
+
+variable "arbitration_runtime_version" {
+  description = "Runtime version for the arbitration App Service."
+  type        = string
+  default     = ""
+}
+
+variable "arbitration_app_settings" {
+  description = "App settings applied to the arbitration App Service."
+  type        = map(string)
+  default     = {}
+}
+
+variable "arbitration_connection_strings" {
+  description = "Connection strings for the arbitration App Service."
+  type = list(object({
+    name  = string
+    type  = string
+    value = string
+  }))
+  default = []
+}
