@@ -17,6 +17,15 @@ locals {
   arbitration_plan_sku_effective        = var.arbitration_plan_sku != "" ? trimspace(var.arbitration_plan_sku) : "B1"
   arbitration_runtime_stack_effective   = var.arbitration_runtime_stack != "" ? trimspace(var.arbitration_runtime_stack) : "dotnet"
   arbitration_runtime_version_effective = var.arbitration_runtime_version != "" ? trimspace(var.arbitration_runtime_version) : "8.0"
+  arbitration_storage_container_name = coalesce(
+    try(
+      trimspace(var.arbitration_app_settings["Storage__Container"]) != "" ?
+      trimspace(var.arbitration_app_settings["Storage__Container"]) :
+      null,
+      null,
+    ),
+    "arbitration-calculator",
+  )
   storage_data_name                     = lower(replace("st${var.project_name}${var.env_name}data", "-", ""))
   sql_server_name                       = "sql-${var.project_name}-${var.env_name}"
   aad_app_display                       = "aad-${var.project_name}-${var.env_name}"
@@ -38,6 +47,20 @@ module "network" {
   dns_servers         = var.vnet_dns_servers
   subnets             = var.subnets
   tags                = var.tags
+}
+
+module "arbitration_storage_account" {
+  source              = "../../Azure/modules/storage-account"
+  name                = local.storage_data_name
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  tags                = var.tags
+}
+
+module "arbitration_storage_container" {
+  source               = "../../Azure/modules/storage-container"
+  name                 = local.arbitration_storage_container_name
+  storage_account_name = module.arbitration_storage_account.name
 }
 
 module "acr" {
@@ -166,12 +189,30 @@ module "aad_app" {
   display_name = local.aad_app_display
 }
 
+locals {
+  kv_secrets = {
+    "arbitration-storage-connection" = {
+      value = module.arbitration_storage_account.primary_connection_string
+    }
+  }
+
+  kv_rbac_assignments = {
+    arbitration_app = {
+      principal_id         = module.app_service_arbitration.principal_id
+      role_definition_name = "Key Vault Secrets User"
+    }
+  }
+}
+
 module "kv" {
   source                        = "../../Azure/modules/key-vault"
   name                          = local.kv_name
   resource_group_name           = module.resource_group.name
   location                      = var.location
   public_network_access_enabled = var.kv_public_network_access
+  enable_rbac_authorization     = true
+  secrets                       = local.kv_secrets
+  rbac_assignments              = local.kv_rbac_assignments
   tags                          = var.tags
 }
 
