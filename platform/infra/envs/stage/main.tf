@@ -5,8 +5,8 @@ locals {
   appi_name        = "appi-${var.project_name}-${var.env_name}"
   aad_app_display  = "aad-${var.project_name}-${var.env_name}"
 
-  acr_name         = lower(replace("acr${var.project_name}${var.env_name}", "-", ""))
-  aks_name         = "aks-${var.project_name}-${var.env_name}-${var.location}"
+  acr_name = lower(replace("acr${var.project_name}${var.env_name}", "-", ""))
+  aks_name = "aks-${var.project_name}-${var.env_name}-${var.location}"
 
   web_plan         = "asp-halomdweb-${var.env_name}-${var.location}"
   web_name         = "app-halomdweb-${var.env_name}"
@@ -29,36 +29,33 @@ locals {
   sql_database_name = var.sql_database_name != "" ? var.sql_database_name : "${var.project_name}-${var.env_name}"
   sql_admin_login_effective    = trimspace(coalesce(var.sql_admin_login, ""))
   sql_admin_password_effective = coalesce(var.sql_admin_password, "")
-}
-
-# Inject SQL admin password securely
-locals {
-  sql_admin_password_input = try(trim(var.sql_admin_password), "")
+  sql_admin_password_input     = try(trim(var.sql_admin_password), "")
   resolved_sql_admin_password = local.sql_admin_password_input != "" ? local.sql_admin_password_input : (
     length(data.azurerm_key_vault_secret.sql_admin_password) > 0 ? data.azurerm_key_vault_secret.sql_admin_password[0].value : ""
   )
-}
 
-module "sql" {
-  count                         = var.enable_sql && local.sql_admin_login_effective != "" && local.resolved_sql_admin_password != "" ? 1 : 0
+  default_app_gateway_backend_fqdns = compact([
+    module.app_service.default_hostname,
+    module.app_service_arbitration.default_hostname,
+  ])
 
-  source                        = "../../Azure/modules/sql-serverless"
-  server_name                   = local.sql_server_name
-  database_name                 = local.sql_database_name
-  resource_group_name           = module.resource_group.name
-  location                      = var.location
-  administrator_login           = local.sql_admin_login_effective
-  administrator_password        = local.resolved_sql_admin_password
-  public_network_access_enabled = var.sql_public_network_access
-  minimum_tls_version           = var.sql_minimum_tls_version
-  sku_name                      = var.sql_sku_name
-  auto_pause_delay_in_minutes   = var.sql_auto_pause_delay
-  max_size_gb                   = var.sql_max_size_gb
-  min_capacity                  = var.sql_min_capacity
-  max_capacity                  = var.sql_max_capacity
-  read_scale                    = var.sql_read_scale
-  zone_redundant                = var.sql_zone_redundant
-  collation                     = var.sql_collation
-  firewall_rules                = var.sql_firewall_rules
-  tags                          = var.tags
+  app_gateway_backend_fqdns = distinct(compact(concat(
+    var.app_gateway_backend_fqdns,
+    local.default_app_gateway_backend_fqdns,
+  )))
+
+  dns_hostname_overrides = {
+    for hostname, replacement in {
+      format("%s.azurewebsites.net", var.app_service_fqdn_prefix) = module.app_service.default_hostname
+      format("%s.azurewebsites.net", local.arbitration_name)      = module.app_service_arbitration.default_hostname
+    } : lower(hostname) => replacement
+    if replacement != null && replacement != ""
+  }
+
+  dns_cname_records = {
+    for name, cfg in var.dns_cname_records :
+    name => merge(cfg, {
+      record = lookup(local.dns_hostname_overrides, lower(cfg.record), cfg.record)
+    })
+  }
 }

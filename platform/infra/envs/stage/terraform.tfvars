@@ -75,8 +75,9 @@ app_service_connection_strings = {
 # -------------------------
 # Arbitration App
 # -------------------------
-arbitration_runtime_version = "v6.0"
-
+arbitration_plan_sku        = "P1v3"
+arbitration_runtime_stack   = "dotnet"
+arbitration_runtime_version = "8.0"
 arbitration_storage_container_name = "arbitration-calculator"
 
 arbitration_app_settings = {
