@@ -1,5 +1,5 @@
 # this is for for the cron functions
-resource "azurerm_service_plan" "arbit-workflow-application-cron-functions-app-serviceplan-1" {
+resource "azurerm_service_plan" "arbit_workflow_application_cron_functions_app_serviceplan_1" {
   name                = "${var.env_region}-arbit-workflow-application-cron-functions-asp-1"
   location            = azurerm_resource_group.workflow_rg.location
   resource_group_name = azurerm_resource_group.workflow_rg.name
@@ -16,11 +16,11 @@ resource "azurerm_application_insights" "cron_functions_ai" {
 }
 
 # # and then the function app for cron tasks
-resource "azurerm_linux_function_app" "arbit-workflow-application-cron-functions-app-1" {
+resource "azurerm_linux_function_app" "arbit_workflow_application_cron_functions_app_1" {
   name                = "${var.env_region}-arbit-workflow-cron-function-app"
   resource_group_name = azurerm_resource_group.workflow_rg.name
   location            = azurerm_resource_group.workflow_rg.location
-  service_plan_id = azurerm_service_plan.arbit-workflow-application-cron-functions-app-serviceplan-1.id
+  service_plan_id = azurerm_service_plan.arbit_workflow_application_cron_functions_app_serviceplan_1.id
 
   # this one should be deveus2workflowfuncsa meaning it is used by that function
   storage_account_name       = azurerm_storage_account.workflow_storage_account_cron_function.name
@@ -59,20 +59,20 @@ resource "azurerm_linux_function_app" "arbit-workflow-application-cron-functions
 # private endpoint for function app for crons
 resource "azurerm_private_endpoint" "workflow_function_cron_private_ep" {
   name                = "${var.env_region}-arbit-workflow-application-function-crons-ep-1"
-  location            = azurerm_linux_function_app.arbit-workflow-application-cron-functions-app-1.location
-  resource_group_name = azurerm_linux_function_app.arbit-workflow-application-cron-functions-app-1.resource_group_name
+  location            = azurerm_linux_function_app.arbit_workflow_application_cron_functions_app_1.location
+  resource_group_name = azurerm_linux_function_app.arbit_workflow_application_cron_functions_app_1.resource_group_name
   subnet_id           = "/subscriptions/${var.subscription_id}/resourceGroups/${var.vnet_resource_group}/providers/Microsoft.Network/virtualNetworks/${var.main_vnet}/subnets/${var.env_region}-private-services-snet-1"
 
   private_service_connection {
     name                           = "func-psc"
-    private_connection_resource_id = azurerm_linux_function_app.arbit-workflow-application-cron-functions-app-1.id
+    private_connection_resource_id = azurerm_linux_function_app.arbit_workflow_application_cron_functions_app_1.id
     subresource_names = ["sites"]
     is_manual_connection           = false
   }
 }
 
 resource "azurerm_private_dns_a_record" "function_record" {
-  name                = azurerm_linux_function_app.arbit-workflow-application-cron-functions-app-1.name
+  name                = azurerm_linux_function_app.arbit_workflow_application_cron_functions_app_1.name
   zone_name           = data.azurerm_private_dns_zone.function_dns.name
   resource_group_name = data.azurerm_private_dns_zone.function_dns.resource_group_name
   ttl                 = 300

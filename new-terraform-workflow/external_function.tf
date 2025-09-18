@@ -1,5 +1,5 @@
 # this is for for the external function
-resource "azurerm_service_plan" "arbit-workflow-application-external-function-app-serviceplan-1" {
+resource "azurerm_service_plan" "arbit_workflow_application_external_function_app_serviceplan_1" {
   name                = "${var.env_region}-arbit-workflow-application-ext-functions-asp"
   location            = azurerm_resource_group.workflow_rg.location
   resource_group_name = azurerm_resource_group.workflow_rg.name
@@ -44,11 +44,11 @@ resource "azurerm_subnet_network_security_group_association" "workflow_external_
   network_security_group_id = azurerm_network_security_group.workflow_external_function_nsg.id
 }
 
-resource "azurerm_linux_function_app" "arbit-workflow-application-ext-function-app" {
+resource "azurerm_linux_function_app" "arbit_workflow_application_ext_function_app" {
   name                = "${var.env_region}-arbit-workflow-application-ext-function-app"
   resource_group_name = azurerm_resource_group.workflow_rg.name
   location            = azurerm_resource_group.workflow_rg.location
-  service_plan_id = azurerm_service_plan.arbit-workflow-application-external-function-app-serviceplan-1.id
+  service_plan_id = azurerm_service_plan.arbit_workflow_application_external_function_app_serviceplan_1.id
 
   # this one should be deveus2workflowextsa meaning it is used by that function
   storage_account_name       = azurerm_storage_account.workflow_storage_account_external_function.name

@@ -1,4 +1,4 @@
-resource "azurerm_redis_cache" "workflow-redis" {
+resource "azurerm_redis_cache" "workflow_redis" {
   capacity                      = 1
   family                        = "C"
   location                      = azurerm_resource_group.workflow_rg.location

@@ -1,6 +1,6 @@
 
 # Define Network Security Group for VM
-resource "azurerm_network_security_group" "arbit-workflow-application-ml-nsg" {
+resource "azurerm_network_security_group" "arbit_workflow_application_ml_nsg" {
   name                = "${var.env_region}-arbit-workflow-application-ml-nsg-1"
   location            = azurerm_resource_group.workflow_rg.location
   resource_group_name = azurerm_resource_group.workflow_rg.name
@@ -55,7 +55,7 @@ resource "azurerm_network_security_group" "arbit-workflow-application-ml-nsg" {
 }
 
 # Define Network Interface
-resource "azurerm_network_interface" "arbit-workflow-application-ml-nic" {
+resource "azurerm_network_interface" "arbit_workflow_application_ml_nic" {
   count               = 2
   name                = "${var.env_region}-arbit-workflow-application-ml-nic-${count.index + 1}"
   location            = azurerm_resource_group.workflow_rg.location
@@ -70,10 +70,10 @@ resource "azurerm_network_interface" "arbit-workflow-application-ml-nic" {
   }
 }
 
-resource "azurerm_network_interface_security_group_association" "workflow-ml-vm-nic-nsg-association" {
+resource "azurerm_network_interface_security_group_association" "workflow_ml_vm_nic_nsg_association" {
   count                     = 2
-  network_interface_id      = azurerm_network_interface.arbit-workflow-application-ml-nic[count.index].id
-  network_security_group_id = azurerm_network_security_group.arbit-workflow-application-ml-nsg.id
+  network_interface_id      = azurerm_network_interface.arbit_workflow_application_ml_nic[count.index].id
+  network_security_group_id = azurerm_network_security_group.arbit_workflow_application_ml_nsg.id
 }
 
 # Define Virtual Machine
@@ -84,7 +84,7 @@ resource "azurerm_linux_virtual_machine" "workflow" {
   location             = azurerm_resource_group.workflow_rg.location
   size                 = "Standard_D2s_v4"
   admin_username       = "adminuser"
-  network_interface_ids = [azurerm_network_interface.arbit-workflow-application-ml-nic[count.index].id]
+  network_interface_ids = [azurerm_network_interface.arbit_workflow_application_ml_nic[count.index].id]
 
   tags = {
     "Environment" = var.environment_label
