@@ -1,0 +1,6 @@
+.venv
+*.tfvars
+.terraform
+.idea
+.tfplan
+*.tfplan
