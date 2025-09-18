@@ -18,9 +18,6 @@ main_vnet           = "stage-eus2-ops-vnet-1"
 function_dns_zone_name           = "privatelink.azurewebsites.net"
 function_dns_resource_group_name = "hub-eus2-vnet-rg-1"
 
-azure_vpn_ipv4         = "10.0.0.0/24"
-sonicwall_vpn_ipv4     = "10.1.0.0/24"
-point_to_site_vpn_ipv4 = "10.2.0.0/24"
 vpns_ipv4 = [
   "10.0.0.0/24",
   "10.1.0.0/24",
@@ -40,26 +37,9 @@ workflow_sqlserver_dbadmin_password = null
 
 ml_virtual_machine_count = 2
 
+# Optional IP allowlists
 briefbuilder_development_vdis = []
-halomd_development_test_vdi   = []
-halomd_brief_avd_vnet_ipv4    = []
 mpower_brief_avd_pool_ipv4    = []
-vdis_ipv4                     = []
-
-builder_ipv4 = ""
-dagster_ipv4 = ""
-
-public_operations_subnet      = ""
-public_gateways_subnet        = ""
-private_asps_subnet           = ""
-private_gateways_subnet       = ""
-private_services_subnet       = ""
-private_powerplatform_subnet  = ""
-private_psql_databases_subnet = ""
-private_dataplatform_subnet   = ""
-private_operations_subnet     = ""
-public_mssql_databases_subnet = ""
-private_databases_subnet      = ""
 
 tags = {
   project = "arbit"
