@@ -24,32 +24,13 @@ module "arbit_workflow" {
   function_dns_zone_name           = var.function_dns_zone_name
   function_dns_resource_group_name = var.function_dns_resource_group_name
 
-  azure_vpn_ipv4         = var.azure_vpn_ipv4
-  sonicwall_vpn_ipv4     = var.sonicwall_vpn_ipv4
-  point_to_site_vpn_ipv4 = var.point_to_site_vpn_ipv4
   vpns_ipv4              = var.vpns_ipv4
-  vdis_ipv4              = var.vdis_ipv4
   mpower_brief_avd_pool_ipv4    = var.mpower_brief_avd_pool_ipv4
   briefbuilder_development_vdis = var.briefbuilder_development_vdis
-  halomd_development_test_vdi   = var.halomd_development_test_vdi
-  halomd_brief_avd_vnet_ipv4    = var.halomd_brief_avd_vnet_ipv4
   monitoring_ipv4        = var.monitoring_ipv4
   octopus_ipv4           = var.octopus_ipv4
-  builder_ipv4           = var.builder_ipv4
-  dagster_ipv4           = var.dagster_ipv4
 
-  public_operations_subnet      = var.public_operations_subnet
-  public_gateways_subnet        = var.public_gateways_subnet
-  private_asps_subnet           = var.private_asps_subnet
-  private_gateways_subnet       = var.private_gateways_subnet
   private_applications_subnet   = var.private_applications_subnet
-  private_services_subnet       = var.private_services_subnet
-  private_powerplatform_subnet  = var.private_powerplatform_subnet
-  private_psql_databases_subnet = var.private_psql_databases_subnet
-  private_dataplatform_subnet   = var.private_dataplatform_subnet
-  private_operations_subnet     = var.private_operations_subnet
-  public_mssql_databases_subnet = var.public_mssql_databases_subnet
-  private_databases_subnet      = var.private_databases_subnet
 
   workflow_storage_account_docs              = var.workflow_storage_account_docs
   workflow_storage_account_cron_function     = var.workflow_storage_account_cron_function

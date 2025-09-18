@@ -79,32 +79,8 @@ variable "function_dns_resource_group_name" {
   type        = string
 }
 
-variable "azure_vpn_ipv4" {
-  description = "Azure VPN IPv4 CIDR block."
-  type        = string
-  default     = ""
-}
-
-variable "sonicwall_vpn_ipv4" {
-  description = "SonicWall VPN IPv4 CIDR block."
-  type        = string
-  default     = ""
-}
-
-variable "point_to_site_vpn_ipv4" {
-  description = "Point-to-site VPN IPv4 CIDR block."
-  type        = string
-  default     = ""
-}
-
 variable "vpns_ipv4" {
   description = "List of VPN IPv4 CIDR blocks allowed through network security rules."
-  type        = list(string)
-  default     = []
-}
-
-variable "vdis_ipv4" {
-  description = "List of VDI IPv4 CIDR blocks."
   type        = list(string)
   default     = []
 }
@@ -121,18 +97,6 @@ variable "briefbuilder_development_vdis" {
   default     = []
 }
 
-variable "halomd_development_test_vdi" {
-  description = "HaloMD development/test VDI IPv4 ranges."
-  type        = list(string)
-  default     = []
-}
-
-variable "halomd_brief_avd_vnet_ipv4" {
-  description = "HaloMD brief AVD virtual network IPv4 ranges."
-  type        = list(string)
-  default     = []
-}
-
 variable "monitoring_ipv4" {
   description = "Prometheus monitoring IPv4 CIDR block."
   type        = string
@@ -143,87 +107,9 @@ variable "octopus_ipv4" {
   type        = string
 }
 
-variable "builder_ipv4" {
-  description = "Builder IPv4 address."
-  type        = string
-  default     = ""
-}
-
-variable "dagster_ipv4" {
-  description = "Dagster IPv4 address."
-  type        = string
-  default     = ""
-}
-
-variable "public_operations_subnet" {
-  description = "Public operations subnet prefix."
-  type        = string
-  default     = ""
-}
-
-variable "public_gateways_subnet" {
-  description = "Public gateways subnet prefix."
-  type        = string
-  default     = ""
-}
-
-variable "private_asps_subnet" {
-  description = "Private ASPs subnet prefix."
-  type        = string
-  default     = ""
-}
-
-variable "private_gateways_subnet" {
-  description = "Private gateways subnet prefix."
-  type        = string
-  default     = ""
-}
-
 variable "private_applications_subnet" {
   description = "Private applications subnet prefix used for ML VMs."
   type        = string
-}
-
-variable "private_services_subnet" {
-  description = "Private services subnet prefix."
-  type        = string
-  default     = ""
-}
-
-variable "private_powerplatform_subnet" {
-  description = "Private Power Platform subnet prefix."
-  type        = string
-  default     = ""
-}
-
-variable "private_psql_databases_subnet" {
-  description = "Private PostgreSQL databases subnet prefix."
-  type        = string
-  default     = ""
-}
-
-variable "private_dataplatform_subnet" {
-  description = "Private data platform subnet prefix."
-  type        = string
-  default     = ""
-}
-
-variable "private_operations_subnet" {
-  description = "Private operations subnet prefix."
-  type        = string
-  default     = ""
-}
-
-variable "public_mssql_databases_subnet" {
-  description = "Public MSSQL subnet prefix."
-  type        = string
-  default     = ""
-}
-
-variable "private_databases_subnet" {
-  description = "Private databases subnet prefix."
-  type        = string
-  default     = ""
 }
 
 variable "workflow_storage_account_docs" {
