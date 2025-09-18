@@ -24,13 +24,13 @@ module "arbit_workflow" {
   function_dns_zone_name           = var.function_dns_zone_name
   function_dns_resource_group_name = var.function_dns_resource_group_name
 
-  vpns_ipv4              = var.vpns_ipv4
+  vpns_ipv4                     = var.vpns_ipv4
   mpower_brief_avd_pool_ipv4    = var.mpower_brief_avd_pool_ipv4
   briefbuilder_development_vdis = var.briefbuilder_development_vdis
-  monitoring_ipv4        = var.monitoring_ipv4
-  octopus_ipv4           = var.octopus_ipv4
+  monitoring_ipv4               = var.monitoring_ipv4
+  octopus_ipv4                  = var.octopus_ipv4
 
-  private_applications_subnet   = var.private_applications_subnet
+  private_applications_subnet = var.private_applications_subnet
 
   workflow_storage_account_docs              = var.workflow_storage_account_docs
   workflow_storage_account_cron_function     = var.workflow_storage_account_cron_function

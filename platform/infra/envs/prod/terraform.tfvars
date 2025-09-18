@@ -37,6 +37,7 @@ workflow_sqlserver_dbadmin_password = null
 
 ml_virtual_machine_count = 2
 
+# Optional IP allowlists
 briefbuilder_development_vdis = []
 mpower_brief_avd_pool_ipv4    = []
 
