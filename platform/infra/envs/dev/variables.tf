@@ -1,454 +1,290 @@
-# -------------------------
-# Global
-# -------------------------
-variable "location" {
-  description = "Azure region for resource deployment."
-  type        = string
-}
-
-variable "env_name" {
-  description = "Environment name (e.g. dev, stage, prod)."
-  type        = string
-}
-
 variable "project_name" {
   description = "Project or application identifier used for naming."
   type        = string
 }
 
-variable "subscription_id" {
-  description = "Azure subscription ID. If null, ensure downstream modules handle this gracefully or require explicit assignment."
+variable "env_name" {
+  description = "Environment name (e.g. dev, qa, stage, prod)."
   type        = string
-  default     = ""
+}
+
+variable "tags" {
+  description = "Tags applied to all workflow resources."
+  type        = map(string)
+}
+
+variable "subscription_id" {
+  description = "Azure subscription ID hosting the workflow workload."
+  type        = string
+}
+
+variable "hub_subscription_id" {
+  description = "Subscription ID for the networking hub where private DNS zones live."
+  type        = string
 }
 
 variable "tenant_id" {
-  description = "Azure tenant ID. If null, ensure downstream modules handle this gracefully or require explicit assignment."
+  description = "Azure tenant ID used for authentication."
   type        = string
   default     = ""
 }
 
-variable "kv_cicd_principal_id" {
-  description = "Object ID of the CI/CD principal that should have Key Vault access."
+variable "environment" {
+  description = "Environment identifier passed to the workflow module."
+  type        = string
+}
+
+variable "environment_label" {
+  description = "Human friendly environment label used for tagging."
+  type        = string
+}
+
+variable "region" {
+  description = "Azure region where resources are deployed."
+  type        = string
+}
+
+variable "env_region" {
+  description = "Composite environment/region string (e.g. dev-eus2)."
+  type        = string
+}
+
+variable "region_short" {
+  description = "Short region code (e.g. eus2)."
+  type        = string
+}
+
+variable "ipv4_prefix" {
+  description = "IPv4 prefix used for static addressing."
+  type        = string
+}
+
+variable "vnet_resource_group" {
+  description = "Resource group containing the shared virtual network."
+  type        = string
+}
+
+variable "main_vnet" {
+  description = "Name of the shared virtual network hosting workflow subnets."
+  type        = string
+}
+
+variable "function_dns_zone_name" {
+  description = "Private DNS zone name for Azure Web Apps."
+  type        = string
+}
+
+variable "function_dns_resource_group_name" {
+  description = "Resource group containing the private DNS zone."
+  type        = string
+}
+
+variable "azure_vpn_ipv4" {
+  description = "Azure VPN IPv4 CIDR block."
   type        = string
   default     = ""
 }
 
-# -------------------------
-# Feature toggles
-# -------------------------
-variable "enable_acr" {
-  description = "Flag to enable Azure Container Registry provisioning."
-  type        = bool
-  default     = false
-}
-
-variable "enable_sql" {
-  description = "Flag to deploy the SQL Serverless resources."
-  type        = bool
-  default     = false
-}
-
-variable "kv_public_network_access" {
-  description = "Allow public network access to the Key Vault."
-  type        = bool
-  default     = true
-}
-
-variable "app_service_primary_database_connection_string" {
-  description = "Primary database connection string for the web App Service (stored in Key Vault)."
+variable "sonicwall_vpn_ipv4" {
+  description = "SonicWall VPN IPv4 CIDR block."
   type        = string
   default     = ""
-  sensitive   = true
 }
 
-variable "arbitration_primary_connection_string" {
-  description = "Primary arbitration SQL connection string stored in Key Vault."
+variable "point_to_site_vpn_ipv4" {
+  description = "Point-to-site VPN IPv4 CIDR block."
   type        = string
   default     = ""
-  sensitive   = true
 }
 
-variable "arbitration_idr_connection_string" {
-  description = "IDR arbitration SQL connection string stored in Key Vault."
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "arbitration_storage_connection_string" {
-  description = "Storage connection string consumed by the arbitration workload."
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "kv_additional_secrets" {
-  description = "Additional secrets to populate in the Key Vault (name => value)."
-  type        = map(string)
-  default     = {}
-  sensitive   = true
-}
-
-# -------------------------
-# Networking
-# -------------------------
-variable "vnet_address_space" {
-  description = "Address space assigned to the virtual network."
-  type        = list(string)
-}
-
-variable "vnet_dns_servers" {
-  description = "Optional custom DNS servers applied to the virtual network. Set to an empty list to disable custom DNS."
+variable "vpns_ipv4" {
+  description = "List of VPN IPv4 CIDR blocks allowed through network security rules."
   type        = list(string)
   default     = []
 }
 
-variable "subnets" {
-  description = <<EOT
-Map of subnet definitions keyed by subnet name.
-Example:
-{
-  "app" = {
-    address_prefixes  = ["10.0.1.0/24"]
-    service_endpoints = ["Microsoft.Sql"]
-    delegations = [
-      {
-        name = "delegation1"
-        service_delegation = {
-          name    = "Microsoft.Web/serverFarms"
-          actions = ["Microsoft.Network/virtualNetworks/subnets/action"]
-        }
-      }
-    ]
-  }
-}
-EOT
-  type = map(object({
-    address_prefixes  = list(string)
-    service_endpoints = optional(list(string), [])
-    delegations = optional(list(object({
-      name = string
-      service_delegation = object({
-        name    = string
-        actions = list(string)
-      })
-    })), [])
-  }))
-}
-
-variable "app_gateway_subnet_key" {
-  description = "Key referencing the subnet in the 'subnets' variable to be used for the Application Gateway."
-  type        = string
-}
-
-# -------------------------
-# Application Gateway
-# -------------------------
-variable "app_gateway_fqdn_prefix" {
-  description = "Domain name label for the Application Gateway public IP."
-  type        = string
-}
-
-variable "app_gateway_backend_fqdns" {
-  description = "Additional backend FQDNs joined to the App Gateway pool."
+variable "vdis_ipv4" {
+  description = "List of VDI IPv4 CIDR blocks."
   type        = list(string)
   default     = []
 }
 
-variable "app_gateway_backend_port" {
-  description = "Backend port used by the Application Gateway."
-  type        = number
-  default     = 80
+variable "mpower_brief_avd_pool_ipv4" {
+  description = "MPOWER brief AVD pool IPv4 CIDR ranges."
+  type        = list(string)
+  default     = []
 }
 
-variable "app_gateway_frontend_port" {
-  description = "Frontend port exposed by the Application Gateway."
-  type        = number
-  default     = 80
+variable "briefbuilder_development_vdis" {
+  description = "Briefbuilder development VDI IPv4 ranges."
+  type        = list(string)
+  default     = []
 }
 
-variable "app_gateway_listener_protocol" {
-  description = "Protocol for the default listener."
-  type        = string
-  default     = "Http"
+variable "halomd_development_test_vdi" {
+  description = "HaloMD development/test VDI IPv4 ranges."
+  type        = list(string)
+  default     = []
 }
 
-variable "app_gateway_sku_name" {
-  description = "Application Gateway SKU name."
-  type        = string
-  default     = "Standard_v2"
+variable "halomd_brief_avd_vnet_ipv4" {
+  description = "HaloMD brief AVD virtual network IPv4 ranges."
+  type        = list(string)
+  default     = []
 }
 
-variable "app_gateway_sku_tier" {
-  description = "Application Gateway SKU tier."
-  type        = string
-  default     = "Standard_v2"
-}
-
-variable "app_gateway_capacity" {
-  description = "Application Gateway capacity units."
-  type        = number
-  default     = 1
-}
-
-variable "app_gateway_enable_http2" {
-  description = "Enable HTTP/2 on the Application Gateway listener."
-  type        = bool
-  default     = true
-}
-
-variable "app_gateway_pick_host_name" {
-  description = "Use backend address host names for the host header."
-  type        = bool
-  default     = true
-}
-
-# -------------------------
-# App Service
-# -------------------------
-variable "app_service_plan_sku" {
-  description = "SKU used for the App Service plan. Example: 'S1', 'P1v2', 'B1'."
+variable "monitoring_ipv4" {
+  description = "Prometheus monitoring IPv4 CIDR block."
   type        = string
 }
 
-variable "app_service_plan_os_type" {
-  description = "Operating system for the App Service plan."
-  type        = string
-  default     = "Windows"
-}
-
-variable "app_service_fqdn_prefix" {
-  description = "Name of the App Service (also the default FQDN prefix)."
+variable "octopus_ipv4" {
+  description = "Octopus Deploy IPv4 address."
   type        = string
 }
 
-variable "app_service_https_only" {
-  description = "Force HTTPS traffic only."
-  type        = bool
-  default     = true
-}
-
-variable "app_service_always_on" {
-  description = "Keep the App Service always on."
-  type        = bool
-  default     = true
-}
-
-variable "app_service_app_settings" {
-  description = "Application settings applied to the App Service."
-  type        = map(string)
-  default     = {}
-}
-
-variable "app_service_connection_strings" {
-  description = "Connection strings applied to the App Service."
-  type = map(object({
-    type  = string
-    value = string
-  }))
-  default = {}
-}
-
-# -------------------------
-# Monitoring
-# -------------------------
-variable "app_insights_resource_group_name" {
-  description = "Optional resource group where Application Insights resources are created."
-  type        = string
-  default     = null
-}
-
-variable "app_insights_name" {
-  description = "Optional name override for the Application Insights resource."
+variable "builder_ipv4" {
+  description = "Builder IPv4 address."
   type        = string
   default     = ""
 }
 
-variable "log_analytics_workspace_name" {
-  description = "Name of Log Analytics workspace. Example: 'halomd-dev-law'"
-  type        = string
-}
-
-variable "application_insights_name" {
-  description = "Name of Application Insights resource. Example: 'my-app-insights'"
-  type        = string
-}
-
-# -------------------------
-# DNS
-# -------------------------
-variable "dns_zone_name" {
-  description = "DNS zone managed within the environment."
-  type        = string
-  default     = "az.halomd.com"
-}
-
-variable "dns_a_records" {
-  description = "DNS A records managed by Terraform."
-  type = map(object({
-    ttl     = number
-    records = list(string)
-  }))
-  default = {}
-}
-
-variable "dns_cname_records" {
-  description = "DNS CNAME records managed by Terraform."
-  type = map(object({
-    ttl    = number
-    record = string
-  }))
-  default = {}
-}
-
-# -------------------------
-# SQL
-# -------------------------
-variable "sql_database_name" {
-  description = "Optional SQL database name override."
+variable "dagster_ipv4" {
+  description = "Dagster IPv4 address."
   type        = string
   default     = ""
 }
 
-variable "sql_sku_name" {
-  description = "SKU for the serverless SQL database. Example: 'GP_S_Gen5_2'."
+variable "public_operations_subnet" {
+  description = "Public operations subnet prefix."
+  type        = string
+  default     = ""
+}
+
+variable "public_gateways_subnet" {
+  description = "Public gateways subnet prefix."
+  type        = string
+  default     = ""
+}
+
+variable "private_asps_subnet" {
+  description = "Private ASPs subnet prefix."
+  type        = string
+  default     = ""
+}
+
+variable "private_gateways_subnet" {
+  description = "Private gateways subnet prefix."
+  type        = string
+  default     = ""
+}
+
+variable "private_applications_subnet" {
+  description = "Private applications subnet prefix used for ML VMs."
   type        = string
 }
 
-variable "sql_max_size_gb" {
-  description = "Maximum size of the SQL database in GB."
-  type        = number
-  default     = 75
-}
-
-variable "sql_auto_pause_delay" {
-  description = "Auto pause delay for the SQL database."
-  type        = number
-  default     = 60
-}
-
-variable "sql_min_capacity" {
-  description = "Minimum vCore capacity for the SQL database."
-  type        = number
-  default     = 0.5
-}
-
-variable "sql_max_capacity" {
-  description = "Maximum vCore capacity for the SQL database."
-  type        = number
-  default     = 4
-}
-
-variable "sql_read_scale" {
-  description = "Enable read scale-out on the SQL database."
-  type        = bool
-  default     = false
-}
-
-variable "sql_zone_redundant" {
-  description = "Enable zone redundancy on the SQL database."
-  type        = bool
-  default     = false
-}
-
-variable "sql_collation" {
-  description = "Collation applied to the SQL database."
+variable "private_services_subnet" {
+  description = "Private services subnet prefix."
   type        = string
-  default     = "SQL_Latin1_General_CP1_CI_AS"
+  default     = ""
 }
 
-variable "sql_minimum_tls_version" {
-  description = "Minimum TLS version enforced on the SQL server."
+variable "private_powerplatform_subnet" {
+  description = "Private Power Platform subnet prefix."
   type        = string
-  default     = "1.2"
+  default     = ""
 }
 
-variable "sql_public_network_access" {
-  description = "Allow public network access to the SQL server."
-  type        = bool
-  default     = true
-}
-
-variable "sql_firewall_rules" {
-  description = "Firewall rules applied to the SQL server."
-  type = list(object({
-    name             = string
-    start_ip_address = string
-    end_ip_address   = string
-  }))
-  default = []
-}
-
-variable "sql_admin_login" {
-  description = "Administrator login for the SQL server."
+variable "private_psql_databases_subnet" {
+  description = "Private PostgreSQL databases subnet prefix."
   type        = string
-  default     = null
+  default     = ""
 }
 
-variable "sql_admin_password" {
-  description = "Administrator password for the SQL server. Provide this securely via environment variable or Key Vault."
+variable "private_dataplatform_subnet" {
+  description = "Private data platform subnet prefix."
+  type        = string
+  default     = ""
+}
+
+variable "private_operations_subnet" {
+  description = "Private operations subnet prefix."
+  type        = string
+  default     = ""
+}
+
+variable "public_mssql_databases_subnet" {
+  description = "Public MSSQL subnet prefix."
+  type        = string
+  default     = ""
+}
+
+variable "private_databases_subnet" {
+  description = "Private databases subnet prefix."
+  type        = string
+  default     = ""
+}
+
+variable "workflow_storage_account_docs" {
+  description = "Storage account name for workflow documentation assets."
+  type        = string
+}
+
+variable "workflow_storage_account_cron_function" {
+  description = "Storage account name backing the cron function app."
+  type        = string
+}
+
+variable "workflow_storage_account_external_function" {
+  description = "Storage account name backing the external function app."
+  type        = string
+}
+
+variable "workflow_sqlserver_administrator_login" {
+  description = "SQL administrator login name for the workflow server."
+  type        = string
+  default     = "dbadmin"
+}
+
+variable "workflow_sqlserver_dbadmin_password" {
+  description = "SQL administrator password for the workflow server."
   type        = string
   sensitive   = true
-  default     = null
 }
 
-# -------------------------
-# Arbitration
-# -------------------------
-variable "arbitration_storage_container_name" {
-  description = "Name of the blob container used by the arbitration workload."
+variable "sql_ad_admin_login_username" {
+  description = "Azure AD admin login username for SQL."
   type        = string
+  default     = "SQL Admins"
 }
 
-variable "arbitration_plan_sku" {
-  description = "SKU for the arbitration App Service plan."
+variable "sql_ad_admin_object_id" {
+  description = "Azure AD admin object ID for SQL."
   type        = string
-  default     = null
+  default     = "b846eec0-b0b9-40d4-a1e3-2fbaa8e83905"
 }
 
-variable "arbitration_runtime_stack" {
-  description = "Runtime stack used by the arbitration App Service."
+variable "sql_ad_admin_tenant_id" {
+  description = "Tenant ID used for the Azure AD SQL administrator."
   type        = string
-  default     = null
+  default     = "70750cc4-6f21-4c27-bb0e-8b7e66bcb2dd"
 }
 
-variable "arbitration_runtime_version" {
-  description = "Runtime version for the arbitration App Service."
+variable "ml_virtual_machine_count" {
+  description = "Number of ML virtual machines to provision."
+  type        = number
+  default     = 2
+}
+
+variable "ml_virtual_machine_size" {
+  description = "Size of the ML virtual machines."
   type        = string
-  default     = null
+  default     = "Standard_D2s_v4"
 }
 
-variable "arbitration_app_settings" {
-  description = "App settings applied to the arbitration App Service."
-  type        = map(string)
-  default     = {}
-}
-
-variable "arbitration_connection_strings" {
-  description = "Connection strings for arbitration app service"
-  type = list(object({
-    name  = string
-    type  = string
-    value = string
-  }))
-  default = []
-}
-
-# -------------------------
-# Tags
-# -------------------------
-variable "tags" {
-  description = "Tags to apply to resources. Example: { environment = \"dev\", owner = \"team-x\" }"
-  type        = map(string)
-  default     = {}
-}
-
-# -------------------------
-# Plan SKU (Generic)
-# -------------------------
-variable "plan_sku" {
-  description = "SKU for the App Service plan"
+variable "ml_virtual_machine_admin_username" {
+  description = "Admin username for the ML virtual machines."
   type        = string
-  default     = "B1"
+  default     = "adminuser"
 }
