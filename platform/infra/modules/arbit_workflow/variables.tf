@@ -44,33 +44,9 @@ variable "ipv4_prefix" {
   description = "IPv4 prefix used when deriving static addresses."
 }
 
-variable "azure_vpn_ipv4" {
-  type        = string
-  description = "Azure VPN IPv4 CIDR block."
-  default     = ""
-}
-
-variable "sonicwall_vpn_ipv4" {
-  type        = string
-  description = "SonicWall VPN IPv4 CIDR block."
-  default     = ""
-}
-
-variable "point_to_site_vpn_ipv4" {
-  type        = string
-  description = "Point-to-site VPN IPv4 CIDR block."
-  default     = ""
-}
-
 variable "vpns_ipv4" {
   type        = list(string)
   description = "List of VPN IPv4 CIDR blocks allowed through NSGs."
-}
-
-variable "vdis_ipv4" {
-  type        = list(string)
-  description = "List of VDI IPv4 CIDR blocks."
-  default     = []
 }
 
 variable "mpower_brief_avd_pool_ipv4" {
@@ -85,18 +61,6 @@ variable "briefbuilder_development_vdis" {
   default     = []
 }
 
-variable "halomd_development_test_vdi" {
-  type        = list(string)
-  description = "HaloMD development/test VDI IPv4 ranges."
-  default     = []
-}
-
-variable "halomd_brief_avd_vnet_ipv4" {
-  type        = list(string)
-  description = "HaloMD brief AVD VNet IPv4 ranges."
-  default     = []
-}
-
 variable "monitoring_ipv4" {
   type        = string
   description = "Prometheus monitoring IPv4 CIDR block."
@@ -107,87 +71,9 @@ variable "octopus_ipv4" {
   description = "Octopus deploy IPv4 address."
 }
 
-variable "builder_ipv4" {
-  type        = string
-  description = "Builder IPv4 address."
-  default     = ""
-}
-
-variable "dagster_ipv4" {
-  type        = string
-  description = "Dagster IPv4 address."
-  default     = ""
-}
-
-variable "public_operations_subnet" {
-  type        = string
-  description = "Public operations subnet prefix."
-  default     = ""
-}
-
-variable "public_gateways_subnet" {
-  type        = string
-  description = "Public gateways subnet prefix."
-  default     = ""
-}
-
-variable "private_asps_subnet" {
-  type        = string
-  description = "Private ASPs subnet prefix."
-  default     = ""
-}
-
-variable "private_gateways_subnet" {
-  type        = string
-  description = "Private gateways subnet prefix."
-  default     = ""
-}
-
 variable "private_applications_subnet" {
   type        = string
   description = "Private applications subnet prefix used for ML VMs."
-}
-
-variable "private_services_subnet" {
-  type        = string
-  description = "Private services subnet prefix."
-  default     = ""
-}
-
-variable "private_powerplatform_subnet" {
-  type        = string
-  description = "Private Power Platform subnet prefix."
-  default     = ""
-}
-
-variable "private_psql_databases_subnet" {
-  type        = string
-  description = "Private PostgreSQL databases subnet prefix."
-  default     = ""
-}
-
-variable "private_dataplatform_subnet" {
-  type        = string
-  description = "Private data platform subnet prefix."
-  default     = ""
-}
-
-variable "private_operations_subnet" {
-  type        = string
-  description = "Private operations subnet prefix."
-  default     = ""
-}
-
-variable "public_mssql_databases_subnet" {
-  type        = string
-  description = "Public MSSQL subnet prefix."
-  default     = ""
-}
-
-variable "private_databases_subnet" {
-  type        = string
-  description = "Private databases subnet prefix."
-  default     = ""
 }
 
 variable "subscription_id" {
