@@ -29,7 +29,8 @@ module "arbit_workflow" {
   briefbuilder_development_vdis = var.briefbuilder_development_vdis
   monitoring_ipv4               = var.monitoring_ipv4
   octopus_ipv4                  = var.octopus_ipv4
-  private_applications_subnet   = var.private_applications_subnet
+
+  private_applications_subnet = var.private_applications_subnet
 
   workflow_storage_account_docs              = var.workflow_storage_account_docs
   workflow_storage_account_cron_function     = var.workflow_storage_account_cron_function
