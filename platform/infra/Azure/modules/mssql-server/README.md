@@ -1,37 +1,14 @@
 # mssql-server module
 
-Provisions an Azure SQL (MSSQL) server instance.
+Provision an Azure SQL Server instance that supports either SQL authentication or Azure AD administration.
 
 ## Inputs
 
 - `name` (`string`, required) – Name of the SQL server resource.
-- `location` (`string`, required) – Azure region where the server will be deployed.
-- `resource_group_name` (`string`, required) – Resource group that hosts the server.
-- `administrator_login` (`string`, required) – Login name for the SQL administrator account.
-- `administrator_password` (`string`, required, sensitive) – Password for the SQL administrator account. Store this value securely (for example in Key Vault or a secret store) and pass it to Terraform as a sensitive variable.
-- `sku` (`string`, optional) – SKU for the SQL server. Defaults to `Standard`.
-- `tags` (`map(string)`, optional) – Tags to apply to the SQL server resource.
+- `location` (`string`, required) – Azure region where the server is deployed.
+- `resource_group_name` (`string`, required) – Resource group that will contain the server.
+- `admin_login` (`string`, optional) – SQL administrator login to provision. Must be provided together with `admin_password` when using SQL authentication.
+- `admin_password` (`string`, optional) – SQL administrator password to provision. Must be provided together with `admin_login` when using SQL authentication.
+- `azuread_administrator` (`object`, optional) – Azure AD administrator settings for the server. When supplied, it must include `login_username` and `object_id`, and it can optionally include `tenant_id`.
 
-### Example
-
-```hcl
-module "mssql_server" {
-  source = "../modules/mssql-server"
-
-  name                = "sql-prod-01"
-  location            = "eastus2"
-  resource_group_name = azurerm_resource_group.example.name
-
-  administrator_login    = "sqladminuser"
-  administrator_password = var.sql_admin_password
-
-  tags = {
-    Environment = "production"
-  }
-}
-
-variable "sql_admin_password" {
-  type      = string
-  sensitive = true
-}
-```
+Either the SQL administrator credentials (`admin_login` and `admin_password`) or an `azuread_administrator` block must be provided to satisfy Azure API requirements.

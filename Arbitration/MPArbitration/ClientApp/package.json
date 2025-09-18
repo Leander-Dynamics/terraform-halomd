@@ -1,22 +1,19 @@
 {
   "name": "mparbitration",
   "version": "2024.9.0",
-  "engines": {
-    "node": ">=18 <19",
-    "npm": ">=9"
-  },
   "scripts": {
     "ng": "ng",
     "prestart": "node aspnetcore-https",
     "start": "run-script-os",
     "start:windows": "ng serve --port 44473 --ssl --ssl-cert %APPDATA%\\ASP.NET\\https\\%npm_package_name%.pem --ssl-key %APPDATA%\\ASP.NET\\https\\%npm_package_name%.key",
     "start:default": "ng serve --port 44473 --ssl --ssl-cert $HOME/.aspnet/https/${npm_package_name}.pem --ssl-key $HOME/.aspnet/https/${npm_package_name}.key",
+    "prebuild": "npm --no-git-tag-version version patch",
     "build": "ng build",
     "build-stage": "ng build --prod=false --configuration stage",
     "build-dev": "ng build --prod=false --configuration dev",
     "build:ssr": "ng run MPArbitration:server:dev",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test --watch=false --browsers=ChromeHeadless"
+    "test": "ng test"
   },
   "private": true,
   "dependencies": {

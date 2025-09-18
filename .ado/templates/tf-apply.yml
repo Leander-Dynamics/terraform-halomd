@@ -64,15 +64,9 @@ jobs:
               cd platform/infra/envs/${{ parameters.envName }}
 
               # Init backend (reconfigure ensures the local .terraform matches this backend)
-              declare -a BACKEND_CONFIG_ARGS=(-backend-config=backend.tfvars)
-              if [[ -n "${AZ_SUBSCRIPTION_ID:-}" ]]; then
-                BACKEND_CONFIG_ARGS+=(-backend-config="subscription_id=${AZ_SUBSCRIPTION_ID}")
-              fi
-              if [[ -n "${AZ_TENANT_ID:-}" ]]; then
-                BACKEND_CONFIG_ARGS+=(-backend-config="tenant_id=${AZ_TENANT_ID}")
-              fi
-
-              terraform init -reconfigure "${BACKEND_CONFIG_ARGS[@]}" -lock-timeout='${{ parameters.lockTimeout }}'
+              terraform init -reconfigure \
+                -backend-config=backend.tfvars \
+                -lock-timeout='${{ parameters.lockTimeout }}'
 
               # Apply the previously generated plan file (NO extra '.' at the end)
               terraform apply -input=false -auto-approve \

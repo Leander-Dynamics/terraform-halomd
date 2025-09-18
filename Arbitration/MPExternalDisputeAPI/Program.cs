@@ -1,3 +1,5 @@
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Azure.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
@@ -13,12 +15,17 @@ internal class Program
 {
     private static void Main(string[] args)
     {
-        const string corsPolicyName = "CorsPolicy";
-
         var builder = WebApplication.CreateBuilder(args);
-        SecureConfigurationHelper.ConfigureKeyVault(builder);
         // The following line enables Application Insights telemetry collection.
 //        builder.Services.AddApplicationInsightsTelemetry();
+
+        var keyVaultUri = builder.Configuration["KeyVault:Uri"] ?? builder.Configuration["KeyVaultUri"];
+        if (!string.IsNullOrWhiteSpace(keyVaultUri))
+        {
+            var credential = new DefaultAzureCredential();
+            builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUri), credential);
+        }
+
         var configuration = builder.Configuration;
         // increase file upload size to handle the benchmark files
         // https://bartwullems.blogspot.com/2022/01/aspnet-core-configure-file-upload-size.html
@@ -39,16 +46,6 @@ internal class Program
             o.BufferBody = true;
             o.ValueCountLimit = int.MaxValue;
         });
-        builder.Services.AddCors(options =>
-        {
-            options.AddPolicy(corsPolicyName, policy =>
-            {
-                policy.AllowAnyOrigin();
-                policy.AllowAnyMethod();
-                policy.AllowAnyHeader();
-            });
-        });
-
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
         builder.Services.AddSwaggerGen(opt =>
@@ -119,10 +116,10 @@ internal class Program
 
         builder.Services.AddTransient<IImportDataSynchronizer, ImportDataSynchronizer>();
 
-        var arbitrationConnectionString = SecureConfigurationHelper.GetRequiredSqlConnectionString(configuration, "ConnStr");
+        var cs = configuration.GetConnectionString("ConnStr");
         builder.Services.AddDbContext<ArbitrationDbContext>(options =>
         {
-            options.UseSqlServer(arbitrationConnectionString, sqlServerOptionsAction: sqlOptions =>
+            options.UseSqlServer(cs, sqlServerOptionsAction: sqlOptions =>
             {
                 sqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
@@ -131,10 +128,10 @@ internal class Program
             });
         });
 
-        var idrConnectionString = SecureConfigurationHelper.GetRequiredSqlConnectionString(configuration, "IDRConnStr");
+        var idr_cs = configuration.GetConnectionString("IDRConnStr");
         builder.Services.AddDbContext<DisputeIdrDbContext>(options =>
         {
-            options.UseSqlServer(idrConnectionString, sqlServerOptionsAction: sqlOptions =>
+            options.UseSqlServer(idr_cs, sqlServerOptionsAction: sqlOptions =>
             {
                 sqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
@@ -142,8 +139,6 @@ internal class Program
                     errorNumbersToAdd: null);
             });
         });
-
-        SecureConfigurationHelper.EnsureApiKeyConfigured(configuration);
 
         //------------------- BUILD AND USE MIDDLEWARE ----------------------------------------------
         var app = builder.Build();
@@ -161,7 +156,7 @@ internal class Program
             app.UseHsts();
         }
         app.MapSwagger().RequireAuthorization();
-        app.UseCors(corsPolicyName);
+        app.UseCors();
         app.UseHttpsRedirection();
         app.UseStaticFiles();
         app.UseRouting();

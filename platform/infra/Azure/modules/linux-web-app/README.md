@@ -12,13 +12,7 @@ module "web_app" {
   location            = "eastus"
   resource_group_name = azurerm_resource_group.example.name
   service_plan_id     = azurerm_service_plan.example.id
-
-  tags = {
-    Environment = "dev"
-  }
 }
 ```
 
 Pass the `service_plan_id` for the plan that should host the app.
-
-`tags` is optional and lets you add Azure resource tags when needed.

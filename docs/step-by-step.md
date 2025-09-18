@@ -3,4 +3,4 @@
 2) Create ADO Environments: `dev`, `qa`, `stage`, `prod` (add approvals for stage/prod).
 3) Ensure `backend.tfvars` in each env points to your tfstate and `use_azuread_auth = true`.
 4) Import pipeline: `azure-pipelines.yml`.
-5) Open a PR to test plans; merge to apply Dev and QA; approve for stage/prod.
+5) Open a PR to test plans; merge to apply Dev & QA; approve for stage/prod.

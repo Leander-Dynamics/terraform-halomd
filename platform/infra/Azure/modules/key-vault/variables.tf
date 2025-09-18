@@ -1,6 +1,15 @@
-variable "name"                { type = string }
-variable "resource_group_name" { type = string }
-variable "location"            { type = string }
+variable "name" {
+  type = string
+}
+
+variable "resource_group_name" {
+  type = string
+}
+
+variable "location" {
+  type = string
+}
+
 variable "tags" {
   type    = map(string)
   default = {}
@@ -11,22 +20,28 @@ variable "public_network_access_enabled" {
   default = true
 }
 
-variable "network_acls" {
-  description = "Optional network ACL configuration applied to the Key Vault."
-  type = object({
-    bypass                     = optional(string)
-    default_action             = optional(string)
-    ip_rules                   = optional(list(string))
-    virtual_network_subnet_ids = optional(list(string))
-  })
-  default = null
+variable "enable_rbac_authorization" {
+  type    = bool
+  default = true
 }
 
-variable "private_endpoints" {
-  description = "Private endpoint definitions associated with the Key Vault for network ACL augmentation."
-  type = list(object({
-    id        = optional(string)
-    subnet_id = optional(string)
+variable "secrets" {
+  description = "Map of secrets to populate in the Key Vault."
+  type = map(object({
+    value        = string
+    content_type = optional(string)
+    tags         = optional(map(string))
   }))
-  default = []
+  default   = {}
+  sensitive = true
+}
+
+variable "rbac_assignments" {
+  description = "Map of RBAC assignments to create for the Key Vault scope."
+  type = map(object({
+    principal_id         = string
+    role_definition_id   = optional(string)
+    role_definition_name = optional(string)
+  }))
+  default = {}
 }

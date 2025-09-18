@@ -44,10 +44,12 @@ Create these **Pipeline variables** (Project → Pipelines → Library → Varia
 
 ### Per environment (non‑secret)
 - `KV_NAME_DEV` = `kv-arbit-dev`
+- `KV_NAME_QA` = `kv-arbit-qa`
 - `KV_NAME_STAGE` = `kv-arbit-stage`
 - `KV_NAME_PROD` = `kv-arbit-prod`
 
-- `AKV_ENABLE_DYNAMIC_IP_DEV`   = `true`|`false`  
+- `AKV_ENABLE_DYNAMIC_IP_DEV`   = `true`|`false`
+- `AKV_ENABLE_DYNAMIC_IP_QA`    = `true`|`false`
 - `AKV_ENABLE_DYNAMIC_IP_STAGE` = `false` (recommended false for higher envs)
 - `AKV_ENABLE_DYNAMIC_IP_PROD`  = `false` (recommended false for prod)
 
@@ -55,6 +57,7 @@ Create these **Pipeline variables** (Project → Pipelines → Library → Varia
 
 ### Optional (for Terraform-managed RBAC)
 - `KV_CICD_PRINCIPAL_ID_DEV` = `<object id of dev service connection principal>`
+- `KV_CICD_PRINCIPAL_ID_QA` = `<object id ...>`
 - `KV_CICD_PRINCIPAL_ID_STAGE` = `<object id ...>`
 - `KV_CICD_PRINCIPAL_ID_PROD` = `<object id ...>`
 
@@ -69,34 +72,6 @@ Create these secrets **in each environment’s Key Vault** (names configurable v
 - `arbitration-primary-connection`
 - `arbitration-idr-connection`
 - `arbitration-storage-connection`
-
-### Arbitration web app configuration maps
-
-Populate the following keys in each environment's Terraform inputs so the arbitration App Service has storage and database connectivity:
-
-#### dev
-- `arbitration_app_settings`
-  - `Storage__Connection` → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/arbitration-storage-connection)`
-  - `Storage__Container`  → `arbitration-calculator`
-- `arbitration_connection_strings`
-  - `ConnStr`     → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/arbitration-primary-connection)`
-  - `IDRConnStr`  → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-dev.vault.azure.net/secrets/arbitration-idr-connection)`
-
-#### stage
-- `arbitration_app_settings`
-  - `Storage__Connection` → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-storage-connection)`
-  - `Storage__Container`  → `arbitration-calculator`
-- `arbitration_connection_strings`
-  - `ConnStr`     → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-primary-connection)`
-  - `IDRConnStr`  → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-stage.vault.azure.net/secrets/arbitration-idr-connection)`
-
-#### prod
-- `arbitration_app_settings`
-  - `Storage__Connection` → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-storage-connection)`
-  - `Storage__Container`  → `arbitration-calculator`
-- `arbitration_connection_strings`
-  - `ConnStr`     → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-primary-connection)`
-  - `IDRConnStr`  → `@Microsoft.KeyVault(SecretUri=https://kv-arbit-prod.vault.azure.net/secrets/arbitration-idr-connection)`
 
 You can add more (e.g., `webapp-client-secret`) and extend the YAML similarly.
 

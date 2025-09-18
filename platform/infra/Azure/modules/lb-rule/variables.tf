@@ -1,36 +1,9 @@
-variable "name" {
-  type = string
-}
-
-variable "resource_group_name" {
-  type = string
-}
-
-variable "loadbalancer_id" {
-  type = string
-}
-
-variable "protocol" {
-  type    = string
-  default = "Tcp"
-}
-
-variable "frontend_port" {
-  type = number
-}
-
-variable "backend_port" {
-  type = number
-}
-
-variable "frontend_ip_name" {
-  type = string
-}
-
-variable "backend_pool_id" {
-  type = string
-}
-
-variable "probe_id" {
-  type = string
-}
+variable "name" {}
+variable "resource_group_name" {}
+variable "loadbalancer_id" {}
+variable "protocol" { default = "Tcp" }
+variable "frontend_port" {}
+variable "backend_port" {}
+variable "frontend_ip_name" {}
+variable "backend_pool_id" {}
+variable "probe_id" {}

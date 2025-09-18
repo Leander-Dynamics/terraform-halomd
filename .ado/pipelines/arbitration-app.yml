@@ -1,7 +1,30 @@
 # Azure DevOps multi-stage pipeline for the Arbitration web application
-# Build -> Deploy (dev -> qa -> stage -> prod)
+# Build -> Deploy (dev -> stage -> prod)
 # Environment approvals for stage/prod should be configured on the
 # corresponding Azure DevOps environments (arbitration-stage, arbitration-prod).
+
+parameters:
+- name: devAppType
+  displayName: App Service type (dev)
+  type: string
+  default: webApp
+  values:
+  - webApp
+  - webAppLinux
+- name: stageAppType
+  displayName: App Service type (stage)
+  type: string
+  default: webApp
+  values:
+  - webApp
+  - webAppLinux
+- name: prodAppType
+  displayName: App Service type (prod)
+  type: string
+  default: webApp
+  values:
+  - webApp
+  - webAppLinux
 
 trigger:
   branches: { include: [ main ] }
@@ -36,24 +59,11 @@ stages:
       environmentName: arbitration-dev
       displayNameSuffix: dev
       azureSubscription: sc-azure-oidc-dev
-
-- stage: deploy_qa
-  displayName: Deploy to qa
-  dependsOn: deploy_dev
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-  variables:
-  - group: arbitration-app-qa  # provides webAppName/appSettingsJson/connectionStringsJson
-  jobs:
-  - template: .ado/templates/arbitration-deploy.yml
-    parameters:
-      jobName: deploy_qa
-      environmentName: arbitration-qa
-      displayNameSuffix: qa
-      azureSubscription: sc-azure-oidc-qa
+      appType: ${{ parameters.devAppType }}
 
 - stage: deploy_stage
   displayName: Deploy to stage
-  dependsOn: deploy_qa
+  dependsOn: deploy_dev
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   variables:
   - group: arbitration-app-stage  # provides webAppName/appSettingsJson/connectionStringsJson
@@ -64,6 +74,7 @@ stages:
       environmentName: arbitration-stage
       displayNameSuffix: stage
       azureSubscription: sc-azure-oidc-stage
+      appType: ${{ parameters.stageAppType }}
 
 - stage: deploy_prod
   displayName: Deploy to prod
@@ -78,3 +89,4 @@ stages:
       environmentName: arbitration-prod
       displayNameSuffix: prod
       azureSubscription: sc-azure-oidc-prod
+      appType: ${{ parameters.prodAppType }}

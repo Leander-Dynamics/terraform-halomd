@@ -121,3 +121,20 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+variable "sql_auto_pause_delay" {
+  type        = number
+  description = "Auto-pause delay in minutes for the serverless SQL DB"
+  default     = 60
+}
+
+variable "sql_min_capacity" {
+  type        = number
+  description = "Minimum capacity (vCores) for the serverless SQL DB"
+  default     = 0.5
+}
+
+variable "sql_max_size_gb" {
+  type        = number
+  description = "Maximum size in GB for the SQL DB"
+  default     = 32
+}

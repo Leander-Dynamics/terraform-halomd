@@ -33,6 +33,12 @@ parameters:
   - name: akvSecretSqlAdminPasswordName
     type: string
     default: 'sql-admin-password'
+  - name: pipelineSqlAdminLogin
+    type: string
+    default: ''
+  - name: pipelineSqlAdminPassword
+    type: string
+    default: ''
 
 jobs:
 - job: plan_${{ parameters.envName }}
@@ -41,80 +47,96 @@ jobs:
     variables:
       - group: ${{ parameters.variableGroup }}
   steps:
-    - checkout: self
+  - checkout: self
+  - task: AzureCLI@2
+    displayName: "Azure login & terraform plan (${{ parameters.envName }})"
+    inputs:
+      azureSubscription: '${{ parameters.serviceConnection }}'
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        set -euo pipefail
+        az account show --query "{name:name, sub:id, tenant:tenantId}" -o table || true
 
-    - task: AzureCLI@2
-      displayName: "Azure login & terraform plan (${{ parameters.envName }})"
-      inputs:
-        azureSubscription: '${{ parameters.serviceConnection }}'
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          set -euo pipefail
+        TFV='${{ parameters.tfVersion }}'
+        if ! command -v terraform >/dev/null 2>&1 || ! terraform version | head -1 | grep -q "v${TFV}"; then
+          sudo apt-get update -y && sudo apt-get install -y unzip curl
+          curl -fsSL -o /tmp/tf.zip "https://releases.hashicorp.com/terraform/${TFV}/terraform_${TFV}_linux_amd64.zip"
+          sudo unzip -o /tmp/tf.zip -d /usr/local/bin
+        fi
+        terraform -version
 
-          az account show --query "{name:name, sub:id, tenant:tenantId}" -o table || true
+        # ---- AKV integration (optional) ----
+        USE_AKV='${{ parameters.useAkv }}'
+        KV_NAME='${{ parameters.akvName }}'
+        DYN_IP='${{ parameters.akvEnableDynamicIp }}'
+        SECRET_LOGIN='${{ parameters.akvSecretSqlAdminLoginName }}'
+        SECRET_PASS='${{ parameters.akvSecretSqlAdminPasswordName }}'
+        AKV_VAR_FLAGS=""
+        SUB_TENANT_VAR_FLAGS=""
 
-          # Ensure correct Terraform version
-          TFV='${{ parameters.tfVersion }}'
-          if ! command -v terraform >/dev/null 2>&1 || ! terraform version | head -1 | grep -q "v${TFV}"; then
-            sudo apt-get update -y && sudo apt-get install -y unzip curl
-            curl -fsSL -o /tmp/tf.zip "https://releases.hashicorp.com/terraform/${TFV}/terraform_${TFV}_linux_amd64.zip"
-            sudo unzip -o /tmp/tf.zip -d /usr/local/bin
-          fi
-          terraform -version
-
-          # ---- AKV integration (optional) ----
-          USE_AKV='${{ parameters.useAkv }}'
-          KV_NAME='${{ parameters.akvName }}'
-          DYN_IP='${{ parameters.akvEnableDynamicIp }}'
-          SECRET_LOGIN='${{ parameters.akvSecretSqlAdminLoginName }}'
-          SECRET_PASS='${{ parameters.akvSecretSqlAdminPasswordName }}'
-          AKV_VAR_FLAGS=""
-
-          if [[ "$USE_AKV" == "true" && -n "$KV_NAME" ]]; then
-            if [[ "$DYN_IP" == "true" ]]; then
-              echo "Detecting agent public IP for temporary KV allow-list..."
-              AGENT_IP="$(curl -fsSL https://api.ipify.org || curl -fsSL https://ifconfig.me || echo "")"
-              if [[ -n "$AGENT_IP" ]]; then
-                echo "Adding agent IP ${AGENT_IP} to Key Vault firewall temporarily..."
-                az keyvault network-rule add --name "$KV_NAME" --ip-address "${AGENT_IP}" || echo "WARN: could not add IP rule"
-                trap 'echo "Removing agent IP ${AGENT_IP} from Key Vault firewall..."; az keyvault network-rule remove --name "$KV_NAME" --ip-address "${AGENT_IP}" || true' EXIT
-              else
-                echo "WARNING: Could not determine agent IP; proceeding without temporary rule."
-              fi
-            fi
-
-            # Pull secrets securely
-            set +x
-            SQL_ADMIN_LOGIN="$(az keyvault secret show --vault-name "$KV_NAME" --name "$SECRET_LOGIN" --query value -o tsv || true)"
-            SQL_ADMIN_PASSWORD="$(az keyvault secret show --vault-name "$KV_NAME" --name "$SECRET_PASS" --query value -o tsv || true)"
-            set -x
-
-            if [[ -n "$SQL_ADMIN_LOGIN" && -n "$SQL_ADMIN_PASSWORD" ]]; then
-              AKV_VAR_FLAGS="-var \"sql_admin_login=${SQL_ADMIN_LOGIN}\" -var \"sql_admin_password=${SQL_ADMIN_PASSWORD}\""
+        if [[ "$USE_AKV" == "true" && -n "$KV_NAME" ]]; then
+          if [[ "$DYN_IP" == "true" ]]; then
+            echo "Detecting agent public IP for temporary KV allow-list..."
+            AGENT_IP="$(curl -fsSL https://api.ipify.org || curl -fsSL https://ifconfig.me || echo "")"
+            if [[ -n "$AGENT_IP" ]]; then
+              echo "Adding agent IP ${AGENT_IP} to Key Vault firewall temporarily..."
+              az keyvault network-rule add --name "$KV_NAME" --ip-address "${AGENT_IP}" || echo "WARN: could not add IP rule"
+              trap 'echo "Removing agent IP ${AGENT_IP} from Key Vault firewall..."; az keyvault network-rule remove --name "$KV_NAME" --ip-address "${AGENT_IP}" || true' EXIT
             else
-              echo "NOTE: SQL secrets missing or empty in Key Vault '${KV_NAME}'. Skipping SQL vars."
+              echo "WARNING: Could not determine agent IP; proceeding without temporary rule."
             fi
           fi
 
-          # Terraform execution
-          cd platform/infra/envs/${{ parameters.envName }}
-          declare -a BACKEND_CONFIG_ARGS=(-backend-config=backend.tfvars)
-          SUB_TENANT_VAR_FLAGS=""
+        fi
 
-          if [[ -n "${AZ_SUBSCRIPTION_ID:-}" ]]; then
-            SUB_TENANT_VAR_FLAGS="${SUB_TENANT_VAR_FLAGS} -var \"subscription_id=${AZ_SUBSCRIPTION_ID}\""
-            BACKEND_CONFIG_ARGS+=(-backend-config="subscription_id=${AZ_SUBSCRIPTION_ID}")
+        # Pull secrets from Key Vault or pipeline variables without echoing sensitive data
+        set +x
+        SQL_ADMIN_LOGIN=""
+        SQL_ADMIN_PASSWORD=""
+        PIPELINE_SQL_ADMIN_LOGIN="${PIPELINE_SQL_ADMIN_LOGIN:-}"
+        PIPELINE_SQL_ADMIN_PASSWORD="${PIPELINE_SQL_ADMIN_PASSWORD:-}"
+
+        if [[ "$USE_AKV" == "true" && -n "$KV_NAME" ]]; then
+          KV_SQL_ADMIN_LOGIN="$(az keyvault secret show --vault-name "$KV_NAME" --name "$SECRET_LOGIN" --query value -o tsv || true)"
+          KV_SQL_ADMIN_PASSWORD="$(az keyvault secret show --vault-name "$KV_NAME" --name "$SECRET_PASS" --query value -o tsv || true)"
+
+          if [[ -n "$KV_SQL_ADMIN_LOGIN" ]]; then
+            SQL_ADMIN_LOGIN="$KV_SQL_ADMIN_LOGIN"
           fi
-          if [[ -n "${AZ_TENANT_ID:-}" ]]; then
-            SUB_TENANT_VAR_FLAGS="${SUB_TENANT_VAR_FLAGS} -var \"tenant_id=${AZ_TENANT_ID}\""
-            BACKEND_CONFIG_ARGS+=(-backend-config="tenant_id=${AZ_TENANT_ID}")
+          if [[ -n "$KV_SQL_ADMIN_PASSWORD" ]]; then
+            SQL_ADMIN_PASSWORD="$KV_SQL_ADMIN_PASSWORD"
           fi
+        fi
 
-          terraform init -reconfigure "${BACKEND_CONFIG_ARGS[@]}" -lock-timeout='${{ parameters.lockTimeout }}'
-          terraform plan -input=false -var-file=terraform.tfvars ${{ parameters.extraVarFlags }} ${SUB_TENANT_VAR_FLAGS} ${AKV_VAR_FLAGS} -out "$BUILD_SOURCESDIRECTORY/tfplan-${{ parameters.envName }}.tfplan"
+        if [[ -z "$SQL_ADMIN_LOGIN" && -n "$PIPELINE_SQL_ADMIN_LOGIN" ]]; then
+          SQL_ADMIN_LOGIN="$PIPELINE_SQL_ADMIN_LOGIN"
+        fi
+        if [[ -z "$SQL_ADMIN_PASSWORD" && -n "$PIPELINE_SQL_ADMIN_PASSWORD" ]]; then
+          SQL_ADMIN_PASSWORD="$PIPELINE_SQL_ADMIN_PASSWORD"
+        fi
 
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(Build.SourcesDirectory)/tfplan-${{ parameters.envName }}.tfplan'
-        artifact: 'tfplan-${{ parameters.envName }}'
+        if [[ -n "$SQL_ADMIN_LOGIN" && -n "$SQL_ADMIN_PASSWORD" ]]; then
+          AKV_VAR_FLAGS="-var \"sql_admin_login=${SQL_ADMIN_LOGIN}\" -var \"sql_admin_password=${SQL_ADMIN_PASSWORD}\""
+        else
+          echo "NOTE: SQL admin credentials not supplied via Key Vault or pipeline variables for '${{ parameters.envName }}'. Skipping SQL vars."
+        fi
+        set -x
+
+        cd platform/infra/envs/${{ parameters.envName }}
+        if [[ -n "${AZ_SUBSCRIPTION_ID:-}" ]]; then
+          SUB_TENANT_VAR_FLAGS="${SUB_TENANT_VAR_FLAGS} -var \"subscription_id=${AZ_SUBSCRIPTION_ID}\""
+        fi
+        if [[ -n "${AZ_TENANT_ID:-}" ]]; then
+          SUB_TENANT_VAR_FLAGS="${SUB_TENANT_VAR_FLAGS} -var \"tenant_id=${AZ_TENANT_ID}\""
+        fi
+
+        terraform init -reconfigure -backend-config=backend.tfvars -lock-timeout='${{ parameters.lockTimeout }}'
+        terraform plan -input=false -var-file=terraform.tfvars ${{ parameters.extraVarFlags }} ${SUB_TENANT_VAR_FLAGS} ${AKV_VAR_FLAGS} -out "$BUILD_SOURCESDIRECTORY/tfplan-${{ parameters.envName }}.tfplan"
+    env:
+      PIPELINE_SQL_ADMIN_LOGIN: ${{ parameters.pipelineSqlAdminLogin }}
+      PIPELINE_SQL_ADMIN_PASSWORD: ${{ parameters.pipelineSqlAdminPassword }}
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)/tfplan-${{ parameters.envName }}.tfplan'
+      artifact: 'tfplan-${{ parameters.envName }}'
