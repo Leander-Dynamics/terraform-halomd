@@ -12,22 +12,22 @@ output "storage_accounts" {
   description = "Identifiers and connection details for workflow storage accounts."
   value = {
     docs = {
-      name                  = module.docs_storage_account.name
-      id                    = module.docs_storage_account.id
-      primary_access_key    = module.docs_storage_account.primary_access_key
-      primary_connection    = module.docs_storage_account.primary_connection_string
+      name               = module.docs_storage_account.name
+      id                 = module.docs_storage_account.id
+      primary_access_key = module.docs_storage_account.primary_access_key
+      primary_connection = module.docs_storage_account.primary_connection_string
     }
     cron = {
-      name                  = module.cron_storage_account.name
-      id                    = module.cron_storage_account.id
-      primary_access_key    = module.cron_storage_account.primary_access_key
-      primary_connection    = module.cron_storage_account.primary_connection_string
+      name               = module.cron_storage_account.name
+      id                 = module.cron_storage_account.id
+      primary_access_key = module.cron_storage_account.primary_access_key
+      primary_connection = module.cron_storage_account.primary_connection_string
     }
     external = {
-      name                  = module.external_storage_account.name
-      id                    = module.external_storage_account.id
-      primary_access_key    = module.external_storage_account.primary_access_key
-      primary_connection    = module.external_storage_account.primary_connection_string
+      name               = module.external_storage_account.name
+      id                 = module.external_storage_account.id
+      primary_access_key = module.external_storage_account.primary_access_key
+      primary_connection = module.external_storage_account.primary_connection_string
     }
   }
   sensitive = true
@@ -69,23 +69,24 @@ output "external_function_default_hostname" {
 }
 
 output "redis_cache_details" {
-  description = "Redis cache identifiers and connection details."
-  value = {
-    id         = azurerm_redis_cache.workflow.id
-    hostname   = azurerm_redis_cache.workflow.hostname
-    port       = azurerm_redis_cache.workflow.port
-    ssl_port   = azurerm_redis_cache.workflow.ssl_port
-    access_key = azurerm_redis_cache.workflow.primary_access_key
-  }
+  description = "Redis cache identifiers and connection details (null when disabled)."
+  value = var.enable_redis ? {
+    id         = azurerm_redis_cache.workflow[0].id
+    hostname   = azurerm_redis_cache.workflow[0].hostname
+    port       = azurerm_redis_cache.workflow[0].port
+    ssl_port   = azurerm_redis_cache.workflow[0].ssl_port
+    access_key = azurerm_redis_cache.workflow[0].primary_access_key
+  } : null
   sensitive = true
 }
+
 
 output "sql_server_details" {
   description = "Details for the workflow SQL server and associated databases."
   value = {
-    id       = azurerm_mssql_server.workflow.id
-    name     = azurerm_mssql_server.workflow.name
-    fqdn     = azurerm_mssql_server.workflow.fully_qualified_domain_name
+    id   = azurerm_mssql_server.workflow.id
+    name = azurerm_mssql_server.workflow.name
+    fqdn = azurerm_mssql_server.workflow.fully_qualified_domain_name
     databases = {
       app  = azurerm_mssql_database.app.id
       logs = azurerm_mssql_database.logs.id
@@ -96,16 +97,16 @@ output "sql_server_details" {
 output "load_balancer_details" {
   description = "Identifiers for the public load balancer."
   value = {
-    id              = azurerm_lb.workflow.id
-    public_ip_id    = azurerm_public_ip.workflow.id
-    public_ip       = azurerm_public_ip.workflow.ip_address
-    public_ip_fqdn  = azurerm_public_ip.workflow.fqdn
+    id             = azurerm_lb.workflow.id
+    public_ip_id   = azurerm_public_ip.workflow.id
+    public_ip      = azurerm_public_ip.workflow.ip_address
+    public_ip_fqdn = azurerm_public_ip.workflow.fqdn
   }
 }
 
 output "ml_virtual_machine_private_ips" {
   description = "Private IPv4 addresses allocated to ML virtual machines."
-  value = [for nic in azurerm_network_interface.ml : nic.ip_configuration[0].private_ip_address]
+  value       = [for nic in azurerm_network_interface.ml : nic.ip_configuration[0].private_ip_address]
 }
 
 output "openai_endpoint" {

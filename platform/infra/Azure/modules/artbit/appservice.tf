@@ -1,6 +1,6 @@
 resource "azurerm_service_plan" "backend" {
   name                = local.names.backend_plan
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   os_type             = "Linux"
   sku_name            = "P1v3"
@@ -9,7 +9,7 @@ resource "azurerm_service_plan" "backend" {
 
 resource "azurerm_application_insights" "backend" {
   name                = local.names.backend_insights
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   application_type    = "web"
   tags                = var.tags
@@ -17,7 +17,7 @@ resource "azurerm_application_insights" "backend" {
 
 resource "azurerm_linux_web_app" "backend" {
   name                                           = local.names.backend_app
-  location                                       = module.resource_group.location
+  location                                       = var.region
   resource_group_name                            = module.resource_group.name
   service_plan_id                                = azurerm_service_plan.backend.id
   public_network_access_enabled                  = false
@@ -52,7 +52,7 @@ resource "azurerm_linux_web_app" "backend" {
 
 resource "azurerm_private_endpoint" "backend" {
   name                = local.names.backend_endpoint
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   subnet_id           = local.subnet_ids.services
   tags                = var.tags
@@ -76,7 +76,7 @@ resource "azurerm_private_dns_a_record" "backend" {
 
 resource "azurerm_service_plan" "frontend" {
   name                = local.names.frontend_plan
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   os_type             = "Linux"
   sku_name            = "P1v3"
@@ -85,7 +85,7 @@ resource "azurerm_service_plan" "frontend" {
 
 resource "azurerm_application_insights" "frontend" {
   name                = local.names.frontend_insights
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   application_type    = "web"
   tags                = var.tags
@@ -93,7 +93,7 @@ resource "azurerm_application_insights" "frontend" {
 
 resource "azurerm_linux_web_app" "frontend" {
   name                                           = local.names.frontend_app
-  location                                       = module.resource_group.location
+  location                                       = var.region
   resource_group_name                            = module.resource_group.name
   service_plan_id                                = azurerm_service_plan.frontend.id
   public_network_access_enabled                  = false
@@ -128,7 +128,7 @@ resource "azurerm_linux_web_app" "frontend" {
 
 resource "azurerm_private_endpoint" "frontend" {
   name                = local.names.frontend_endpoint
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   subnet_id           = local.subnet_ids.services
   tags                = var.tags

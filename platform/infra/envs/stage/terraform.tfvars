@@ -1,12 +1,12 @@
 project_name = "arbit"
 env_name     = "stage"
 
-environment        = "stage"
-environment_label  = "Staging"
-region             = "eastus2"
-env_region         = "stage-eus2"
-region_short       = "eus2"
-ipv4_prefix        = "10.20.0"
+environment       = "stage"
+environment_label = "Staging"
+region            = "eastus2"
+env_region        = "stage-eus2"
+region_short      = "eus2"
+ipv4_prefix       = "10.20.0"
 
 subscription_id     = "930755b1-ef22-4721-a31a-1b6fbecf7da6"
 hub_subscription_id = "54b02500-d420-4838-a98a-00d0854b5592"
@@ -52,3 +52,5 @@ enable_key_vault_private_endpoint = true
 vault_dns_zone_name = "privatelink.vaultcore.azure.net"
 
 vault_dns_resource_group_name = "hub-eus2-vnet-rg-1"
+
+enable_redis = false

@@ -1,12 +1,12 @@
 project_name = "arbit"
 env_name     = "qa"
 
-environment        = "qa"
-environment_label  = "Quality Assurance"
-region             = "eastus2"
-env_region         = "qa-eus2"
-region_short       = "eus2"
-ipv4_prefix        = "10.15.0"
+environment       = "qa"
+environment_label = "Quality Assurance"
+region            = "eastus2"
+env_region        = "qa-eus2"
+region_short      = "eus2"
+ipv4_prefix       = "10.15.0"
 
 subscription_id     = "205da762-4b21-4105-94de-edf6799de330"
 hub_subscription_id = "54b02500-d420-4838-a98a-00d0854b5592"
@@ -52,3 +52,5 @@ enable_key_vault_private_endpoint = true
 vault_dns_zone_name = "privatelink.vaultcore.azure.net"
 
 vault_dns_resource_group_name = "hub-eus2-vnet-rg-1"
+
+enable_redis = false

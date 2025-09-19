@@ -7,7 +7,7 @@ locals {
 
 resource "azurerm_network_security_group" "ml" {
   name                = local.names.ml_nsg
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   tags                = var.tags
 
@@ -63,7 +63,7 @@ resource "azurerm_network_security_group" "ml" {
 resource "azurerm_network_interface" "ml" {
   count               = var.ml_virtual_machine_count
   name                = format("%s-%d", local.names.ml_nic, count.index + 1)
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   tags                = var.tags
 
@@ -83,14 +83,14 @@ resource "azurerm_network_interface_security_group_association" "ml" {
 }
 
 resource "azurerm_linux_virtual_machine" "ml" {
-  count               = var.ml_virtual_machine_count
-  name                = format("%s-%d", local.names.ml_vm, count.index + 1)
-  resource_group_name = module.resource_group.name
-  location            = module.resource_group.location
-  size                = var.ml_virtual_machine_size
-  admin_username      = var.ml_virtual_machine_admin_username
+  count                 = var.ml_virtual_machine_count
+  name                  = format("%s-%d", local.names.ml_vm, count.index + 1)
+  resource_group_name   = module.resource_group.name
+  location              = var.region
+  size                  = var.ml_virtual_machine_size
+  admin_username        = var.ml_virtual_machine_admin_username
   network_interface_ids = [azurerm_network_interface.ml[count.index].id]
-  tags                = local.ml_vm_tags
+  tags                  = local.ml_vm_tags
 
   admin_ssh_key {
     username   = var.ml_virtual_machine_admin_username

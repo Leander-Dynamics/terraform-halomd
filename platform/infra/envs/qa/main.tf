@@ -10,9 +10,9 @@ module "artbit" {
   env_name     = var.env_name
   tags         = var.tags
 
-enable_key_vault_private_endpoint = var.enable_key_vault_private_endpoint
-vault_dns_zone_name               = var.vault_dns_zone_name
-vault_dns_resource_group_name     = var.vault_dns_resource_group_name
+  enable_key_vault_private_endpoint = var.enable_key_vault_private_endpoint
+  vault_dns_zone_name               = var.vault_dns_zone_name
+  vault_dns_resource_group_name     = var.vault_dns_resource_group_name
 
   environment       = var.environment
   environment_label = var.environment_label
@@ -49,4 +49,6 @@ vault_dns_resource_group_name     = var.vault_dns_resource_group_name
   ml_virtual_machine_count          = var.ml_virtual_machine_count
   ml_virtual_machine_size           = var.ml_virtual_machine_size
   ml_virtual_machine_admin_username = var.ml_virtual_machine_admin_username
+
+  enable_redis = var.enable_redis
 }
