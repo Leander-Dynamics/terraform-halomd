@@ -1,7 +1,7 @@
 resource "azurerm_mssql_server" "workflow" {
   name                          = local.names.sql_server
   resource_group_name           = module.resource_group.name
-  location                      = module.resource_group.location
+  location                      = var.region
   version                       = "12.0"
   administrator_login           = var.workflow_sqlserver_administrator_login
   administrator_login_password  = var.workflow_sqlserver_dbadmin_password

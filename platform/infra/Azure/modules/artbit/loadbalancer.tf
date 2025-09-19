@@ -1,6 +1,6 @@
 resource "azurerm_public_ip" "workflow" {
   name                = local.names.load_balancer_pip
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   allocation_method   = "Static"
   sku                 = "Standard"
@@ -9,7 +9,7 @@ resource "azurerm_public_ip" "workflow" {
 
 resource "azurerm_lb" "workflow" {
   name                = local.names.load_balancer
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   sku                 = "Standard"
   tags                = var.tags

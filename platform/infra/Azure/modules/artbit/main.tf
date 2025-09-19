@@ -1,17 +1,18 @@
 terraform {
   required_providers {
     azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.33"
+      source                = "hashicorp/azurerm"
+      version               = "~> 4.33"
+      configuration_aliases = [azurerm.hub]
     }
   }
 }
 
 locals {
-  base_name        = "${var.project_name}-${var.env_name}"
-  workflow_suffix  = "${local.base_name}-workflow"
-  regional_suffix  = "${var.region_short}-${local.workflow_suffix}"
-  resource_group   = format("rg-%s", local.workflow_suffix)
+  base_name       = "${var.project_name}-${var.env_name}"
+  workflow_suffix = "${local.base_name}-workflow"
+  regional_suffix = "${var.region_short}-${local.workflow_suffix}"
+  resource_group  = format("rg-%s", local.workflow_suffix)
 
   names = {
     backend_plan       = format("asp-%s-backend-1", local.workflow_suffix)
@@ -26,7 +27,7 @@ locals {
     external_plan      = format("asp-%s-external-1", local.workflow_suffix)
     external_app       = format("func-%s-external", local.workflow_suffix)
     external_nsg       = format("nsg-%s-external", local.workflow_suffix)
-    redis              = format("%s-redis", local.workflow_suffix)
+    key_vault          = format("kv-%s", local.workflow_suffix)
     sql_server         = format("sql-%s", local.workflow_suffix)
     sql_app_db         = format("%s-app-db", local.workflow_suffix)
     sql_logs_db        = format("%s-logs-db", local.workflow_suffix)
@@ -90,4 +91,4 @@ data "azurerm_private_dns_zone" "function_dns" {
   resource_group_name = var.function_dns_resource_group_name
   provider            = azurerm.hub
 }
-    key_vault         = format("kv-%s", local.workflow_suffix)
+

@@ -158,6 +158,12 @@ variable "ml_virtual_machine_size" {
   default     = "Standard_D2s_v4"
 }
 
+variable "enable_redis" {
+  type        = bool
+  description = "Enable provisioning of Azure Redis Cache for workflow."
+  default     = false
+}
+
 variable "ml_virtual_machine_admin_username" {
   type        = string
   description = "Admin username for the ML virtual machines."

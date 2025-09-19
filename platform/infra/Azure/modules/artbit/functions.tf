@@ -1,6 +1,6 @@
 resource "azurerm_service_plan" "cron" {
   name                = local.names.cron_plan
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   os_type             = "Linux"
   sku_name            = "EP1"
@@ -9,22 +9,22 @@ resource "azurerm_service_plan" "cron" {
 
 resource "azurerm_application_insights" "cron" {
   name                = local.names.cron_insights
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   application_type    = "web"
   tags                = var.tags
 }
 
 resource "azurerm_linux_function_app" "cron" {
-  name                       = local.names.cron_app
-  resource_group_name        = module.resource_group.name
-  location                   = module.resource_group.location
-  service_plan_id            = azurerm_service_plan.cron.id
-  storage_account_name       = module.cron_storage_account.name
-  storage_account_access_key = module.cron_storage_account.primary_access_key
-  virtual_network_subnet_id  = local.subnet_ids.app_services
+  name                          = local.names.cron_app
+  resource_group_name           = module.resource_group.name
+  location                      = var.region
+  service_plan_id               = azurerm_service_plan.cron.id
+  storage_account_name          = module.cron_storage_account.name
+  storage_account_access_key    = module.cron_storage_account.primary_access_key
+  virtual_network_subnet_id     = local.subnet_ids.app_services
   public_network_access_enabled = false
-  tags                       = var.tags
+  tags                          = var.tags
 
   app_settings = {
     APPINSIGHTS_INSTRUMENTATIONKEY        = azurerm_application_insights.cron.instrumentation_key
@@ -53,7 +53,7 @@ resource "azurerm_linux_function_app" "cron" {
 
 resource "azurerm_private_endpoint" "cron" {
   name                = local.names.cron_endpoint
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   subnet_id           = local.subnet_ids.services
   tags                = var.tags
@@ -77,7 +77,7 @@ resource "azurerm_private_dns_a_record" "cron" {
 
 resource "azurerm_service_plan" "external" {
   name                = local.names.external_plan
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   os_type             = "Linux"
   sku_name            = "EP1"
@@ -86,7 +86,7 @@ resource "azurerm_service_plan" "external" {
 
 resource "azurerm_application_insights" "external" {
   name                = local.names.external_insights
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   application_type    = "web"
   tags                = var.tags
@@ -94,7 +94,7 @@ resource "azurerm_application_insights" "external" {
 
 resource "azurerm_network_security_group" "external_function" {
   name                = local.names.external_nsg
-  location            = module.resource_group.location
+  location            = var.region
   resource_group_name = module.resource_group.name
   tags                = var.tags
 }
@@ -119,15 +119,15 @@ resource "azurerm_subnet_network_security_group_association" "external" {
 }
 
 resource "azurerm_linux_function_app" "external" {
-  name                       = local.names.external_app
-  resource_group_name        = module.resource_group.name
-  location                   = module.resource_group.location
-  service_plan_id            = azurerm_service_plan.external.id
-  storage_account_name       = module.external_storage_account.name
-  storage_account_access_key = module.external_storage_account.primary_access_key
-  virtual_network_subnet_id  = local.subnet_ids.app_services
+  name                          = local.names.external_app
+  resource_group_name           = module.resource_group.name
+  location                      = var.region
+  service_plan_id               = azurerm_service_plan.external.id
+  storage_account_name          = module.external_storage_account.name
+  storage_account_access_key    = module.external_storage_account.primary_access_key
+  virtual_network_subnet_id     = local.subnet_ids.app_services
   public_network_access_enabled = false
-  tags                       = var.tags
+  tags                          = var.tags
 
   app_settings = {
     APPINSIGHTS_INSTRUMENTATIONKEY        = azurerm_application_insights.external.instrumentation_key

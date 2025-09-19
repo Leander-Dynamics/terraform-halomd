@@ -194,3 +194,9 @@ variable "vault_dns_resource_group_name" {
   description = "Resource group name that hosts the Key Vault private DNS zone."
   type        = string
 }
+
+variable "enable_redis" {
+  description = "When true, provisions Redis cache for the workflow."
+  type        = bool
+  default     = false
+}
