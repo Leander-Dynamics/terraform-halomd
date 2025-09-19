@@ -1,0 +1,66 @@
+# Azure DevOps pipeline - Terraform (Dev only) - Option A
+trigger:
+  branches:
+    include: [ main ]
+
+variables:
+- group: terraform-global-common
+- group: terraform-dev
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+- stage: Dev
+  displayName: "Terraform: Dev"
+  jobs:
+  - job: PlanAndApply_Dev
+    displayName: "Plan & Apply (Dev)"
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: "Terraform init/plan/apply (Dev)"
+      inputs:
+        azureSubscription: "$(SERVICE_CONNECTION)"
+        scriptType: bash
+        scriptLocation: inlineScript
+        workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
+        inlineScript: |
+          set -euo pipefail
+
+          echo "== Fail-fast conflict checks =="
+          if grep -R "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)" ; then
+            echo "ERROR: Found legacy path 'new-terraform-modules'. Please remove."
+            exit 1
+          fi
+          if grep -R "arbit_workflow" -n "$(System.DefaultWorkingDirectory)" ; then
+            echo "ERROR: Found legacy module name 'arbit_workflow'. Please rename to 'artbit'."
+            exit 1
+          fi
+          if grep -R "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then
+            echo "ERROR: Found AKS/ACR modules which are no longer used."
+            exit 1
+          fi
+
+          echo "== Azure context =="
+          az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
+          az account show --query name -o tsv
+
+          echo "== Terraform version =="
+          terraform -version || true
+
+          echo "== Format =="
+          terraform fmt -recursive
+
+          echo "== Init =="
+          terraform init -backend-config=backend.tfvars
+
+          echo "== Validate =="
+          terraform validate
+
+          echo "== Plan =="
+          terraform plan -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+
+          echo "== Apply =="
+          terraform apply -auto-approve tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s

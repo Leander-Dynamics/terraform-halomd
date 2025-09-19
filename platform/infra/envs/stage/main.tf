@@ -1,5 +1,5 @@
-module "arbit_workflow" {
-  source = "../../modules/arbit_workflow"
+module "artbit" {
+  source = "../../Azure/modules/artbit"
 
   providers = {
     azurerm     = azurerm
