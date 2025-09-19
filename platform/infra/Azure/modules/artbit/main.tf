@@ -75,7 +75,7 @@ locals {
 }
 
 module "resource_group" {
-  source   = "../resource_group"
+  source   = "../resource-group"
   name     = local.resource_group
   location = var.region
 }

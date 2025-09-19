@@ -76,6 +76,7 @@ resource "azurerm_private_dns_a_record" "cron" {
 }
 
 resource "azurerm_service_plan" "external" {
+  count = var.enable_external_api ? 1 : 0
   name                = local.names.external_plan
   location            = module.resource_group.location
   resource_group_name = module.resource_group.name
@@ -85,6 +86,7 @@ resource "azurerm_service_plan" "external" {
 }
 
 resource "azurerm_application_insights" "external" {
+  count = var.enable_external_api ? 1 : 0
   name                = local.names.external_insights
   location            = module.resource_group.location
   resource_group_name = module.resource_group.name
@@ -119,6 +121,7 @@ resource "azurerm_subnet_network_security_group_association" "external" {
 }
 
 resource "azurerm_linux_function_app" "external" {
+  count = var.enable_external_api ? 1 : 0
   name                       = local.names.external_app
   resource_group_name        = module.resource_group.name
   location                   = module.resource_group.location

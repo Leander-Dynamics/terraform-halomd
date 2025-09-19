@@ -65,7 +65,7 @@ output "cron_function_private_endpoint_ip" {
 
 output "external_function_default_hostname" {
   description = "Default hostname assigned to the external function application."
-  value       = azurerm_linux_function_app.external.default_hostname
+  value       = var.enable_external_api ? azurerm_linux_function_app.external[0].default_hostname : null
 }
 
 output "redis_cache_details" {

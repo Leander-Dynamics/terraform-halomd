@@ -163,3 +163,31 @@ variable "ml_virtual_machine_admin_username" {
   description = "Admin username for the ML virtual machines."
   default     = "adminuser"
 }
+
+
+# ==== KV Private Endpoint & DNS toggles (Option A) ====
+variable "enable_key_vault_private_endpoint" {
+  type        = bool
+  description = "Enable Key Vault Private Endpoint and Private DNS linkage. When true, Key Vault public network access is disabled."
+  default     = false
+}
+
+# If you have a shared/hub DNS zone for Key Vault, set these. Otherwise, the module will look up the zone in the same RG used for function DNS.
+variable "vault_dns_zone_name" {
+  type        = string
+  description = "Private DNS zone name to use for Key Vault private endpoints."
+  default     = "privatelink.vaultcore.azure.net"
+}
+
+variable "vault_dns_resource_group_name" {
+  type        = string
+  description = "Resource group hosting the Private DNS zone for Key Vault (hub/shared RG). Leave empty to reuse function_dns_resource_group_name."
+  default     = ""
+}
+
+# Toggle to provision a standalone External API app. Keep false to simplify unless you need separate scaling/exposure.
+variable "enable_external_api" {
+  type        = bool
+  description = "Provision the standalone External API App Service."
+  default     = false
+}

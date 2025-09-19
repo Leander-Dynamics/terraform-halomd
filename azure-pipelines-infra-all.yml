@@ -1,0 +1,150 @@
+# Azure DevOps pipeline - Terraform (All envs) - Option A
+trigger:
+  branches:
+    include: [ main ]
+
+stages:
+- stage: Dev
+  displayName: "Terraform: Dev"
+  variables:
+  - group: terraform-global-common
+  - group: terraform-dev
+  jobs:
+  - job: PlanAndApply_Dev
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+    - task: AzureCLI@2
+      displayName: "Terraform init/plan/apply (Dev)"
+      inputs:
+        azureSubscription: "$(SERVICE_CONNECTION)"
+        scriptType: bash
+        scriptLocation: inlineScript
+        workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
+        inlineScript: |
+          set -euo pipefail
+          if grep -R "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy 'new-terraform-modules' present"; exit 1; fi
+          if grep -R "arbit_workflow" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy module name 'arbit_workflow' present"; exit 1; fi
+          if grep -R "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: AKS/ACR modules present"; exit 1; fi
+          az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
+          terraform fmt -recursive
+          terraform init -backend-config=backend.tfvars
+          terraform validate
+          terraform plan -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+
+- stage: QA
+  displayName: "Terraform: QA"
+  dependsOn: Dev
+  variables:
+  - group: terraform-global-common
+  - group: terraform-qa
+  jobs:
+  - job: PlanAndApply_QA
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+    - task: AzureCLI@2
+      displayName: "Terraform init/plan/apply (QA)"
+      inputs:
+        azureSubscription: "$(SERVICE_CONNECTION)"
+        scriptType: bash
+        scriptLocation: inlineScript
+        workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
+        inlineScript: |
+          set -euo pipefail
+          if grep -R "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy 'new-terraform-modules' present"; exit 1; fi
+          if grep -R "arbit_workflow" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy module name 'arbit_workflow' present"; exit 1; fi
+          if grep -R "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: AKS/ACR modules present"; exit 1; fi
+          az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
+          terraform fmt -recursive
+          terraform init -backend-config=backend.tfvars
+          terraform validate
+          terraform plan -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+
+- stage: Stage
+  displayName: "Terraform: Stage"
+  dependsOn: QA
+  variables:
+  - group: terraform-global-common
+  - group: terraform-stage
+  jobs:
+  - job: Validate_Stage
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: ManualValidation@0
+      inputs:
+        instructions: "Review the QA deployment. Approve to continue to Stage apply."
+        onTimeout: "reject"
+        timeout: "43200"
+
+  - job: PlanAndApply_Stage
+    dependsOn: Validate_Stage
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+    - task: AzureCLI@2
+      displayName: "Terraform init/plan/apply (Stage)"
+      inputs:
+        azureSubscription: "$(SERVICE_CONNECTION)"
+        scriptType: bash
+        scriptLocation: inlineScript
+        workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
+        inlineScript: |
+          set -euo pipefail
+          if grep -R "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy 'new-terraform-modules' present"; exit 1; fi
+          if grep -R "arbit_workflow" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy module name 'arbit_workflow' present"; exit 1; fi
+          if grep -R "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: AKS/ACR modules present"; exit 1; fi
+          az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
+          terraform fmt -recursive
+          terraform init -backend-config=backend.tfvars
+          terraform validate
+          terraform plan -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+
+- stage: Prod
+  displayName: "Terraform: Prod"
+  dependsOn: Stage
+  variables:
+  - group: terraform-global-common
+  - group: terraform-prod
+  jobs:
+  - job: Validate_Prod
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: ManualValidation@0
+      inputs:
+        instructions: "Review the Stage deployment. Approve to continue to Prod apply."
+        onTimeout: "reject"
+        timeout: "43200"
+
+  - job: PlanAndApply_Prod
+    dependsOn: Validate_Prod
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+    - task: AzureCLI@2
+      displayName: "Terraform init/plan/apply (Prod)"
+      inputs:
+        azureSubscription: "$(SERVICE_CONNECTION)"
+        scriptType: bash
+        scriptLocation: inlineScript
+        workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
+        inlineScript: |
+          set -euo pipefail
+          if grep -R "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy 'new-terraform-modules' present"; exit 1; fi
+          if grep -R "arbit_workflow" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy module name 'arbit_workflow' present"; exit 1; fi
+          if grep -R "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: AKS/ACR modules present"; exit 1; fi
+          az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
+          terraform fmt -recursive
+          terraform init -backend-config=backend.tfvars
+          terraform validate
+          terraform plan -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s

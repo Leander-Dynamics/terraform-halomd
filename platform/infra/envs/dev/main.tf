@@ -49,83 +49,83 @@ module "artbit" {
 
 output "resource_group_name" {
   description = "Resource group provisioned for the environment."
-  value       = module.arbit_workflow.resource_group_name
+  value       = module.artbit.resource_group_name
 }
 
 output "resource_group_id" {
   description = "Resource ID of the workflow resource group."
-  value       = module.arbit_workflow.resource_group_id
+  value       = module.artbit.resource_group_id
 }
 
 output "frontend_default_hostname" {
   description = "Default hostname assigned to the frontend web application."
-  value       = module.arbit_workflow.frontend_default_hostname
+  value       = module.artbit.frontend_default_hostname
 }
 
 output "backend_default_hostname" {
   description = "Default hostname assigned to the backend web application."
-  value       = module.arbit_workflow.backend_default_hostname
+  value       = module.artbit.backend_default_hostname
 }
 
 output "cron_function_default_hostname" {
   description = "Default hostname assigned to the cron function application."
-  value       = module.arbit_workflow.cron_function_default_hostname
+  value       = module.artbit.cron_function_default_hostname
 }
 
 output "external_function_default_hostname" {
   description = "Default hostname assigned to the external function application."
-  value       = module.arbit_workflow.external_function_default_hostname
+  value       = module.artbit.external_function_default_hostname
 }
 
 output "frontend_private_endpoint_ip" {
   description = "Private endpoint IP allocated to the frontend web application."
-  value       = module.arbit_workflow.frontend_private_endpoint_ip
+  value       = module.artbit.frontend_private_endpoint_ip
 }
 
 output "backend_private_endpoint_ip" {
   description = "Private endpoint IP allocated to the backend web application."
-  value       = module.arbit_workflow.backend_private_endpoint_ip
+  value       = module.artbit.backend_private_endpoint_ip
 }
 
 output "cron_function_private_endpoint_ip" {
   description = "Private endpoint IP allocated to the cron function application."
-  value       = module.arbit_workflow.cron_function_private_endpoint_ip
+  value       = module.artbit.cron_function_private_endpoint_ip
 }
 
 output "storage_accounts" {
   description = "Workflow storage account identifiers and secrets."
-  value       = module.arbit_workflow.storage_accounts
+  value       = module.artbit.storage_accounts
   sensitive   = true
 }
 
 output "redis_cache_details" {
   description = "Redis cache identifiers and connection details."
-  value       = module.arbit_workflow.redis_cache_details
+  value       = module.artbit.redis_cache_details
   sensitive   = true
 }
 
 output "sql_server_details" {
   description = "Details for the workflow SQL server and associated databases."
-  value       = module.arbit_workflow.sql_server_details
+  value       = module.artbit.sql_server_details
 }
 
 output "load_balancer_details" {
   description = "Identifiers for the public load balancer."
-  value       = module.arbit_workflow.load_balancer_details
+  value       = module.artbit.load_balancer_details
 }
 
 output "ml_virtual_machine_private_ips" {
   description = "Private IPv4 addresses allocated to ML virtual machines."
-  value       = module.arbit_workflow.ml_virtual_machine_private_ips
+  value       = module.artbit.ml_virtual_machine_private_ips
 }
 
 output "openai_endpoint" {
   description = "Endpoint URL for the Azure OpenAI account."
-  value       = module.arbit_workflow.openai_endpoint
+  value       = module.artbit.openai_endpoint
 }
 
 output "openai_primary_key" {
   description = "Primary access key for the Azure OpenAI account."
-  value       = module.arbit_workflow.openai_primary_key
+  value       = module.artbit.openai_primary_key
   sensitive   = true
 }

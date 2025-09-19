@@ -1,5 +1,5 @@
 module "docs_storage_account" {
-  source = "../storage_account"
+  source = "../storage-account"
 
   name                     = var.workflow_storage_account_docs
   resource_group_name      = module.resource_group.name
@@ -11,7 +11,7 @@ module "docs_storage_account" {
 }
 
 module "cron_storage_account" {
-  source = "../storage_account"
+  source = "../storage-account"
 
   name                     = var.workflow_storage_account_cron_function
   resource_group_name      = module.resource_group.name
@@ -23,7 +23,7 @@ module "cron_storage_account" {
 }
 
 module "external_storage_account" {
-  source = "../storage_account"
+  source = "../storage-account"
 
   name                     = var.workflow_storage_account_external_function
   resource_group_name      = module.resource_group.name
