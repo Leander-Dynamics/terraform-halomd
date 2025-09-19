@@ -31,7 +31,7 @@ resource "azurerm_linux_web_app" "backend" {
     minimum_tls_version = "1.2"
 
     application_stack {
-        dotnet_version = "6.0"
+      node_version = "20-lts"
     }
   }
 
@@ -106,7 +106,7 @@ resource "azurerm_linux_web_app" "frontend" {
     minimum_tls_version = "1.2"
 
     application_stack {
-        dotnet_version = "6.0"
+      node_version = "20-lts"
     }
   }
 

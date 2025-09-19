@@ -1,54 +1,3 @@
-# artbit — Infrastructure (Terraform on Azure)
-
-This repository provisions **artbit** infrastructure for **dev**, **qa**, **stage**, and **prod** using Terraform.
-It contains **only infrastructure code** (Terraform). The application source (Angular + .NET + WebJob) lives in a separate **App repo**.
-
-## Structure
-
-```
-platform/
-  infra/
-    Azure/
-      modules/
-        artbit/           # workflow module (app services, sql serverless, storage, insights, private endpoints)
-        # shared modules like resource-group/, storage-account/, network/ may be here as well
-    envs/
-      dev/
-      qa/
-      stage/
-      prod/
-```
-
-> **Note:** Canonical modules path is `platform/infra/Azure/modules`. Legacy `platform/infra/modules` was removed.
-> **Note:** AKS & ACR were removed per requirements.
-
-## Prerequisites
-
-- Terraform CLI ≥ 1.3
-- Azure CLI ≥ 2.40
-- Azure subscription with contributor permissions
-- Remote state configured via `backend.tfvars` in each env
-
-## Usage (per environment)
-
-```bash
-az login
-az account set --subscription "<YOUR_SUBSCRIPTION_ID>"
-
-cd platform/infra/envs/dev
-terraform init -backend-config=backend.tfvars
-terraform validate
-terraform plan -var-file=terraform.tfvars -out=tfplan
-terraform apply -auto-approve tfplan
-```
-
-Repeat for `qa`, `stage`, and `prod`.
-
-## Azure DevOps Pipeline (Terraform only)
-
-Add the following pipeline as `azure-pipelines-infra.yml` in this repo root.
-
-```yaml
 trigger:
   branches:
     include: [ main ]
@@ -105,4 +54,3 @@ stages:
           set -e
           az account set --subscription $(subscriptionId)
           terraform apply -auto-approve tfplan
-```
