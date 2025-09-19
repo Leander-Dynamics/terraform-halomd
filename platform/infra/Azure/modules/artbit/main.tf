@@ -90,3 +90,4 @@ data "azurerm_private_dns_zone" "function_dns" {
   resource_group_name = var.function_dns_resource_group_name
   provider            = azurerm.hub
 }
+    key_vault         = format("kv-%s", local.workflow_suffix)

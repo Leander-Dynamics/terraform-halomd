@@ -1,7 +1,8 @@
-# Azure DevOps pipeline - Terraform (All envs) - Option A
 trigger:
-  branches:
-    include: [ main ]
+  branches: { include: [ main ] }
+
+pool:
+  vmImage: ubuntu-latest
 
 stages:
 - stage: Dev
@@ -10,9 +11,7 @@ stages:
   - group: terraform-global-common
   - group: terraform-dev
   jobs:
-  - job: PlanAndApply_Dev
-    pool:
-      vmImage: ubuntu-latest
+  - job: DevPlanApply
     steps:
     - checkout: self
     - task: AzureCLI@2
@@ -24,15 +23,15 @@ stages:
         workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
         inlineScript: |
           set -euo pipefail
-          if grep -R "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy 'new-terraform-modules' present"; exit 1; fi
-          if grep -R "arbit_workflow" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy module name 'arbit_workflow' present"; exit 1; fi
-          if grep -R "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: AKS/ACR modules present"; exit 1; fi
           az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
+          if grep -R --include="*.tf" --exclude-dir=".terraform" "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy 'new-terraform-modules' present"; exit 1; fi
+          if grep -R --include="*.tf" --exclude-dir=".terraform" "arbit_workflow" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: old module name 'arbit_workflow' present"; exit 1; fi
+          if grep -R --include="*.tf" --exclude-dir=".terraform" "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R --include="*.tf" --exclude-dir=".terraform" "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: AKS/ACR modules present"; exit 1; fi
           terraform fmt -recursive
           terraform init -backend-config=backend.tfvars
           terraform validate
-          terraform plan -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
-          terraform apply -auto-approve tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform plan  -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan     -lock-timeout=$(TF_LOCK_TIMEOUT)s
 
 - stage: QA
   displayName: "Terraform: QA"
@@ -41,9 +40,7 @@ stages:
   - group: terraform-global-common
   - group: terraform-qa
   jobs:
-  - job: PlanAndApply_QA
-    pool:
-      vmImage: ubuntu-latest
+  - job: QAPlanApply
     steps:
     - checkout: self
     - task: AzureCLI@2
@@ -55,15 +52,12 @@ stages:
         workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
         inlineScript: |
           set -euo pipefail
-          if grep -R "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy 'new-terraform-modules' present"; exit 1; fi
-          if grep -R "arbit_workflow" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy module name 'arbit_workflow' present"; exit 1; fi
-          if grep -R "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: AKS/ACR modules present"; exit 1; fi
           az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
           terraform fmt -recursive
           terraform init -backend-config=backend.tfvars
           terraform validate
-          terraform plan -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
-          terraform apply -auto-approve tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform plan  -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan     -lock-timeout=$(TF_LOCK_TIMEOUT)s
 
 - stage: Stage
   displayName: "Terraform: Stage"
@@ -72,20 +66,15 @@ stages:
   - group: terraform-global-common
   - group: terraform-stage
   jobs:
-  - job: Validate_Stage
-    pool:
-      vmImage: ubuntu-latest
+  - job: ManualApprovalStage
     steps:
     - task: ManualValidation@0
       inputs:
-        instructions: "Review the QA deployment. Approve to continue to Stage apply."
-        onTimeout: "reject"
-        timeout: "43200"
-
-  - job: PlanAndApply_Stage
-    dependsOn: Validate_Stage
-    pool:
-      vmImage: ubuntu-latest
+        instructions: 'Review the QA outcome. Approve to deploy to Stage.'
+        onTimeout: 'reject'
+        timeout: '43200'
+  - job: StagePlanApply
+    dependsOn: ManualApprovalStage
     steps:
     - checkout: self
     - task: AzureCLI@2
@@ -97,15 +86,12 @@ stages:
         workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
         inlineScript: |
           set -euo pipefail
-          if grep -R "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy 'new-terraform-modules' present"; exit 1; fi
-          if grep -R "arbit_workflow" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy module name 'arbit_workflow' present"; exit 1; fi
-          if grep -R "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: AKS/ACR modules present"; exit 1; fi
           az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
           terraform fmt -recursive
           terraform init -backend-config=backend.tfvars
           terraform validate
-          terraform plan -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
-          terraform apply -auto-approve tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform plan  -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan     -lock-timeout=$(TF_LOCK_TIMEOUT)s
 
 - stage: Prod
   displayName: "Terraform: Prod"
@@ -114,20 +100,15 @@ stages:
   - group: terraform-global-common
   - group: terraform-prod
   jobs:
-  - job: Validate_Prod
-    pool:
-      vmImage: ubuntu-latest
+  - job: ManualApprovalProd
     steps:
     - task: ManualValidation@0
       inputs:
-        instructions: "Review the Stage deployment. Approve to continue to Prod apply."
-        onTimeout: "reject"
-        timeout: "43200"
-
-  - job: PlanAndApply_Prod
-    dependsOn: Validate_Prod
-    pool:
-      vmImage: ubuntu-latest
+        instructions: 'Review the Stage outcome. Approve to deploy to Prod.'
+        onTimeout: 'reject'
+        timeout: '43200'
+  - job: ProdPlanApply
+    dependsOn: ManualApprovalProd
     steps:
     - checkout: self
     - task: AzureCLI@2
@@ -139,12 +120,9 @@ stages:
         workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
         inlineScript: |
           set -euo pipefail
-          if grep -R "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy 'new-terraform-modules' present"; exit 1; fi
-          if grep -R "arbit_workflow" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy module name 'arbit_workflow' present"; exit 1; fi
-          if grep -R "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: AKS/ACR modules present"; exit 1; fi
           az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
           terraform fmt -recursive
           terraform init -backend-config=backend.tfvars
           terraform validate
-          terraform plan -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
-          terraform apply -auto-approve tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform plan  -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan     -lock-timeout=$(TF_LOCK_TIMEOUT)s

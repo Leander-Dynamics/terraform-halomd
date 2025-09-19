@@ -174,3 +174,23 @@ variable "ml_virtual_machine_admin_username" {
   type        = string
   default     = "adminuser"
 }
+
+
+# --- Added by Option A KV PE toggle ---
+
+variable "enable_key_vault_private_endpoint" {
+  description = "When true, provision Key Vault private endpoint and disable public network access."
+  type        = bool
+  default     = false
+}
+
+variable "vault_dns_zone_name" {
+  description = "Private DNS zone name for Key Vault (privatelink.vaultcore.azure.net)."
+  type        = string
+  default     = "privatelink.vaultcore.azure.net"
+}
+
+variable "vault_dns_resource_group_name" {
+  description = "Resource group name that hosts the Key Vault private DNS zone."
+  type        = string
+}

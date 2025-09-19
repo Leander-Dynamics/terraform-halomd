@@ -10,6 +10,10 @@ module "artbit" {
   env_name     = var.env_name
   tags         = var.tags
 
+enable_key_vault_private_endpoint = var.enable_key_vault_private_endpoint
+vault_dns_zone_name               = var.vault_dns_zone_name
+vault_dns_resource_group_name     = var.vault_dns_resource_group_name
+
   environment       = var.environment
   environment_label = var.environment_label
   region            = var.region

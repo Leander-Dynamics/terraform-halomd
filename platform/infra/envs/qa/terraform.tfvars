@@ -46,7 +46,9 @@ tags = {
   env     = "qa"
   owner   = "platform"
 }
+
 enable_key_vault_private_endpoint = true
+
 vault_dns_zone_name = "privatelink.vaultcore.azure.net"
+
 vault_dns_resource_group_name = "hub-eus2-vnet-rg-1"
-enable_external_api = false

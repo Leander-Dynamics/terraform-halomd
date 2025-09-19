@@ -1,7 +1,5 @@
-# Azure DevOps pipeline - Terraform (Dev only) - Option A
 trigger:
-  branches:
-    include: [ main ]
+  branches: { include: [ main ] }
 
 variables:
 - group: terraform-global-common
@@ -15,7 +13,6 @@ stages:
   displayName: "Terraform: Dev"
   jobs:
   - job: PlanAndApply_Dev
-    displayName: "Plan & Apply (Dev)"
     steps:
     - checkout: self
 
@@ -28,39 +25,16 @@ stages:
         workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
         inlineScript: |
           set -euo pipefail
-
-          echo "== Fail-fast conflict checks =="
-          if grep -R "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)" ; then
-            echo "ERROR: Found legacy path 'new-terraform-modules'. Please remove."
-            exit 1
-          fi
-          if grep -R "arbit_workflow" -n "$(System.DefaultWorkingDirectory)" ; then
-            echo "ERROR: Found legacy module name 'arbit_workflow'. Please rename to 'artbit'."
-            exit 1
-          fi
-          if grep -R "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then
-            echo "ERROR: Found AKS/ACR modules which are no longer used."
-            exit 1
-          fi
-
-          echo "== Azure context =="
+          echo "Azure Subscription: $(AZ_SUBSCRIPTION_ID)"
           az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
-          az account show --query name -o tsv
 
-          echo "== Terraform version =="
-          terraform -version || true
+          # Fail-fast conflict guards
+          if grep -R --include="*.tf" --exclude-dir=".terraform" "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy 'new-terraform-modules' present"; exit 1; fi
+          if grep -R --include="*.tf" --exclude-dir=".terraform" "arbit_workflow" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: old module name 'arbit_workflow' present"; exit 1; fi
+          if grep -R --include="*.tf" --exclude-dir=".terraform" "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R --include="*.tf" --exclude-dir=".terraform" "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: AKS/ACR modules present"; exit 1; fi
 
-          echo "== Format =="
           terraform fmt -recursive
-
-          echo "== Init =="
           terraform init -backend-config=backend.tfvars
-
-          echo "== Validate =="
           terraform validate
-
-          echo "== Plan =="
-          terraform plan -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
-
-          echo "== Apply =="
-          terraform apply -auto-approve tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform plan  -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan     -lock-timeout=$(TF_LOCK_TIMEOUT)s
