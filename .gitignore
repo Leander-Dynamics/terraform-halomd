@@ -22,3 +22,10 @@ override.tf.json
 
 # Build outputs
 artifacts/
+
+# Pipeline/download caches
+_dl/
+.ado/_dl/
+
+# Local tools
+.tools

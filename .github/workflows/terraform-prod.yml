@@ -1,0 +1,207 @@
+name: Terraform Prod (Plan/Guard/Apply)
+
+on:
+  workflow_dispatch:
+    inputs:
+      envName:
+        description: Environment name (infra folder under platform/infra/envs)
+        required: true
+        default: prod
+      runApply:
+        description: Run Apply after Guard passes
+        required: true
+        type: boolean
+        default: false
+      diagOnly:
+        description: Diagnostics only (no terraform init/plan)
+        required: true
+        type: boolean
+        default: false
+      applyDisableHub:
+        description: Force disable hub provider and orphan hub-linked DNS from state
+        required: true
+        type: boolean
+        default: true
+      useAkv:
+        description: Use Key Vault for secrets during Plan (may require firewall allow)
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  id-token: write   # for Azure OIDC login (recommended)
+  contents: read
+
+env:
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Azure login (OIDC)
+        if: ${{ env.AZURE_CLIENT_ID == '' }}
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Echo environment
+        run: |
+          echo "ENV_NAME=${{ inputs.envName }}"
+          echo "DIAG_ONLY=${{ inputs.diagOnly }}"
+          echo "FORCE_DISABLE_HUB=${{ inputs.applyDisableHub }}"
+          echo "USE_AKV=${{ inputs.useAkv }}"
+
+  plan:
+    name: Plan
+    needs: validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      ENV_NAME: ${{ inputs.envName }}
+      DIAG_ONLY: ${{ inputs.diagOnly }}
+      # Force hub off if requested (script reads this to blank hub provider)
+      FORCE_DISABLE_HUB: ${{ inputs.applyDisableHub }}
+      # For safer plans, you can skip KV secrets during plan to avoid firewall 403s
+      SKIP_KV_SECRETS: ${{ inputs.useAkv == false && 'true' || '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run tf-plan.sh
+        run: |
+          if [ ! -f ".ado/scripts/tf-plan.sh" ]; then
+            echo "tf-plan.sh not found at .ado/scripts/tf-plan.sh" >&2
+            exit 2
+          fi
+          bash .ado/scripts/tf-plan.sh
+
+      - name: Ensure artifacts directory
+        run: mkdir -p artifacts
+
+      - name: Create plan summary (bash)
+        run: |
+          if [ -f "artifacts/plan-${ENV_NAME}.json" ]; then
+            bash scripts/plan-summarize.sh || true
+          else
+            echo '{"note":"plan not generated"}' > "artifacts/plan-summary-${ENV_NAME}.json"
+            echo "Summary unavailable (plan JSON missing)" > "artifacts/plan-summary-${ENV_NAME}.txt"
+          fi
+
+      - name: SQL-only summary (PowerShell)
+        shell: pwsh
+        run: |
+          $planJson = Join-Path $PWD "artifacts/plan-${env:ENV_NAME}.json"
+          if (Test-Path $planJson) {
+            Write-Host "Running scripts/plan-sql-check.ps1 against $planJson (env=${env:ENV_NAME})"
+            $null = & ./scripts/plan-sql-check.ps1 -PlanJsonPath $planJson -Env $env:ENV_NAME
+          } else {
+            Write-Warning "Plan JSON not found at $planJson. Skipping SQL-only summary."
+          }
+
+      - name: Upload plan artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: plan-${{ inputs.envName }}
+          path: |
+            artifacts/plan-${{ inputs.envName }}.json
+            artifacts/plan-${{ inputs.envName }}.tfplan
+            artifacts/plan-${{ inputs.envName }}.log
+            artifacts/plan-summary-${{ inputs.envName }}.json
+            artifacts/plan-summary-${{ inputs.envName }}.txt
+            artifacts/${{ inputs.envName }}-plan-sql-*.json
+            artifacts/${{ inputs.envName }}-plan-sql-*.txt
+          if-no-files-found: warn
+
+  guard:
+    name: Guard
+    needs: plan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download plan artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: plan-${{ inputs.envName }}
+          path: artifacts
+
+      - name: Run guard (bash)
+        shell: bash
+        run: |
+          set -e
+          PLAN_JSON="artifacts/plan-${{ inputs.envName }}.json"
+          if [ ! -f "$PLAN_JSON" ]; then
+            echo "Plan JSON not found at $PLAN_JSON" >&2
+            exit 3
+          fi
+          bash ./scripts/terraform-destroy-guard.sh "$PLAN_JSON"
+
+  apply:
+    name: Apply
+    if: ${{ inputs.runApply }}
+    needs: guard
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+      ENV_NAME: ${{ inputs.envName }}
+      FORCE_DISABLE_HUB: ${{ inputs.applyDisableHub }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Pre-apply guard and plan (fresh)
+        shell: bash
+        run: |
+          if [ ! -f ".ado/scripts/tf-preapply.sh" ]; then
+            echo "tf-preapply.sh not found at .ado/scripts/tf-preapply.sh" >&2
+            exit 2
+          fi
+          bash .ado/scripts/tf-preapply.sh
+
+      - name: Apply (tf-apply.sh)
+        shell: bash
+        run: |
+          if [ ! -f ".ado/scripts/tf-apply.sh" ]; then
+            echo "tf-apply.sh not found at .ado/scripts/tf-apply.sh" >&2
+            exit 2
+          fi
+          bash .ado/scripts/tf-apply.sh
