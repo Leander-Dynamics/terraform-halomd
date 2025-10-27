@@ -29,7 +29,7 @@ on:
         default: true
 
 permissions:
-  id-token: write   # for Azure OIDC login (recommended)
+  id-token: write # for Azure OIDC login (recommended)
   contents: read
 
 env:
@@ -40,28 +40,28 @@ jobs:
     name: Validate
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.6
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.6
 
-      - name: Azure login (OIDC)
-        if: ${{ env.AZURE_CLIENT_ID == '' }}
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - name: Azure login (OIDC)
+      if: ${{ env.AZURE_CLIENT_ID == '' }}
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Echo environment
-        run: |
-          echo "ENV_NAME=${{ inputs.envName }}"
-          echo "DIAG_ONLY=${{ inputs.diagOnly }}"
-          echo "FORCE_DISABLE_HUB=${{ inputs.applyDisableHub }}"
-          echo "USE_AKV=${{ inputs.useAkv }}"
+    - name: Echo environment
+      run: |
+        echo "ENV_NAME=${{ inputs.envName }}"
+        echo "DIAG_ONLY=${{ inputs.diagOnly }}"
+        echo "FORCE_DISABLE_HUB=${{ inputs.applyDisableHub }}"
+        echo "USE_AKV=${{ inputs.useAkv }}"
 
   plan:
     name: Plan
@@ -76,117 +76,125 @@ jobs:
       # Force hub off if requested (script reads this to blank hub provider)
       FORCE_DISABLE_HUB: ${{ inputs.applyDisableHub }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.6
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.6
 
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - name: Azure login (OIDC)
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Terraform init/plan (inline)
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts
-          if [ "${DIAG_ONLY}" = "true" ]; then
-            echo '{"note":"DIAG_ONLY set; skipping terraform"}' > "artifacts/plan-${ENV_NAME}.json"
-            exit 0
-          fi
-          cd "platform/infra/envs/${ENV_NAME}"
-          terraform -version
-          terraform init -reconfigure -backend-config=backend.tfvars -lock-timeout=20m
-          terraform plan -input=false -var-file=terraform.tfvars -out "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.tfplan"
-          terraform show -json "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.tfplan" > "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.json"
+    - name: Terraform init/plan (inline)
+      run: |
+        set -euo pipefail
+        mkdir -p artifacts
+        if [ "${DIAG_ONLY}" = "true" ]; then
+          echo '{"note":"DIAG_ONLY set; skipping terraform"}' > "artifacts/plan-${ENV_NAME}.json"
+          exit 0
+        fi
+        # Provide TF_VARs for provider variables from OIDC secrets
+        export TF_VAR_subscription_id="${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+        export TF_VAR_tenant_id="${{ secrets.AZURE_TENANT_ID }}"
+        # Optionally disable hub alias by blanking hub_subscription_id when requested
+        if [ "${FORCE_DISABLE_HUB}" = "true" ]; then
+          echo "FORCE_DISABLE_HUB=true: blanking TF_VAR_hub_subscription_id"
+          export TF_VAR_hub_subscription_id=""
+        fi
+        cd "platform/infra/envs/${ENV_NAME}"
+        terraform -version
+        terraform init -reconfigure -backend-config=backend.tfvars -lock-timeout=20m
+        terraform plan -input=false -var-file=terraform.tfvars -out "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.tfplan"
+        terraform show -json "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.tfplan" > "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.json"
 
-      - name: Ensure artifacts directory
-        run: mkdir -p artifacts
+    - name: Ensure artifacts directory
+      run: mkdir -p artifacts
 
-      - name: Create plan summary (bash)
-        run: |
-          PLAN_JSON="artifacts/plan-${ENV_NAME}.json"
-          if [ -f "$PLAN_JSON" ]; then
-            ADDS=$(jq '[.resource_changes[]? | select(.change.actions[]? == "create")] | length' "$PLAN_JSON")
-            CHANGES=$(jq '[.resource_changes[]? | select(.change.actions[]? == "update")] | length' "$PLAN_JSON")
-            DELETES=$(jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length' "$PLAN_JSON")
-            REPLACES=$(jq '[.resource_changes[]? | select((.change.actions | index("replace")) != null)] | length' "$PLAN_JSON")
-            echo "{\"adds\":$ADDS,\"changes\":$CHANGES,\"deletes\":$DELETES,\"replaces\":$REPLACES}" > "artifacts/plan-summary-${ENV_NAME}.json"
-            printf "Adds: %s\nChanges: %s\nDeletes: %s\nReplaces: %s\n" "$ADDS" "$CHANGES" "$DELETES" "$REPLACES" > "artifacts/plan-summary-${ENV_NAME}.txt"
-          else
-            echo '{"note":"plan not generated"}' > "artifacts/plan-summary-${ENV_NAME}.json"
-            echo "Summary unavailable (plan JSON missing)" > "artifacts/plan-summary-${ENV_NAME}.txt"
-          fi
+    - name: Create plan summary (bash)
+      run: |
+        PLAN_JSON="artifacts/plan-${ENV_NAME}.json"
+        if [ -f "$PLAN_JSON" ]; then
+          ADDS=$(jq '[.resource_changes[]? | select(.change.actions[]? == "create")] | length' "$PLAN_JSON")
+          CHANGES=$(jq '[.resource_changes[]? | select(.change.actions[]? == "update")] | length' "$PLAN_JSON")
+          DELETES=$(jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length' "$PLAN_JSON")
+          REPLACES=$(jq '[.resource_changes[]? | select((.change.actions | index("replace")) != null)] | length' "$PLAN_JSON")
+          echo "{\"adds\":$ADDS,\"changes\":$CHANGES,\"deletes\":$DELETES,\"replaces\":$REPLACES}" > "artifacts/plan-summary-${ENV_NAME}.json"
+          printf "Adds: %s\nChanges: %s\nDeletes: %s\nReplaces: %s\n" "$ADDS" "$CHANGES" "$DELETES" "$REPLACES" > "artifacts/plan-summary-${ENV_NAME}.txt"
+        else
+          echo '{"note":"plan not generated"}' > "artifacts/plan-summary-${ENV_NAME}.json"
+          echo "Summary unavailable (plan JSON missing)" > "artifacts/plan-summary-${ENV_NAME}.txt"
+        fi
 
-      - name: SQL-only summary (PowerShell inline)
-        shell: pwsh
-        run: |
-          $planJson = Join-Path $PWD "artifacts/plan-${env:ENV_NAME}.json"
-          if (Test-Path $planJson) {
-            $json = Get-Content $planJson -Raw | ConvertFrom-Json
-            $changes = @()
-            if ($null -ne $json.resource_changes) { $changes = $json.resource_changes }
-            $sql = $changes | Where-Object { $_.type -like 'azurerm_mssql_*' }
-            $adds = ($sql | Where-Object { $_.change.actions -contains 'create' }).Count
-            $updates = ($sql | Where-Object { $_.change.actions -contains 'update' }).Count
-            $deletes = ($sql | Where-Object { $_.change.actions -contains 'delete' }).Count
-            $replaces = ($sql | Where-Object { $_.change.actions -contains 'replace' }).Count
-            $outObj = [ordered]@{ env = "$env:ENV_NAME"; adds = $adds; changes = $updates; deletes = $deletes; replaces = $replaces }
-            ($outObj | ConvertTo-Json -Compress) | Out-File -Encoding utf8 "artifacts/${env:ENV_NAME}-plan-sql-summary.json"
-            "SQL adds: $adds`nSQL changes: $updates`nSQL deletes: $deletes`nSQL replaces: $replaces" | Out-File -Encoding utf8 "artifacts/${env:ENV_NAME}-plan-sql-summary.txt"
-          } else {
-            Write-Warning "Plan JSON not found at $planJson. Skipping SQL-only summary."
-          }
+    - name: SQL-only summary (PowerShell inline)
+      shell: pwsh
+      run: |
+        $planJson = Join-Path $PWD "artifacts/plan-${env:ENV_NAME}.json"
+        if (Test-Path $planJson) {
+          $json = Get-Content $planJson -Raw | ConvertFrom-Json
+          $changes = @()
+          if ($null -ne $json.resource_changes) { $changes = $json.resource_changes }
+          $sql = $changes | Where-Object { $_.type -like 'azurerm_mssql_*' }
+          $adds = ($sql | Where-Object { $_.change.actions -contains 'create' }).Count
+          $updates = ($sql | Where-Object { $_.change.actions -contains 'update' }).Count
+          $deletes = ($sql | Where-Object { $_.change.actions -contains 'delete' }).Count
+          $replaces = ($sql | Where-Object { $_.change.actions -contains 'replace' }).Count
+          $outObj = [ordered]@{ env = "$env:ENV_NAME"; adds = $adds; changes = $updates; deletes = $deletes; replaces = $replaces }
+          ($outObj | ConvertTo-Json -Compress) | Out-File -Encoding utf8 "artifacts/${env:ENV_NAME}-plan-sql-summary.json"
+          "SQL adds: $adds`nSQL changes: $updates`nSQL deletes: $deletes`nSQL replaces: $replaces" | Out-File -Encoding utf8 "artifacts/${env:ENV_NAME}-plan-sql-summary.txt"
+        } else {
+          Write-Warning "Plan JSON not found at $planJson. Skipping SQL-only summary."
+        }
 
-      - name: Upload plan artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: plan-${{ inputs.envName }}
-          path: |
-            artifacts/plan-${{ inputs.envName }}.json
-            artifacts/plan-${{ inputs.envName }}.tfplan
-            artifacts/plan-${{ inputs.envName }}.log
-            artifacts/plan-summary-${{ inputs.envName }}.json
-            artifacts/plan-summary-${{ inputs.envName }}.txt
-            artifacts/${{ inputs.envName }}-plan-sql-*.json
-            artifacts/${{ inputs.envName }}-plan-sql-*.txt
-          if-no-files-found: warn
+    - name: Upload plan artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: plan-${{ inputs.envName }}
+        path: |
+          artifacts/plan-${{ inputs.envName }}.json
+          artifacts/plan-${{ inputs.envName }}.tfplan
+          artifacts/plan-${{ inputs.envName }}.log
+          artifacts/plan-summary-${{ inputs.envName }}.json
+          artifacts/plan-summary-${{ inputs.envName }}.txt
+          artifacts/${{ inputs.envName }}-plan-sql-*.json
+          artifacts/${{ inputs.envName }}-plan-sql-*.txt
+        if-no-files-found: warn
 
   guard:
     name: Guard
     needs: plan
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Download plan artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: plan-${{ inputs.envName }}
-          path: artifacts
+    - name: Download plan artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: plan-${{ inputs.envName }}
+        path: artifacts
 
-      - name: Run guard (bash)
-        shell: bash
-        run: |
-          set -e
-          PLAN_JSON="artifacts/plan-${{ inputs.envName }}.json"
-          if [ ! -f "$PLAN_JSON" ]; then
-            echo "Plan JSON not found at $PLAN_JSON" >&2
-            exit 3
-          fi
-          DELETES=$(jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length' "$PLAN_JSON")
-          REPLACES=$(jq '[.resource_changes[]? | select((.change.actions | index("replace")) != null)] | length' "$PLAN_JSON")
-          echo "Guard check: deletes=$DELETES replaces=$REPLACES"
-          if [ "$DELETES" -gt 0 ] || [ "$REPLACES" -gt 0 ]; then
-            echo "Guard failed: plan includes deletes or replacements."
-            exit 10
-          fi
+    - name: Run guard (bash)
+      shell: bash
+      run: |
+        set -e
+        PLAN_JSON="artifacts/plan-${{ inputs.envName }}.json"
+        if [ ! -f "$PLAN_JSON" ]; then
+          echo "Plan JSON not found at $PLAN_JSON" >&2
+          exit 3
+        fi
+        DELETES=$(jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length' "$PLAN_JSON")
+        REPLACES=$(jq '[.resource_changes[]? | select((.change.actions | index("replace")) != null)] | length' "$PLAN_JSON")
+        echo "Guard check: deletes=$DELETES replaces=$REPLACES"
+        if [ "$DELETES" -gt 0 ] || [ "$REPLACES" -gt 0 ]; then
+          echo "Guard failed: plan includes deletes or replacements."
+          exit 10
+        fi
 
   apply:
     name: Apply
@@ -198,40 +206,48 @@ jobs:
       ENV_NAME: ${{ inputs.envName }}
       FORCE_DISABLE_HUB: ${{ inputs.applyDisableHub }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.6
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.6
 
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - name: Azure login (OIDC)
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Pre-apply guard and plan (fresh)
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "platform/infra/envs/${ENV_NAME}"
-          terraform init -reconfigure -backend-config=backend.tfvars -lock-timeout=20m
-          terraform plan -input=false -var-file=terraform.tfvars -out "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.tfplan"
-          terraform show -json "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.tfplan" > "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.json"
-          DELETES=$(jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length' "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.json")
-          REPLACES=$(jq '[.resource_changes[]? | select((.change.actions | index("replace")) != null)] | length' "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.json")
-          echo "Pre-apply guard: deletes=$DELETES replaces=$REPLACES"
-          if [ "$DELETES" -gt 0 ] || [ "$REPLACES" -gt 0 ]; then
-            echo "Guard failed: plan includes deletes or replacements."
-            exit 10
-          fi
+    - name: Pre-apply guard and plan (fresh)
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Provide TF_VARs for provider variables from OIDC secrets
+        export TF_VAR_subscription_id="${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+        export TF_VAR_tenant_id="${{ secrets.AZURE_TENANT_ID }}"
+        # Optionally disable hub alias by blanking hub_subscription_id when requested
+        if [ "${FORCE_DISABLE_HUB}" = "true" ]; then
+          echo "FORCE_DISABLE_HUB=true: blanking TF_VAR_hub_subscription_id"
+          export TF_VAR_hub_subscription_id=""
+        fi
+        cd "platform/infra/envs/${ENV_NAME}"
+        terraform init -reconfigure -backend-config=backend.tfvars -lock-timeout=20m
+        terraform plan -input=false -var-file=terraform.tfvars -out "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.tfplan"
+        terraform show -json "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.tfplan" > "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.json"
+        DELETES=$(jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length' "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.json")
+        REPLACES=$(jq '[.resource_changes[]? | select((.change.actions | index("replace")) != null)] | length' "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.json")
+        echo "Pre-apply guard: deletes=$DELETES replaces=$REPLACES"
+        if [ "$DELETES" -gt 0 ] || [ "$REPLACES" -gt 0 ]; then
+          echo "Guard failed: plan includes deletes or replacements."
+          exit 10
+        fi
 
-      - name: Apply (tf-apply.sh)
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "platform/infra/envs/${ENV_NAME}"
-          terraform apply -input=false "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.tfplan"
+    - name: Apply (tf-apply.sh)
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "platform/infra/envs/${ENV_NAME}"
+        terraform apply -input=false "${GITHUB_WORKSPACE}/artifacts/plan-${ENV_NAME}.tfplan"

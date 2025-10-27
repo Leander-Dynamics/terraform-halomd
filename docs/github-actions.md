@@ -1,6 +1,6 @@
 # GitHub Actions for Terraform (Prod)
 
-This repository now includes a GitHub Actions workflow that mirrors the Azure DevOps (ADO) pipeline flow using the same scripts:
+This repository includes a GitHub Actions workflow that mirrors the Azure DevOps (ADO) pipeline flow using self-contained steps (no local script dependencies):
 
 - Validate → Plan → Guard → (optional) Apply
 - Artifacts: plan JSON, plan summary (JSON/TXT), SQL-only plan summary (JSON/TXT)
@@ -15,17 +15,10 @@ Trigger: manual `workflow_dispatch` with inputs:
 - envName (default `prod`)
 - runApply (default `false`)
 - diagOnly (default `false`)
-- applyDisableHub (default `true`) — disables hub provider linkage and orphans hub-linked DNS from state
-- useAkv (default `true`) — use Key Vault secrets during plan (may require firewall allowance)
+- applyDisableHub (default `true`) — blanks the hub provider subscription input so the hub alias is effectively disabled
+- useAkv (default `true`) — reserved for future enhancement; current workflow doesn’t pull secrets from AKV during Plan
 
-Jobs run on `ubuntu-latest` and call the existing scripts:
-
-- `.ado/scripts/tf-plan.sh`
-- `.ado/scripts/tf-preapply.sh`
-- `.ado/scripts/tf-apply.sh`
-- `scripts/plan-summarize.sh`
-- `scripts/plan-sql-check.ps1`
-- `scripts/terraform-destroy-guard.sh`
+Jobs run on `ubuntu-latest` and perform Terraform inline (init/plan/show/apply). Plan and guard summaries use `jq` and PowerShell.
 
 Artifacts uploaded under name `plan-<env>` include:
 
@@ -55,23 +48,23 @@ The Apply job targets the `prod` environment. To require approvals:
 
 ## Key Vault and firewall notes
 
-- During Plan, if Key Vault firewall blocks access, you can set `useAkv=false` when dispatching to avoid KV interactions. The workflow will set `SKIP_KV_SECRETS=true` so Plan can complete.
-- For Apply, ensure the agent can reach Key Vault or the scripts will manage firewall temporarily as per your existing logic.
+- Current workflow does not retrieve secrets from Key Vault during Plan. Plan uses variables from your env `terraform.tfvars` and TF_VAR_* values.
+- You can add AKV retrieval later if needed; OIDC login is already in place. For now, keep `useAkv=false` or ignore it.
 
 ## Hub provider disabled
 
-Set `applyDisableHub=true` to force hub provider off and orphan hub-linked DNS from state. The plan script already honors `FORCE_DISABLE_HUB` and blanks `hub_subscription_id` accordingly.
+Set `applyDisableHub=true` to blank `TF_VAR_hub_subscription_id` at runtime so the hub `azurerm` alias is effectively disabled during Plan/Apply. Use this when you want Prod to behave like Dev (no hub permissions required).
 
 ## Try it
 
 Actions → `Terraform Prod (Plan/Guard/Apply)` → Run workflow → Choose inputs:
 
-- Start with: `envName=prod`, `runApply=false`, `diagOnly=false`, `applyDisableHub=true`, `useAkv=false` (safer plan)
+- Start with: `envName=prod`, `runApply=false`, `diagOnly=false`, `applyDisableHub=true`.
 - Review artifacts, ensure Guard shows `Deletes=0`, `Replaces=0`, and SQL-only changes = 0.
-- When ready, re-run with `runApply=true` (Apply gated by the `prod` environment)
+- When ready, re-run with `runApply=true` (Apply gated by the `prod` environment).
 
 ## Troubleshooting
 
-- Plan JSON missing: check `.ado/scripts/tf-plan.sh` logs and ensure `terraform` installed.
-- Guard fails due to deletes/replaces: review `plan-json-<env>` and `plan-summary-<env>` to address drift; use `moved` blocks or `terraform import`, then re-plan.
-- SQL-only summary missing: ensure PowerShell (`pwsh`) is available (it is on ubuntu-latest). See `scripts/plan-sql-check.ps1`.
+- Plan JSON missing: check the Plan job logs to confirm Terraform ran and that the backend config exists.
+- Guard fails due to deletes/replaces: review `plan-<env>.json` and `plan-summary-<env>.{json,txt}` to address drift; add `moved` blocks or `terraform import`, then re-plan.
+- SQL-only summary missing: ensure PowerShell (`pwsh`) ran successfully; it is available on `ubuntu-latest`.
