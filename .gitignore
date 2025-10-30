@@ -29,3 +29,8 @@ _dl/
 
 # Local tools
 .tools
+
+# Kubernetes configs (never commit kubeconfig)
+.kube/
+kubeconfig
+kubeconfig-*
