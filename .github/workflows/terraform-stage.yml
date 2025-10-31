@@ -1,4 +1,4 @@
-name: Terraform Prod (Plan/Guard/Apply)
+name: Terraform Stage (Plan/Guard/Apply)
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
       envName:
         description: Environment name (infra folder under platform/infra/envs)
         required: true
-        default: prod
+        default: stage
       runApply:
         description: Run Apply after Guard passes
         required: true
@@ -21,7 +21,7 @@ on:
         description: Force disable hub provider and orphan hub-linked DNS from state
         required: true
         type: boolean
-        default: true
+        default: false
       useAkv:
         description: Use Key Vault for secrets during Plan (may require firewall allow)
         required: true
@@ -234,7 +234,7 @@ jobs:
     if: ${{ inputs.runApply }}
     needs: guard
     runs-on: ubuntu-latest
-    environment: prod
+    environment: stage
     env:
       ENV_NAME: ${{ inputs.envName }}
       FORCE_DISABLE_HUB: ${{ inputs.applyDisableHub }}
