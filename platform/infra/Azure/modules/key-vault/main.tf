@@ -19,7 +19,7 @@ locals {
       role_definition_name = try(cfg.role_definition_name, null)
     }
     if try(trim(cfg.principal_id), "") != ""
-      && (try(cfg.role_definition_id, "") != "" || try(cfg.role_definition_name, "") != "")
+    && (try(cfg.role_definition_id, "") != "" || try(cfg.role_definition_name, "") != "")
   }
 }
 
@@ -37,7 +37,7 @@ resource "azurerm_key_vault" "kv" {
 }
 
 resource "azurerm_key_vault_secret" "this" {
-  for_each     = local.filtered_secrets
+  for_each = local.filtered_secrets
 
   name         = each.key
   value        = each.value.value

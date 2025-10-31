@@ -53,6 +53,24 @@ module "artbit" {
   enable_redis = var.enable_redis
 }
 
+# Optional AKS + ACR (disabled until var.enable_aks = true)
+module "aks" {
+  source    = "../../Azure/modules/aks"
+  providers = { azurerm = azurerm }
+  count     = var.enable_aks ? 1 : 0
+
+  resource_group_name = module.artbit.resource_group_name
+  location            = var.region
+  cluster_name        = var.aks_cluster_name
+  dns_prefix          = var.aks_dns_prefix
+  node_count          = var.aks_node_count
+  vm_size             = var.aks_vm_size
+  os_disk_size_gb     = var.aks_node_os_disk_size_gb
+  acr_name            = var.acr_name
+  acr_sku             = var.acr_sku
+  tags                = var.tags
+}
+
 output "resource_group_name" {
   description = "Resource group provisioned for the environment."
   value       = module.artbit.resource_group_name
@@ -129,4 +147,15 @@ output "openai_primary_key" {
   description = "Primary access key for the Azure OpenAI account."
   value       = module.artbit.openai_primary_key
   sensitive   = true
+}
+
+# AKS/ACR outputs (if enabled)
+output "aks_id" {
+  description = "AKS cluster resource ID"
+  value       = try(module.aks[0].aks_id, null)
+}
+
+output "acr_login_server" {
+  description = "ACR login server hostname"
+  value       = try(module.aks[0].acr_login_server, null)
 }

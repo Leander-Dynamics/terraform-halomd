@@ -26,7 +26,7 @@ variable "a_records" {
 variable "cname_records" {
   description = "Map of DNS CNAME records to create (key is the record name)."
   type = map(object({
-    ttl   = number
+    ttl    = number
     record = string
   }))
   default = {}

@@ -16,16 +16,16 @@ resource "random_string" "storage_account_suffix" {
 }
 
 locals {
-  storage_account_name                  = local.storage_account_name_provided ? local.sanitized_storage_account_input : substr("${local.storage_account_base}${random_string.storage_account_suffix[0].result}", 0, 24)
-  runtime_stack_normalized              = lower(trimspace(var.runtime_stack))
-  runtime_version_effective             = trimspace(var.runtime_version) != "" ? trimspace(var.runtime_version) : (
+  storage_account_name     = local.storage_account_name_provided ? local.sanitized_storage_account_input : substr("${local.storage_account_base}${random_string.storage_account_suffix[0].result}", 0, 24)
+  runtime_stack_normalized = lower(trimspace(var.runtime_stack))
+  runtime_version_effective = trimspace(var.runtime_version) != "" ? trimspace(var.runtime_version) : (
     local.runtime_stack_normalized == "python" ? "3.10" :
-    local.runtime_stack_normalized == "node"   ? "~18" :
+    local.runtime_stack_normalized == "node" ? "~18" :
     "8.0"
   )
   application_insights_connection_string = trimspace(var.application_insights_connection_string)
-  log_analytics_workspace_id_trimmed      = trimspace(coalesce(var.log_analytics_workspace_id, ""))
-  enable_diagnostics                      = local.log_analytics_workspace_id_trimmed != ""
+  log_analytics_workspace_id_trimmed     = trimspace(coalesce(var.log_analytics_workspace_id, ""))
+  enable_diagnostics                     = local.log_analytics_workspace_id_trimmed != ""
 }
 
 resource "azurerm_storage_account" "this" {
@@ -68,7 +68,7 @@ resource "azurerm_linux_function_app" "this" {
 
     application_stack {
       dotnet_version = local.runtime_stack_normalized == "dotnet" ? local.runtime_version_effective : null
-      node_version   = local.runtime_stack_normalized == "node"   ? local.runtime_version_effective : null
+      node_version   = local.runtime_stack_normalized == "node" ? local.runtime_version_effective : null
       python_version = local.runtime_stack_normalized == "python" ? local.runtime_version_effective : null
     }
   }

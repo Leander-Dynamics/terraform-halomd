@@ -1,4 +1,4 @@
-variable "server_name"                 { type = string }
+variable "server_name" { type = string }
 variable "db_name" {
   type    = string
   default = "halomd"
@@ -53,6 +53,6 @@ variable "tags" {
   default = {}
 }
 variable "firewall_rules" {
-  type = list(object({ name = string, start_ip = string, end_ip = string }))
+  type    = list(object({ name = string, start_ip = string, end_ip = string }))
   default = []
 }
