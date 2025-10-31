@@ -16,7 +16,7 @@ resource "azurerm_windows_web_app" "this" {
   tags                = var.tags
 
   site_config {
-    always_on = var.always_on
+    always_on  = var.always_on
     ftps_state = "Disabled"
   }
 

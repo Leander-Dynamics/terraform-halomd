@@ -1,7 +1,7 @@
-variable "name"                           { type = string }
-variable "plan_name"                      { type = string }
-variable "resource_group_name"            { type = string }
-variable "location"                       { type = string }
+variable "name" { type = string }
+variable "plan_name" { type = string }
+variable "resource_group_name" { type = string }
+variable "location" { type = string }
 variable "plan_sku" {
   type    = string
   default = "Y1"

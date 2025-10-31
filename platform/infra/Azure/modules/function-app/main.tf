@@ -35,9 +35,9 @@ resource "azurerm_linux_function_app" "func" {
   site_config {
     ftps_state = "Disabled"
     application_stack {
-      dotnet_version = var.runtime == "dotnet" ? "8.0"  : null
+      dotnet_version = var.runtime == "dotnet" ? "8.0" : null
       python_version = var.runtime == "python" ? "3.10" : null
-      node_version   = var.runtime == "node"   ? "~18"  : null
+      node_version   = var.runtime == "node" ? "~18" : null
     }
   }
   app_settings = merge({

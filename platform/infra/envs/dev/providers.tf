@@ -21,7 +21,7 @@ provider "azurerm" {
 }
 
 provider "azurerm" {
-  alias   = "hub"
+  alias = "hub"
   features {}
 
   subscription_id = local.hub_subscription_id != "" ? local.hub_subscription_id : null

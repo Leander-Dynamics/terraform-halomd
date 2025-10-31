@@ -6,12 +6,12 @@ locals {
 }
 
 resource "azurerm_linux_virtual_machine" "this" {
-  name                = var.name
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  size                = var.size
-  admin_username      = var.admin_username
-  admin_password      = local.admin_password_provided ? local.admin_password_trimmed : null
+  name                            = var.name
+  location                        = var.location
+  resource_group_name             = var.resource_group_name
+  size                            = var.size
+  admin_username                  = var.admin_username
+  admin_password                  = local.admin_password_provided ? local.admin_password_trimmed : null
   disable_password_authentication = !local.admin_password_provided
 
   network_interface_ids = [var.nic_id]
