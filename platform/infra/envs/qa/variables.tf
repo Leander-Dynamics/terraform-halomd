@@ -200,3 +200,53 @@ variable "enable_redis" {
   type        = bool
   default     = false
 }
+
+# --- AKS (disabled by default until configured) ---
+
+variable "enable_aks" {
+  description = "When true, provisions an AKS cluster and ACR for the environment."
+  type        = bool
+  default     = false
+}
+
+variable "aks_cluster_name" {
+  description = "AKS cluster name (unique per env)"
+  type        = string
+  default     = "${var.env_name}-aks"
+}
+
+variable "aks_dns_prefix" {
+  description = "DNS prefix for AKS"
+  type        = string
+  default     = "${var.env_name}-aks"
+}
+
+variable "aks_node_count" {
+  description = "Node count in default pool"
+  type        = number
+  default     = 3
+}
+
+variable "aks_vm_size" {
+  description = "VM size for AKS default pool (8 vCPU, 32GB recommended)"
+  type        = string
+  default     = "Standard_D8s_v5"
+}
+
+variable "aks_node_os_disk_size_gb" {
+  description = "Node OS disk size in GB"
+  type        = number
+  default     = 512
+}
+
+variable "acr_name" {
+  description = "Optional ACR name; leave empty to auto-generate"
+  type        = string
+  default     = ""
+}
+
+variable "acr_sku" {
+  description = "ACR SKU (Basic, Standard, Premium)"
+  type        = string
+  default     = "Standard"
+}
