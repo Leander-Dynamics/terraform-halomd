@@ -1,0 +1,120 @@
+name: Terraform AWS (prod)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+    - 'platform/infra/AWS/**'
+    - 'platform/apps/helm/**'
+    - '.github/workflows/terraform-aws-prod.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME_PROD }}
+        aws-region: ${{ vars.AWS_REGION_PROD }}
+    - uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.7.5
+    - name: Terraform Init
+      working-directory: platform/infra/AWS/envs/prod
+      run: terraform init -upgrade
+    - name: Terraform Plan (prod)
+      working-directory: platform/infra/AWS/envs/prod
+      env:
+        TF_VAR_project_name: ${{ vars.PROJECT_NAME }}
+        TF_VAR_env_name: prod
+        TF_VAR_region: ${{ vars.AWS_REGION_PROD }}
+        TF_VAR_tags: ${{ toJson(vars.TAGS_COMMON) }}
+        TF_VAR_tf_state_bucket: ${{ vars.TF_STATE_BUCKET }}
+        TF_VAR_tf_state_region: ${{ vars.TF_STATE_REGION }}
+        TF_VAR_tf_lock_table: ${{ vars.TF_LOCK_TABLE }}
+        TF_VAR_vpc_cidr: ${{ vars.AWS_VPC_CIDR_PROD }}
+      run: terraform plan -var-file=prod.tfvars -var "rds_password=${{ secrets.RDS_PASSWORD_PROD }}" -out=tfplan
+    - uses: actions/upload-artifact@v4
+      with:
+        name: tfplan-aws-prod
+        path: platform/infra/AWS/envs/prod/tfplan
+  apply:
+    needs: plan
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME_PROD }}
+        aws-region: ${{ vars.AWS_REGION_PROD }}
+    - uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.7.5
+    - name: Terraform Init
+      working-directory: platform/infra/AWS/envs/prod
+      run: terraform init -upgrade
+    - uses: actions/download-artifact@v4
+      with:
+        name: tfplan-aws-prod
+        path: platform/infra/AWS/envs/prod
+    - name: Terraform Apply (prod)
+      working-directory: platform/infra/AWS/envs/prod
+      run: terraform apply -auto-approve tfplan
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v4
+      with:
+        version: 'latest'
+
+    - name: Setup Helm
+      uses: azure/setup-helm@v4
+      with:
+        version: 'v3.14.4'
+
+    - name: Read Terraform outputs
+      id: tf-outputs
+      shell: bash
+      working-directory: platform/infra/AWS/envs/prod
+      run: |
+        echo "cluster_name=$(terraform output -raw eks_cluster_name)" >> $GITHUB_OUTPUT
+        echo "alb_role_arn=$(terraform output -raw alb_controller_role_arn)" >> $GITHUB_OUTPUT
+        terraform output -json irsa_service_account_annotations > irsa_annotations.json
+
+    - name: Extract IRSA role ARN (webapp)
+      id: irsa-webapp
+      shell: pwsh
+      working-directory: platform/infra/AWS/envs/prod
+      run: |
+        $json = Get-Content irsa_annotations.json | ConvertFrom-Json
+        if ($null -eq $json.webapp) { Write-Host "No webapp workload IRSA annotations found"; exit 0 }
+        $roleArn = $json.webapp.'eks.amazonaws.com/role-arn'
+        echo "roleArn=$roleArn" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+    - name: Install EKS add-ons (metrics-server + optional ALB controller)
+      shell: pwsh
+      env:
+        AWS_REGION: ${{ vars.AWS_REGION_PROD }}
+      run: |
+        $cluster = '${{ steps.tf-outputs.outputs.cluster_name }}'
+        $region  = "$env:AWS_REGION"
+        $albArn  = '${{ steps.tf-outputs.outputs.alb_role_arn }}'
+        ./scripts/k8s/deploy-eks-addons.ps1 -ClusterName $cluster -Region $region -AlbControllerRoleArn $albArn
+
+    - name: Deploy Helm webapp (IRSA)
+      if: steps.irsa-webapp.outputs.roleArn != ''
+      shell: pwsh
+      env:
+        AWS_REGION: ${{ vars.AWS_REGION_PROD }}
+      run: |
+        $cluster = '${{ steps.tf-outputs.outputs.cluster_name }}'
+        aws eks update-kubeconfig --name $cluster --region $env:AWS_REGION
+        $roleArn = '${{ steps.irsa-webapp.outputs.roleArn }}'
+        "serviceAccount:`n  annotations:`n    eks.amazonaws.com/role-arn: $roleArn" | Out-File override-irsa-values.yaml
+        helm upgrade --install webapp platform/apps/helm/webapp -n app --create-namespace -f platform/apps/helm/webapp/values.yaml -f override-irsa-values.yaml --wait

@@ -1,0 +1,127 @@
+replicaCount: 2
+
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+env: []
+# - name: FLASK_ENV
+#   value: production
+
+envFrom: []
+# - secretRef:
+#     name: flask-secrets
+# - configMapRef:
+#     name: flask-config
+
+probes:
+  path: /healthz
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 2
+  successThreshold: 1
+  failureThreshold: 3
+  # When true, liveness/readiness/startup probes will target the sidecar instead of the app container
+  useSidecar: false
+
+healthzSidecar:
+  enabled: false
+  image: hashicorp/http-echo:0.2.3
+  port: 5678
+  # Responds with HTTP 200 and body "ok"
+  args:
+  - "-text=ok"
+  - "-listen=:5678"
+
+flask:
+  # If your image already contains the entrypoint, leave command/args empty
+  command: []
+  args: []
+  # Gunicorn defaults if you want us to run it
+  useGunicorn: true
+  appModule: app # module path (e.g., app, src.main)
+  workers: 2
+
+ingress:
+  enabled: true
+  className: "azure/application-gateway"
+  annotations:
+    kubernetes.io/ingress.class: azure/application-gateway
+  hosts:
+  - host: ""
+    paths:
+    - path: /
+      pathType: Prefix
+  tls: []
+  # - secretName: flask-tls
+  #   hosts:
+  #     - example.com
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
+
+vpa:
+  enabled: false
+  updatePolicy: Auto # Off | Initial | Auto
+  # minAllowed:
+  #   cpu: 50m
+  #   memory: 128Mi
+  # maxAllowed:
+  #   cpu: 2000m
+  #   memory: 2Gi
+
+topologySpreadConstraints: []
+
+# - maxSkew: 1
+#   topologyKey: topology.kubernetes.io/zone
+#   whenUnsatisfiable: ScheduleAnyway
+#   labelSelector:
+#     matchLabels: {}

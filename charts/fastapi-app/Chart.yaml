@@ -1,0 +1,6 @@
+apiVersion: v2
+name: fastapi-app
+description: FastAPI REST v2 application with HPA and optional VPA
+type: application
+version: 0.1.0
+appVersion: "2.0.0"

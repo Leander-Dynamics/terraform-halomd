@@ -56,3 +56,24 @@ vault_dns_zone_name = "privatelink.vaultcore.azure.net"
 vault_dns_resource_group_name = "hub-eus2-vnet-rg-1"
 
 enable_redis = false
+
+# --- AKS and Ingress/Gateway/Front Door toggles for dev plan-only run ---
+# Enable AKS cluster with Istio service mesh and AGIC via Application Gateway;
+# also place Azure Front Door in front of the gateway.
+enable_aks             = true
+enable_aks_istio       = true
+enable_app_gateway     = true
+enable_aks_agw_ingress = true
+enable_frontdoor       = true
+
+# Cluster Autoscaler (planned wiring)
+enable_aks_cluster_autoscaler = true
+aks_min_count                 = 3
+aks_max_count                 = 10
+
+# Autoscaler profile tuning
+enable_aks_auto_scaler_profile               = true
+aks_auto_scaler_expander                     = "least-waste"
+aks_auto_scaler_scan_interval                = "10s"
+aks_auto_scaler_balance_similar_node_groups  = true
+aks_auto_scaler_max_graceful_termination_sec = 600

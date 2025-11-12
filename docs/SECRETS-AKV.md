@@ -112,3 +112,7 @@ Use **RBAC** (recommended) rather than legacy access policies.
 
 
 See **docs/GLOBAL-VARIABLES.md** for the exact list of pipeline variables to create.
+
+---
+
+Note: For AWS EKS workloads, see `docs/IRSA-SECRETS.md` for the IRSA-based pattern that lets specific ServiceAccounts read from AWS Secrets Manager and SSM Parameter Store using least-privilege IAM roles.

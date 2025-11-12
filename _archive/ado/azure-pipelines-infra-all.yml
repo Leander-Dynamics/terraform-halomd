@@ -1,0 +1,131 @@
+# Archived from repo root: azure-pipelines-infra-all.yml (ADO infra all envs)
+# Date archived: 2025-11-04
+
+trigger:
+  branches: { include: [ main ] }
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+- stage: Dev
+  displayName: "Terraform: Dev"
+  variables:
+  - group: terraform-global-common
+  - group: terraform-dev
+  jobs:
+  - job: DevPlanApply
+    steps:
+    - checkout: self
+    - task: AzureCLI@2
+      displayName: "Terraform init/plan/apply (Dev)"
+      inputs:
+        azureSubscription: "$(SERVICE_CONNECTION)"
+        scriptType: bash
+        scriptLocation: inlineScript
+        workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
+        inlineScript: |
+          set -euo pipefail
+          az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
+          if grep -R --include="*.tf" --exclude-dir=".terraform" "new-terraform-modules" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: legacy 'new-terraform-modules' present"; exit 1; fi
+          if grep -R --include="*.tf" --exclude-dir=".terraform" "arbit_workflow" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: old module name 'arbit_workflow' present"; exit 1; fi
+          if grep -R --include="*.tf" --exclude-dir=".terraform" "/modules/aks" -n "$(System.DefaultWorkingDirectory)" || grep -R --include="*.tf" --exclude-dir=".terraform" "/modules/acr" -n "$(System.DefaultWorkingDirectory)"; then echo "ERROR: AKS/ACR modules present"; exit 1; fi
+          terraform fmt -recursive
+          terraform init -backend-config=backend.tfvars
+          terraform validate
+          terraform plan  -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan     -lock-timeout=$(TF_LOCK_TIMEOUT)s
+
+- stage: QA
+  displayName: "Terraform: QA"
+  dependsOn: Dev
+  variables:
+  - group: terraform-global-common
+  - group: terraform-qa
+  jobs:
+  - job: QAPlanApply
+    steps:
+    - checkout: self
+    - task: AzureCLI@2
+      displayName: "Terraform init/plan/apply (QA)"
+      inputs:
+        azureSubscription: "$(SERVICE_CONNECTION)"
+        scriptType: bash
+        scriptLocation: inlineScript
+        workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
+        inlineScript: |
+          set -euo pipefail
+          az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
+          terraform fmt -recursive
+          terraform init -backend-config=backend.tfvars
+          terraform validate
+          terraform plan  -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan     -lock-timeout=$(TF_LOCK_TIMEOUT)s
+
+- stage: Stage
+  displayName: "Terraform: Stage"
+  dependsOn: QA
+  variables:
+  - group: terraform-global-common
+  - group: terraform-stage
+  jobs:
+  - job: ManualApprovalStage
+    steps:
+    - task: ManualValidation@0
+      inputs:
+        instructions: 'Review the QA outcome. Approve to deploy to Stage.'
+        onTimeout: 'reject'
+        timeout: '43200'
+  - job: StagePlanApply
+    dependsOn: ManualApprovalStage
+    steps:
+    - checkout: self
+    - task: AzureCLI@2
+      displayName: "Terraform init/plan/apply (Stage)"
+      inputs:
+        azureSubscription: "$(SERVICE_CONNECTION)"
+        scriptType: bash
+        scriptLocation: inlineScript
+        workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
+        inlineScript: |
+          set -euo pipefail
+          az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
+          terraform fmt -recursive
+          terraform init -backend-config=backend.tfvars
+          terraform validate
+          terraform plan  -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan     -lock-timeout=$(TF_LOCK_TIMEOUT)s
+
+- stage: Prod
+  displayName: "Terraform: Prod"
+  dependsOn: Stage
+  variables:
+  - group: terraform-global-common
+  - group: terraform-prod
+  jobs:
+  - job: ManualApprovalProd
+    steps:
+    - task: ManualValidation@0
+      inputs:
+        instructions: 'Review the Stage outcome. Approve to deploy to Prod.'
+        onTimeout: 'reject'
+        timeout: '43200'
+  - job: ProdPlanApply
+    dependsOn: ManualApprovalProd
+    steps:
+    - checkout: self
+    - task: AzureCLI@2
+      displayName: "Terraform init/plan/apply (Prod)"
+      inputs:
+        azureSubscription: "$(SERVICE_CONNECTION)"
+        scriptType: bash
+        scriptLocation: inlineScript
+        workingDirectory: "$(System.DefaultWorkingDirectory)/platform/infra/envs/$(ENV_NAME)"
+        inlineScript: |
+          set -euo pipefail
+          az account set --subscription "$(AZ_SUBSCRIPTION_ID)"
+          terraform fmt -recursive
+          terraform init -backend-config=backend.tfvars
+          terraform validate
+          terraform plan  -var-file=terraform.tfvars -out=tfplan -lock-timeout=$(TF_LOCK_TIMEOUT)s
+          terraform apply -auto-approve tfplan     -lock-timeout=$(TF_LOCK_TIMEOUT)s

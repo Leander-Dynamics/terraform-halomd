@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "edr-agent.fullname" . }}
+  labels:
+    app.kubernetes.io/name: edr-agent
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: edr-agent
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: edr-agent
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations: {{- toYaml .Values.annotations | nindent 8 }}
+    spec:
+      serviceAccountName: {{ default (include "edr-agent.fullname" .) .Values.serviceAccount.name }}
+      nodeSelector: {{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations: {{- toYaml .Values.tolerations | nindent 8 }}
+      affinity: {{- toYaml .Values.affinity | nindent 8 }}
+      containers:
+        - name: agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          env: {{- toYaml .Values.env | nindent 12 }}
+          # Consider hostPID/hostNetwork if agent requires
+          # volumeMounts:
+          #   - name: host-root
+          #     mountPath: /host
+      # volumes:
+      #   - name: host-root
+      #     hostPath:
+      #       path: /

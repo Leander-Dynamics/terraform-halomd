@@ -25,6 +25,9 @@ resource "azurerm_kubernetes_cluster" "aks" {
     name                         = "system"
     vm_size                      = var.vm_size
     node_count                   = var.node_count
+    auto_scaling_enabled         = var.enable_cluster_autoscaler
+    min_count                    = var.enable_cluster_autoscaler ? var.min_count : null
+    max_count                    = var.enable_cluster_autoscaler ? var.max_count : null
     os_disk_size_gb              = var.os_disk_size_gb
     type                         = "VirtualMachineScaleSets"
     orchestrator_version         = null
@@ -52,8 +55,38 @@ resource "azurerm_kubernetes_cluster" "aks" {
     load_balancer_sku = "standard"
   }
 
+  // Optional Istio-based service mesh add-on
+  dynamic "service_mesh_profile" {
+    for_each = var.enable_istio_service_mesh ? [1] : []
+    content {
+      mode      = "Istio"
+      revisions = []
+    }
+  }
+
+  // Optional Application Gateway Ingress Controller (AGIC) integration
+  dynamic "ingress_application_gateway" {
+    for_each = var.enable_ingress_application_gateway && var.ingress_application_gateway_id != "" ? [1] : []
+    content {
+      gateway_id = var.ingress_application_gateway_id
+    }
+  }
+
+  // Optional Cluster Autoscaler profile tuning
+  dynamic "auto_scaler_profile" {
+    for_each = var.enable_auto_scaler_profile ? [1] : []
+    content {
+      expander                     = var.auto_scaler_expander
+      scan_interval                = var.auto_scaler_scan_interval
+      balance_similar_node_groups  = var.auto_scaler_balance_similar_node_groups
+      max_graceful_termination_sec = var.auto_scaler_max_graceful_termination_sec
+    }
+  }
+
   tags = var.tags
 }
+
+# (Planned) Optional user node pool with Cluster Autoscaler (provider v4 schema differs). To be added in follow-up.
 
 # Allow AKS kubelet to pull from ACR
 resource "azurerm_role_assignment" "acr_pull" {

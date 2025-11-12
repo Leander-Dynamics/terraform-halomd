@@ -1,0 +1,22 @@
+{{- if .Values.vpa.enabled }}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ include "fastapi-app.fullname" . }}
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: {{ include "fastapi-app.fullname" . }}
+  updatePolicy:
+    updateMode: {{ .Values.vpa.updatePolicy | quote }}
+  resourcePolicy:
+    containerPolicies:
+      - containerName: "app"
+        minAllowed:
+          cpu: {{ .Values.vpa.minAllowed.cpu | quote }}
+          memory: {{ .Values.vpa.minAllowed.memory | quote }}
+        maxAllowed:
+          cpu: {{ .Values.vpa.maxAllowed.cpu | quote }}
+          memory: {{ .Values.vpa.maxAllowed.memory | quote }}
+{{- end }}
