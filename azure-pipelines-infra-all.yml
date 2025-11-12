@@ -1,3 +1,5 @@
+## DEPRECATED: Migrated to GitHub Actions. See _archive/ado/azure-pipelines-infra-all.yml
+## Replacement: .github/workflows/terraform-*.yml
 trigger:
   branches: { include: [ main ] }
 

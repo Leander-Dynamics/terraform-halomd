@@ -1,0 +1,15 @@
+# Dev overrides for EDR agent
+# Provide env or envFrom with necessary secrets for the EDR DaemonSet
+# Example using an existing Secret named 'falcon-creds'
+
+envFrom:
+- secretRef:
+    name: falcon-creds
+
+# Optionally schedule on specific nodes
+nodeSelector: {}
+
+# tolerations:
+#   - key: "node-role.kubernetes.io/agent"
+#     operator: Exists
+#     effect: NoSchedule

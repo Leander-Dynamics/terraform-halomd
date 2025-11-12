@@ -32,6 +32,24 @@ variable "node_count" {
   default     = 3
 }
 
+variable "enable_cluster_autoscaler" {
+  description = "Enable AKS Cluster Autoscaler on the default node pool."
+  type        = bool
+  default     = false
+}
+
+variable "min_count" {
+  description = "Minimum node count when cluster autoscaler is enabled."
+  type        = number
+  default     = 3
+}
+
+variable "max_count" {
+  description = "Maximum node count when cluster autoscaler is enabled."
+  type        = number
+  default     = 6
+}
+
 variable "vm_size" {
   description = "VM size for default node pool."
   type        = string
@@ -66,4 +84,53 @@ variable "acr_sku" {
   description = "SKU for ACR (Basic, Standard, Premium)."
   type        = string
   default     = "Standard"
+}
+
+variable "enable_istio_service_mesh" {
+  description = "Enable AKS Istio service mesh add-on (service_mesh_profile)."
+  type        = bool
+  default     = false
+}
+
+variable "enable_ingress_application_gateway" {
+  description = "Enable AKS Ingress Application Gateway (AGIC) add-on. Requires ingress_application_gateway_id to be set."
+  type        = bool
+  default     = false
+}
+
+variable "ingress_application_gateway_id" {
+  description = "Resource ID of an existing Application Gateway to use with the AGIC add-on."
+  type        = string
+  default     = ""
+}
+
+# --- Optional Cluster Autoscaler profile tuning ---
+variable "enable_auto_scaler_profile" {
+  description = "Enable and configure AKS Cluster Autoscaler profile for faster reaction and better placement."
+  type        = bool
+  default     = false
+}
+
+variable "auto_scaler_expander" {
+  description = "Autoscaler expander strategy (least-waste | most-pods | random | priority)."
+  type        = string
+  default     = "least-waste"
+}
+
+variable "auto_scaler_scan_interval" {
+  description = "Interval at which autoscaler scans for changes (e.g., 10s, 30s)."
+  type        = string
+  default     = "10s"
+}
+
+variable "auto_scaler_balance_similar_node_groups" {
+  description = "Balance similar node groups when scaling."
+  type        = bool
+  default     = true
+}
+
+variable "auto_scaler_max_graceful_termination_sec" {
+  description = "Maximum seconds allowed for graceful pod termination during scale down."
+  type        = number
+  default     = 600
 }

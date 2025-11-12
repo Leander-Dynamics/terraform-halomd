@@ -1,0 +1,26 @@
+{{- if .Values.vpa.enabled }}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ include "flask-app.fullname" . }}
+  labels:
+    {{- include "flask-app.labels" . | nindent 4 }}
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: {{ include "flask-app.fullname" . }}
+  updatePolicy:
+    updateMode: {{ .Values.vpa.updatePolicy }}
+  {{- if .Values.vpa.minAllowed }}
+  resourcePolicy:
+    containerPolicies:
+      - containerName: "flask"
+        minAllowed:
+          {{- toYaml .Values.vpa.minAllowed | nindent 10 }}
+        {{- if .Values.vpa.maxAllowed }}
+        maxAllowed:
+          {{- toYaml .Values.vpa.maxAllowed | nindent 10 }}
+        {{- end }}
+  {{- end }}
+{{- end }}

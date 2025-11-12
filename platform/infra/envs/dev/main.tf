@@ -61,13 +61,69 @@ module "aks" {
 
   resource_group_name = module.artbit.resource_group_name
   location            = var.region
-  cluster_name        = var.aks_cluster_name
-  dns_prefix          = var.aks_dns_prefix
+  cluster_name        = var.aks_cluster_name != "" ? var.aks_cluster_name : format("%s-aks", var.env_name)
+  dns_prefix          = var.aks_dns_prefix != "" ? var.aks_dns_prefix : format("%s-aks", var.env_name)
   node_count          = var.aks_node_count
   vm_size             = var.aks_vm_size
   os_disk_size_gb     = var.aks_node_os_disk_size_gb
   acr_name            = var.acr_name
   acr_sku             = var.acr_sku
+  tags                = var.tags
+
+  # Optional add-ons
+  enable_istio_service_mesh          = var.enable_aks_istio
+  enable_ingress_application_gateway = var.enable_aks_agw_ingress && var.enable_app_gateway ? true : false
+  ingress_application_gateway_id     = var.enable_aks_agw_ingress && var.enable_app_gateway ? try(module.app_gateway[0].id, "") : ""
+
+  # (Planned) Cluster Autoscaler inputs (future wiring inside module)
+  enable_cluster_autoscaler = var.enable_aks_cluster_autoscaler
+  min_count                 = var.aks_min_count
+  max_count                 = var.aks_max_count
+
+  # Autoscaler profile tuning
+  enable_auto_scaler_profile               = var.enable_aks_auto_scaler_profile
+  auto_scaler_expander                     = var.aks_auto_scaler_expander
+  auto_scaler_scan_interval                = var.aks_auto_scaler_scan_interval
+  auto_scaler_balance_similar_node_groups  = var.aks_auto_scaler_balance_similar_node_groups
+  auto_scaler_max_graceful_termination_sec = var.aks_auto_scaler_max_graceful_termination_sec
+}
+
+# Application Gateway for AKS ingress (AGIC). Deployed when enabled.
+locals {
+  agw_name = var.app_gateway_name != "" ? var.app_gateway_name : format("agw-%s-%s-%s", var.env_name, var.region_short, var.project_name)
+  agw_subnet_id = format(
+    "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
+    var.subscription_id,
+    var.vnet_resource_group,
+    var.main_vnet,
+    format("%s-private-services-snet-1", var.env_region)
+  )
+  agw_fqdn_label = lower(replace(format("%s-%s-agw", var.env_name, var.region_short), "_", ""))
+}
+
+module "app_gateway" {
+  source              = "../../Azure/modules/app-gateway"
+  count               = var.enable_app_gateway ? 1 : 0
+  name                = local.agw_name
+  resource_group_name = module.artbit.resource_group_name
+  location            = var.region
+  subnet_id           = local.agw_subnet_id
+  fqdn_prefix         = local.agw_fqdn_label
+
+  # AGIC will manage listeners and backends; don't create defaults
+  create_default_listener = false
+  backend_fqdns           = []
+  tags                    = var.tags
+}
+
+# Azure Front Door with WAF at the edge, forwarding to the Application Gateway public FQDN
+module "frontdoor_waf" {
+  source              = "../../modules/frontdoor_waf"
+  count               = var.enable_frontdoor && var.enable_app_gateway ? 1 : 0
+  resource_group_name = module.artbit.resource_group_name
+  profile_name        = var.frontdoor_profile_name != "" ? var.frontdoor_profile_name : format("fd-%s-%s-%s", var.env_name, var.region_short, var.project_name)
+  endpoint_name       = var.frontdoor_endpoint_name != "" ? var.frontdoor_endpoint_name : format("fde-%s-%s-%s", var.env_name, var.region_short, var.project_name)
+  origin_host_name    = try(module.app_gateway[0].public_ip_fqdn, null)
   tags                = var.tags
 }
 

@@ -1,0 +1,19 @@
+# Dev overrides for FastAPI app
+image:
+  repository: ""
+  tag: ""
+
+ingress:
+  enabled: true
+  hosts:
+  - host: ""
+    paths:
+    - path: /
+      pathType: Prefix
+  tls: []
+
+# Enable sidecar-based health checks in dev
+probes:
+  useSidecar: true
+healthzSidecar:
+  enabled: true

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fastapi-app.fullname" . }}
+  labels:
+    app.kubernetes.io/name: fastapi-app
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fastapi-app
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fastapi-app
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations: {{- toYaml .Values.podAnnotations | nindent 8 }}
+    spec:
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          env: {{- toYaml .Values.env | nindent 12 }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: {{ ternary "/" .Values.probes.path .Values.probes.useSidecar }}
+              port: {{ ternary .Values.healthzSidecar.port "http" .Values.probes.useSidecar }}
+            initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+            successThreshold: {{ .Values.probes.successThreshold }}
+            failureThreshold: {{ .Values.probes.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: {{ ternary "/" .Values.probes.path .Values.probes.useSidecar }}
+              port: {{ ternary .Values.healthzSidecar.port "http" .Values.probes.useSidecar }}
+            initialDelaySeconds: {{ add .Values.probes.initialDelaySeconds 5 | default 10 }}
+            periodSeconds: {{ .Values.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.failureThreshold }}
+      {{- if .Values.healthzSidecar.enabled }}
+        - name: healthz
+          image: {{ .Values.healthzSidecar.image }}
+          imagePullPolicy: IfNotPresent
+          args:
+            {{- toYaml .Values.healthzSidecar.args | nindent 12 }}
+          ports:
+            - name: health
+              containerPort: {{ .Values.healthzSidecar.port }}
+              protocol: TCP
+          resources: {}
+      {{- end }}
+      nodeSelector: {{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations: {{- toYaml .Values.tolerations | nindent 8 }}
+      affinity: {{- toYaml .Values.affinity | nindent 8 }}

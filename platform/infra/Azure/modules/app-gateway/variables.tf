@@ -24,13 +24,15 @@ variable "fqdn_prefix" {
 }
 
 variable "backend_fqdns" {
-  description = "List of backend target hostnames."
+  description = "List of backend target hostnames. Leave empty when AGIC manages pools."
   type        = list(string)
+  default     = []
+}
 
-  validation {
-    condition     = length(var.backend_fqdns) > 0
-    error_message = "At least one backend hostname must be provided for the Application Gateway."
-  }
+variable "create_default_listener" {
+  description = "Create a default listener/rule bound to backend_fqdns. Keep false when AGIC manages the gateway."
+  type        = bool
+  default     = false
 }
 
 variable "backend_port" {

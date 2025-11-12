@@ -1,0 +1,19 @@
+# Dev overrides for Flask app
+image:
+  repository: ""
+  tag: ""
+
+ingress:
+  enabled: true
+  hosts:
+  - host: ""
+    paths:
+    - path: /
+      pathType: Prefix
+  tls: []
+
+# In dev, enable the sidecar health checker by default
+probes:
+  useSidecar: true
+healthzSidecar:
+  enabled: true

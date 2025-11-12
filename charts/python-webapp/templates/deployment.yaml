@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "python-webapp.fullname" . }}
+  labels:
+    {{- include "python-webapp.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "python-webapp.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "python-webapp.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- $fw := .Values.framework | default "fastapi" -}}
+          {{- $targetPort := ternary .Values.service.targetPort.fastapi (ternary .Values.service.targetPort.flask .Values.service.targetPort.custom (eq $fw "flask")) (eq $fw "fastapi") -}}
+          {{- if .Values.command }}
+          command: {{ toYaml .Values.command | nindent 12 }}
+          {{- else if .Values.runner.useGunicorn }}
+          command: ["sh","-c"]
+          args: ["exec gunicorn --bind 0.0.0.0:{{ ternary $targetPort .Values.runner.bindPort (eq .Values.runner.bindPort 0) }} {{ .Values.runner.appModule }}:app --workers {{ .Values.runner.workers }}"]
+          {{- else if .Values.args }}
+          args: {{ toYaml .Values.args | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ $targetPort }}
+              protocol: TCP
+          env:
+            {{- toYaml .Values.env | nindent 12 }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: {{ ternary "/" .Values.probes.path .Values.probes.useSidecar }}
+              port: {{ ternary .Values.healthzSidecar.port "http" .Values.probes.useSidecar }}
+            initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+            successThreshold: {{ .Values.probes.successThreshold }}
+            failureThreshold: {{ .Values.probes.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: {{ ternary "/" .Values.probes.path .Values.probes.useSidecar }}
+              port: {{ ternary .Values.healthzSidecar.port "http" .Values.probes.useSidecar }}
+            initialDelaySeconds: {{ add .Values.probes.initialDelaySeconds 5 | default 10 }}
+            periodSeconds: {{ .Values.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.failureThreshold }}
+      {{- if .Values.healthzSidecar.enabled }}
+        - name: healthz
+          image: {{ .Values.healthzSidecar.image }}
+          imagePullPolicy: IfNotPresent
+          args:
+            {{- toYaml .Values.healthzSidecar.args | nindent 12 }}
+          ports:
+            - name: health
+              containerPort: {{ .Values.healthzSidecar.port }}
+              protocol: TCP
+          resources: {}
+      {{- end }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

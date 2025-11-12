@@ -1,0 +1,37 @@
+image:
+  repository: your-edr-repo/edr-agent
+  tag: latest
+  pullPolicy: IfNotPresent
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+nodeSelector: {} # edr: "true"
+
+tolerations: []
+  # - key: "node-role.kubernetes.io/control-plane"
+  #   operator: "Exists"
+  #   effect: "NoSchedule"
+
+affinity: {}
+
+env: []
+  # - name: FALCON_CUSTOMER_ID
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: falcon-creds
+  #       key: cid
+
+serviceAccount:
+  create: true
+  name: ""
+
+podSecurityContext: {}
+securityContext: {}
+
+annotations: {}

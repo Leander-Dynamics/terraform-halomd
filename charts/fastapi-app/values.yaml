@@ -1,0 +1,93 @@
+image:
+  repository: your-registry/your-fastapi
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: true
+  className: azure/application-gateway
+  annotations:
+    appgw.ingress.kubernetes.io/backend-path-prefix: /
+  hosts:
+  - host: yourapp.example.com
+    paths:
+    - path: /
+      pathType: Prefix
+  tls: []
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 60
+  targetMemoryUtilizationPercentage: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+
+vpa:
+  enabled: false
+  updatePolicy: Off # Off | Initial | Auto
+  minAllowed:
+    cpu: 100m
+    memory: 128Mi
+  maxAllowed:
+    cpu: 2000m
+    memory: 2Gi
+
+env: []
+  # - name: APPINSIGHTS_CONNECTION_STRING
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: app-secrets
+  #       key: appinsights
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Probes configuration and optional sidecar for zero-config health
+probes:
+  path: /healthz
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 2
+  successThreshold: 1
+  failureThreshold: 3
+  useSidecar: false
+
+healthzSidecar:
+  enabled: false
+  image: hashicorp/http-echo:0.2.3
+  port: 5678
+  args:
+  - "-text=ok"
+  - "-listen=:5678"

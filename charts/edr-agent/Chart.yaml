@@ -1,0 +1,6 @@
+apiVersion: v2
+name: edr-agent
+description: DaemonSet to run an EDR agent on AKS nodes
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

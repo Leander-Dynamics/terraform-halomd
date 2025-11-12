@@ -187,3 +187,34 @@ variable "vault_dns_resource_group_name" {
   type        = string
   description = "Resource group name that hosts the Key Vault private DNS zone."
 }
+
+# --- Diagnostics settings (optional, v4-compliant) ---
+variable "enable_diagnostics" {
+  type        = bool
+  description = "Enable Azure Monitor diagnostic settings for selected resources."
+  default     = false
+}
+
+variable "diagnostics_storage_account_id" {
+  type        = string
+  description = "Destination Storage Account resource ID for diagnostic logs/metrics."
+  default     = ""
+}
+
+variable "diagnostics_log_category_groups" {
+  type        = list(string)
+  description = "Category groups to enable for logs (e.g., allLogs)."
+  default     = ["allLogs"]
+}
+
+variable "diagnostics_log_categories" {
+  type        = list(string)
+  description = "Explicit log categories to enable (empty to skip)."
+  default     = []
+}
+
+variable "diagnostics_metric_categories" {
+  type        = list(string)
+  description = "Metric categories to enable (e.g., AllMetrics)."
+  default     = ["AllMetrics"]
+}

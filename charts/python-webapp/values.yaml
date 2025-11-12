@@ -1,0 +1,96 @@
+framework: fastapi # fastapi | flask | custom
+
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+service:
+  type: ClusterIP
+  port: 80
+  # Defaults by framework; can override
+  targetPort:
+    fastapi: 8000
+    flask: 5000
+    custom: 8000
+
+# For framework=custom, you can set command/args directly
+command: []
+args: []
+
+# Optional built-in Gunicorn runner for Flask/custom
+runner:
+  useGunicorn: false
+  bindPort: 0 # 0 means auto from framework targetPort
+  appModule: app # e.g., app, src.main
+  workers: 2
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+ingress:
+  enabled: true
+  className: azure/application-gateway
+  annotations: {}
+  hosts:
+  - host: ""
+    paths:
+    - path: /
+      pathType: Prefix
+  tls: []
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
+
+vpa:
+  enabled: false
+  updatePolicy: Off # Off | Initial | Auto
+
+env: []
+envFrom: []
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+probes:
+  path: /healthz
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 2
+  successThreshold: 1
+  failureThreshold: 3
+  useSidecar: false
+
+healthzSidecar:
+  enabled: false
+  image: hashicorp/http-echo:0.2.3
+  port: 5678
+  args:
+  - "-text=ok"
+  - "-listen=:5678"

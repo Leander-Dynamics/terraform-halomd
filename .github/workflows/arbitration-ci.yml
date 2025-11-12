@@ -1,0 +1,65 @@
+name: Arbitration CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+    - 'Arbitration/**'
+    - '.github/workflows/arbitration-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+    - 'Arbitration/**'
+    - '.github/workflows/arbitration-ci.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  arbitration:
+    name: Build & Test Arbitration Solution
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('Arbitration/MPArbitration.sln') != '' }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '16.x'
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: Restore .NET solution
+      run: dotnet restore Arbitration/MPArbitration.sln
+
+    - name: Install Arbitration client dependencies
+      run: npm ci
+      working-directory: Arbitration/MPArbitration/ClientApp
+
+    - name: Run Arbitration client tests
+      run: npm test
+      working-directory: Arbitration/MPArbitration/ClientApp
+
+    - name: Build Arbitration client (dev)
+      run: npm run build-dev
+      working-directory: Arbitration/MPArbitration/ClientApp
+
+    - name: Build .NET solution
+      run: dotnet build Arbitration/MPArbitration.sln --configuration Release --no-restore
+
+    - name: Run Arbitration tests
+      run: dotnet test ./tests/TestArbitApi/Tests.csproj --configuration Release --no-build --no-restore
+
+  skip-notice:
+    name: Skip Notice (Arbitration folder not present)
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('Arbitration/MPArbitration.sln') == '' }}
+    steps:
+    - run: echo "Arbitration solution not found; skipping Arbitration CI."

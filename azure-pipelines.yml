@@ -1,3 +1,6 @@
+## DEPRECATED: This Azure DevOps pipeline has been migrated to GitHub Actions. Do not use.
+## Archived copy: _archive/ado/azure-pipelines.yml
+## Replacement: .github/workflows/terraform-*.yml and deploy-apps.yml
 # Multi-stage ADO pipeline (PR -> Validate & Plan; merge -> Apply dev -> gated stage/prod)
 # Includes AKV-driven secrets and optional temporary IP allow-listing for hosted agents.
 

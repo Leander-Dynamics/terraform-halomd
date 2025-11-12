@@ -212,13 +212,13 @@ variable "enable_aks" {
 variable "aks_cluster_name" {
   description = "AKS cluster name (unique per env)"
   type        = string
-  default     = "${var.env_name}-aks"
+  default     = ""
 }
 
 variable "aks_dns_prefix" {
   description = "DNS prefix for AKS"
   type        = string
-  default     = "${var.env_name}-aks"
+  default     = ""
 }
 
 variable "aks_node_count" {
@@ -249,4 +249,98 @@ variable "acr_sku" {
   description = "ACR SKU (Basic, Standard, Premium)"
   type        = string
   default     = "Standard"
+}
+
+# --- Ingress/Gateway/Front Door toggles (dev) ---
+
+variable "enable_app_gateway" {
+  description = "When true, provisions an Application Gateway for AKS ingress (AGIC)."
+  type        = bool
+  default     = false
+}
+
+variable "app_gateway_name" {
+  description = "Application Gateway name (optional). If empty, a name will be derived."
+  type        = string
+  default     = ""
+}
+
+variable "enable_frontdoor" {
+  description = "When true, provisions Azure Front Door (Standard) with WAF in front of the gateway."
+  type        = bool
+  default     = false
+}
+
+variable "frontdoor_profile_name" {
+  description = "Front Door profile name (optional)."
+  type        = string
+  default     = ""
+}
+
+variable "frontdoor_endpoint_name" {
+  description = "Front Door endpoint name (optional)."
+  type        = string
+  default     = ""
+}
+
+variable "enable_aks_istio" {
+  description = "Enable Istio service mesh add-on for AKS."
+  type        = bool
+  default     = false
+}
+
+variable "enable_aks_agw_ingress" {
+  description = "Enable AKS Ingress Application Gateway (AGIC) integration using the created App Gateway."
+  type        = bool
+  default     = false
+}
+
+# --- AKS Cluster Autoscaler (optional) ---
+variable "enable_aks_cluster_autoscaler" {
+  description = "Enable Cluster Autoscaler on a user node pool (follow-up wiring)."
+  type        = bool
+  default     = false
+}
+
+variable "aks_min_count" {
+  description = "Minimum nodes for autoscaler (when enabled)."
+  type        = number
+  default     = 3
+}
+
+variable "aks_max_count" {
+  description = "Maximum nodes for autoscaler (when enabled)."
+  type        = number
+  default     = 6
+}
+
+# --- AKS Autoscaler profile tuning (optional) ---
+variable "enable_aks_auto_scaler_profile" {
+  description = "Enable AKS auto_scaler_profile for faster reaction to load."
+  type        = bool
+  default     = false
+}
+
+variable "aks_auto_scaler_expander" {
+  description = "Autoscaler expander strategy."
+  type        = string
+  default     = "least-waste"
+}
+
+variable "aks_auto_scaler_scan_interval" {
+  description = "Autoscaler scan interval (e.g., 10s)."
+  type        = string
+  default     = "10s"
+}
+
+variable "aks_auto_scaler_balance_similar_node_groups" {
+  description = "Balance similar node groups during scaling."
+  type        = bool
+  default     = true
+}
+
+variable "aks_auto_scaler_max_graceful_termination_sec" {
+  description = "Maximum graceful termination seconds during scale down."
+  type        = number
+  default     = 600
 }

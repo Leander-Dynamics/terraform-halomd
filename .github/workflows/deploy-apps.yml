@@ -1,0 +1,154 @@
+name: Deploy AKS Apps (edr-agent, fastapi)
+
+on:
+  workflow_dispatch:
+    inputs:
+      resourceGroup:
+        description: AKS Resource Group name
+        required: true
+      aksName:
+        description: AKS Cluster name
+        required: true
+      namespace:
+        description: Kubernetes namespace to deploy into
+        required: true
+        default: default
+      edrValuesPath:
+        description: Path to edr-agent values file (optional)
+        required: false
+        default: ''
+      fastapiValuesPath:
+        description: Path to fastapi-app values file (optional)
+        required: false
+        default: ''
+      enableVpa:
+        description: Install VPA components before deploying (true/false)
+        type: boolean
+        required: true
+        default: false
+      createFalconSecret:
+        description: Create 'falcon-creds' Secret from GitHub Secrets (FALCON_*) before deploying EDR
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Azure login (OIDC)
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Get AKS credentials
+      run: |
+        az aks get-credentials -g "${{ inputs.resourceGroup }}" -n "${{ inputs.aksName }}" --overwrite-existing
+
+    - name: Install Helm
+      uses: azure/setup-helm@v4
+
+    - name: (Optional) Create falcon-creds secret from GitHub Secrets
+      if: ${{ inputs.createFalconSecret }}
+      shell: bash
+      env:
+        FALCON_CLIENT_ID: ${{ secrets.FALCON_CLIENT_ID }}
+        FALCON_CLIENT_SECRET: ${{ secrets.FALCON_CLIENT_SECRET }}
+        FALCON_CLOUD: ${{ secrets.FALCON_CLOUD }}
+        FALCON_CID: ${{ secrets.FALCON_CID }}
+        FALCON_BOOTSTRAP: ${{ secrets.FALCON_BOOTSTRAP }}
+      run: |
+        set -euo pipefail
+        ns="${{ inputs.namespace }}"
+        # Basic validation for required secrets
+        if [ -z "${FALCON_CLIENT_ID:-}" ] || [ -z "${FALCON_CLIENT_SECRET:-}" ]; then
+          echo "Missing required GitHub Secrets: FALCON_CLIENT_ID and/or FALCON_CLIENT_SECRET" >&2
+          exit 1
+        fi
+        # Build kubectl command with dynamic literals (include optional if present)
+        cmd=(kubectl create secret generic falcon-creds --namespace "$ns" --dry-run=client -o yaml)
+        cmd+=(--from-literal=FALCON_CLIENT_ID="$FALCON_CLIENT_ID")
+        cmd+=(--from-literal=FALCON_CLIENT_SECRET="$FALCON_CLIENT_SECRET")
+        if [ -n "${FALCON_CLOUD:-}" ]; then cmd+=(--from-literal=FALCON_CLOUD="$FALCON_CLOUD"); fi
+        if [ -n "${FALCON_CID:-}" ]; then cmd+=(--from-literal=FALCON_CID="$FALCON_CID"); fi
+        if [ -n "${FALCON_BOOTSTRAP:-}" ]; then cmd+=(--from-literal=FALCON_BOOTSTRAP="$FALCON_BOOTSTRAP"); fi
+        # Create or update the secret
+        "${cmd[@]}" | kubectl apply -f -
+
+    - name: (Optional) Install VPA components
+      if: ${{ inputs.enableVpa }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        kubectl apply -f https://github.com/kubernetes/autoscaler/releases/download/vertical-pod-autoscaler-1.1.2/vpa-v1-crd.yaml
+        kubectl apply -f https://github.com/kubernetes/autoscaler/releases/download/vertical-pod-autoscaler-1.1.2/vpa-rbac.yaml
+        kubectl apply -f https://github.com/kubernetes/autoscaler/releases/download/vertical-pod-autoscaler-1.1.2/vpa-deployment.yaml
+
+    - name: Deploy edr-agent DaemonSet
+      shell: bash
+      run: |
+        set -euo pipefail
+        ns="${{ inputs.namespace }}"
+        VALUES_ARG=""
+        if [ -n "${{ inputs.edrValuesPath }}" ]; then
+          VALUES_ARG="-f ${{ inputs.edrValuesPath }}"
+        elif [ -f "charts/edr-agent/values.${ns}.yaml" ]; then
+          VALUES_ARG="-f charts/edr-agent/values.${ns}.yaml"
+        fi
+        helm upgrade --install edr charts/edr-agent $VALUES_ARG \
+          --namespace "$ns" --create-namespace
+
+    - name: Deploy FastAPI app
+      shell: bash
+      run: |
+        set -euo pipefail
+        ns="${{ inputs.namespace }}"
+        VALUES_ARG=""
+        if [ -n "${{ inputs.fastapiValuesPath }}" ]; then
+          VALUES_ARG="-f ${{ inputs.fastapiValuesPath }}"
+        elif [ -f "charts/fastapi-app/values.${ns}.yaml" ]; then
+          VALUES_ARG="-f charts/fastapi-app/values.${ns}.yaml"
+        fi
+        helm upgrade --install api charts/fastapi-app $VALUES_ARG \
+          --namespace "$ns" --create-namespace
+
+    - name: Deploy Flask app (optional if chart present)
+      shell: bash
+      run: |
+        set -euo pipefail
+        ns="${{ inputs.namespace }}"
+        if [ -d charts/flask-app ]; then
+          VALUES_ARG=""
+          if [ -f "charts/flask-app/values.${ns}.yaml" ]; then
+            VALUES_ARG="-f charts/flask-app/values.${ns}.yaml"
+          fi
+          helm upgrade --install flask charts/flask-app $VALUES_ARG \
+            --namespace "$ns" --create-namespace
+        else
+          echo "charts/flask-app not found; skipping Flask deploy."
+        fi
+
+    - name: Deploy Python WebApp (optional if chart present)
+      shell: bash
+      run: |
+        set -euo pipefail
+        ns="${{ inputs.namespace }}"
+        if [ -d charts/python-webapp ]; then
+          VALUES_ARG=""
+          if [ -f "charts/python-webapp/values.${ns}.yaml" ]; then
+            VALUES_ARG="-f charts/python-webapp/values.${ns}.yaml"
+          fi
+          helm upgrade --install pyweb charts/python-webapp $VALUES_ARG \
+            --namespace "$ns" --create-namespace
+        else
+          echo "charts/python-webapp not found; skipping Python WebApp deploy."
+        fi
